@@ -12,7 +12,7 @@ type Config struct {
 	ChipDeviceConfigDeviceVendorName            string
 	ChipDeviceConfigDeviceType                  int
 	ChipDeviceConfigDeviceProductName           string
-	ChipDeviceConfigPairingInitialHint          int
+	ChipDeviceConfigPairingInitialHint          uint16
 	ChipDeviceConfigPairingInitialInstruction   string
 	ChipDeviceConfigPairingSecondaryInstruction string
 }
@@ -36,16 +36,16 @@ func ConfigurationMgr() *ConfigurationManager {
 }
 
 type ConfigurationManager struct {
-	mVendorId                                  int
+	mVendorId                                  uint16
 	mVendorName                                string
 	mProductName                               string
 	mProductId                                 int16
 	mDeviceType                                device.MatterDeviceType
 	mDeviceName                                string
 	mTcpSupported                              bool
-	mDevicePairingHint                         int
-	mDevicePairingSecondaryHint                int
-	mDeviceSecondaryPairingHint                int
+	mDevicePairingHint                         uint16
+	mDevicePairingSecondaryHint                uint16
+	mDeviceSecondaryPairingHint                uint16
 	mDeviceConfigPairingInitialInstruction     string
 	mDeviceConfigPairingSecondaryInstruction   string
 	deviceConfigEnableCommissionableDeviceType bool
@@ -66,7 +66,7 @@ func newConfigurationManager(conf Config) *ConfigurationManager {
 	}
 }
 
-func (c ConfigurationManager) GetVendorId() (int, error) {
+func (c ConfigurationManager) GetVendorId() (uint16, error) {
 	return c.mVendorId, nil
 }
 
@@ -116,7 +116,7 @@ func (c ConfigurationManager) GetCommissionableDeviceName() (string, error) {
 	return c.mDeviceName, nil
 }
 
-func (c ConfigurationManager) GetInitialPairingHint() int {
+func (c ConfigurationManager) GetInitialPairingHint() uint16 {
 	return c.mDevicePairingHint
 }
 
@@ -124,7 +124,7 @@ func (c ConfigurationManager) GetInitialPairingInstruction() string {
 	return c.mDeviceConfigPairingInitialInstruction
 }
 
-func (c ConfigurationManager) GetSecondaryPairingHint() int {
+func (c ConfigurationManager) GetSecondaryPairingHint() uint16 {
 	return c.mDeviceSecondaryPairingHint
 }
 

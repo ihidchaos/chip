@@ -9,9 +9,7 @@ import (
 	"github.com/galenliu/chip/inet/udp_endpoint"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/server/internal"
 	"github.com/galenliu/chip/transport"
-	"github.com/galenliu/dnssd"
 	"github.com/galenliu/gateway/pkg/errors"
 	"log"
 	"sync"
@@ -23,13 +21,13 @@ type Config struct {
 }
 
 type Server struct {
-	mSecuredServicePort            int
-	mUnsecuredServicePort          int
-	mOperationalServicePort        int
-	mUserDirectedCommissioningPort int
+	mSecuredServicePort            uint16
+	mUnsecuredServicePort          uint16
+	mOperationalServicePort        uint16
+	mUserDirectedCommissioningPort uint16
 	mInterfaceId                   Interface.Id
 	config                         Config
-	dnssdServer                    *DnssdServer
+	dnssdServer                    *MDNS
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    *CommissioningWindowManager
 	mDeviceStorage                 lib.PersistentStorageDelegate //unknown
@@ -42,11 +40,11 @@ type Server struct {
 	mListener                      any
 }
 
-func defaultServer() *Server {
+func DefaultServer() *Server {
 	return &Server{}
 }
 
-func (s *Server) Init(initParams InitParams) {
+func (s *Server) Init(initParams InitParams) *Server {
 
 	log.Printf("AppServer initializing")
 	var err error
@@ -55,7 +53,7 @@ func (s *Server) Init(initParams InitParams) {
 	s.mSecuredServicePort = initParams.UserDirectedCommissioningPort
 	s.mInterfaceId = initParams.InterfaceId
 
-	s.dnssdServer = defaultDnssd()
+	s.dnssdServer = DefaultDnssd()
 	s.dnssdServer.SetFabricTable(s.mFabrics)
 
 	s.mCommissioningWindowManager = NewCommissioningWindowManager(s)
@@ -67,15 +65,21 @@ func (s *Server) Init(initParams InitParams) {
 
 	// Set up attribute persistence before we try to bring up the data model
 	// handler.
-	err = s.mAttributePersister.Init(s.mDeviceStorage)
-	errors.SuccessOrExit(err)
+	if s.mAttributePersister != nil {
+		err = s.mAttributePersister.Init(s.mDeviceStorage)
+		errors.SuccessOrExit(err)
+	}
 
-	err = s.mFabrics.Init(s.mDeviceStorage)
-	errors.SuccessOrExit(err)
+	if s.mFabrics != nil {
+		err = s.mFabrics.Init(s.mDeviceStorage)
+		errors.SuccessOrExit(err)
+	}
 
 	//少sDeviceTypeResolver参数
-	err = s.mAccessControl.Init(initParams.AccessDelegate)
-	errors.SuccessOrExit(err)
+	if s.mAccessControl != nil {
+		err = s.mAccessControl.Init(initParams.AccessDelegate)
+		errors.SuccessOrExit(err)
+	}
 
 	s.mAclStorage = initParams.AclStorage
 	err = s.mAclStorage.Init(s.mDeviceStorage, s.mFabrics)
@@ -103,20 +107,22 @@ func (s *Server) Init(initParams InitParams) {
 	s.mTransports, err = transport.NewUdpTransport(udp_endpoint.UDPEndpoint{}, params)
 	errors.SuccessOrExit(err)
 
-	s.mListener, err = server.IntGroupDataProviderListener(s.mTransports)
+	//s.mListener, err = mdns.IntGroupDataProviderListener(s.mTransports)
 	errors.SuccessOrExit(err)
 
-	dnssd.ResolverInstance().Init(udp_endpoint.UDPEndpoint{})
+	//dnssd.ResolverInstance().Init(udp_endpoint.UDPEndpoint{})
 
 	DnssdInstance().SetSecuredPort(s.mOperationalServicePort)
 	DnssdInstance().SetUnsecuredPort(s.mUserDirectedCommissioningPort)
 	DnssdInstance().SetInterfaceId(s.mInterfaceId)
 
-	if s.GetFabricTable().FabricCount() != 0 {
-		if config.ConfigNetworkLayerBle {
-			//TODO
-			//如果Fabric不为零，那么设备已经被添加
-			//可以在这里关闭蓝牙
+	if s.GetFabricTable() != nil {
+		if s.GetFabricTable().FabricCount() != 0 {
+			if config.ConfigNetworkLayerBle {
+				//TODO
+				//如果Fabric不为零，那么设备已经被添加
+				//可以在这里关闭蓝牙
+			}
 		}
 	}
 
@@ -126,9 +132,9 @@ func (s *Server) Init(initParams InitParams) {
 		err = s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
 		errors.SuccessOrExit(err)
 	}
-
 	err = DnssdInstance().StartServer()
 	errors.SuccessOrExit(err)
+	return s
 }
 
 var ins *Server
@@ -137,7 +143,7 @@ var once sync.Once
 // GetInstance CHIP服务，单例模式，一个应用中只会存在一个实例
 func GetInstance() *Server {
 	once.Do(func() {
-		ins = defaultServer()
+		ins = DefaultServer()
 	})
 	return ins
 }
@@ -149,4 +155,8 @@ func (s Server) GetFabricTable() *credentials.FabricTable {
 
 func (s Server) Shutdown() {
 
+}
+
+func (s *Server) StartServer() error {
+	return nil
 }

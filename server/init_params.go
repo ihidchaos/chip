@@ -9,8 +9,8 @@ import (
 )
 
 type InitParams struct {
-	OperationalServicePort        int
-	UserDirectedCommissioningPort int
+	OperationalServicePort        uint16
+	UserDirectedCommissioningPort uint16
 	InterfaceId                   Interface.Id
 	AppDelegate                   any //unknown
 	PersistentStorageDelegate     lib.PersistentStorageDelegate

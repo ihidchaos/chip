@@ -1,4 +1,4 @@
-package server
+package pkg
 
 import "github.com/galenliu/chip/transport"
 

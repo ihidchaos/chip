@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/galenliu/dnssd"
+	"github.com/galenliu/chip/config"
 )
 
 type CommissioningWindowManager struct {
@@ -23,6 +23,6 @@ func (m *CommissioningWindowManager) OpenBasicCommissioningWindow() error {
 	return nil
 }
 
-func (m *CommissioningWindowManager) GetCommissioningMode() dnssd.CommissioningMode {
-	return dnssd.KDisabled
+func (m *CommissioningWindowManager) GetCommissioningMode() config.CommissioningMode {
+	return config.KDisabled
 }

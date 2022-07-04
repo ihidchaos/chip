@@ -2,10 +2,12 @@ package udp_endpoint
 
 import (
 	"fmt"
+	"github.com/galenliu/chip/inet/IP"
 	"github.com/galenliu/chip/inet/IPPacket"
 	"github.com/galenliu/chip/inet/Interface"
 	"github.com/galenliu/gateway/pkg/errors"
 	"github.com/galenliu/gateway/pkg/system"
+	"net"
 	"net/netip"
 )
 
@@ -91,7 +93,7 @@ func (e *UDPEndpoint) Listen(funct OnMessageReceivedFunct, errorFunct OnReceiveE
 
 func (e *UDPEndpoint) SendTo(addr netip.Addr, port int, msg *system.PacketBufferHandle, interfaceId Interface.Id) error {
 	pktInfo := &IPPacket.Info{
-		DestAddress: addr,
+		DestAddress: IP.Address{Addr: addr},
 		InterfaceId: interfaceId,
 		DestPort:    port,
 	}
@@ -121,6 +123,10 @@ func (e *UDPEndpoint) Close() {
 		e.CloseImpl()
 		e.mState = kClosed
 	}
+}
+
+func (e *UDPEndpoint) Listeners() []net.Listener {
+	return nil
 }
 
 func (e *UDPEndpoint) GetBoundInterface() Interface.Id {

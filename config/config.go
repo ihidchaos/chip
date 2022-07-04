@@ -1,8 +1,8 @@
 package config
 
 var (
-	ChipPort                                    = 5540
-	ChipUdcPort                                 = ChipPort + 10
+	ChipPort                                    uint16 = 5540
+	ChipUdcPort                                 uint16 = ChipPort + 10
 	ConfigNetworkLayerBle                       bool
 	ChipDeviceConfigEnablePairingAutostart      bool
 	ChipDeviceConfigEnableCommissionerDiscovery bool

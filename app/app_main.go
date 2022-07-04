@@ -16,7 +16,6 @@ func AppMainInit(con Config) {
 }
 
 func AppMainLoop() {
-
 	initParams := server.InitializeStaticResourcesBeforeServerInit()
 	initParams.OperationalServicePort = config.ChipPort
 	initParams.UserDirectedCommissioningPort = config.ChipUdcPort
