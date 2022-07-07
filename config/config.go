@@ -7,3 +7,7 @@ var (
 	ChipDeviceConfigEnablePairingAutostart      bool
 	ChipDeviceConfigEnableCommissionerDiscovery bool
 )
+
+const (
+	InetConfigEnableTcpEndpoint = true
+)

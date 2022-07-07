@@ -1,8 +1,5 @@
 package core
 
-type CompressedFabricId uint64
-type FabricId uint64
-
 const kUndefinedCompressedFabricId CompressedFabricId = 0
 
 const kUndefinedFabricId FabricId = 0
@@ -12,7 +9,14 @@ type PeerId struct {
 	mCompressedFabricId CompressedFabricId
 }
 
-func NewPeerId(compressedFabricId CompressedFabricId, nodeId NodeId) *PeerId {
+func (p PeerId) Default() *PeerId {
+	return &PeerId{
+		mNodeId:             0,
+		mCompressedFabricId: 0,
+	}
+}
+
+func (p PeerId) Init(compressedFabricId CompressedFabricId, nodeId NodeId) *PeerId {
 	return &PeerId{
 		mNodeId:             nodeId,
 		mCompressedFabricId: compressedFabricId,

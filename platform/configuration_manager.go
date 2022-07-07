@@ -10,9 +10,9 @@ import (
 type Config struct {
 	ChipDeviceConfigPairingSecondaryHint        int
 	ChipDeviceConfigDeviceVendorName            string
-	ChipDeviceConfigDeviceType                  int
+	ChipDeviceConfigDeviceType                  uint32
 	ChipDeviceConfigDeviceProductName           string
-	ChipDeviceConfigPairingInitialHint          uint16
+	ChipDeviceConfigPairingInitialHint          string
 	ChipDeviceConfigPairingInitialInstruction   string
 	ChipDeviceConfigPairingSecondaryInstruction string
 }
@@ -27,7 +27,7 @@ func ConfigurationMgr() *ConfigurationManager {
 			ChipDeviceConfigDeviceVendorName:            "",
 			ChipDeviceConfigDeviceType:                  0,
 			ChipDeviceConfigDeviceProductName:           "",
-			ChipDeviceConfigPairingInitialHint:          0,
+			ChipDeviceConfigPairingInitialHint:          "",
 			ChipDeviceConfigPairingInitialInstruction:   "",
 			ChipDeviceConfigPairingSecondaryInstruction: "",
 		})
@@ -39,16 +39,17 @@ type ConfigurationManager struct {
 	mVendorId                                  uint16
 	mVendorName                                string
 	mProductName                               string
-	mProductId                                 int16
+	mProductId                                 uint16
 	mDeviceType                                device.MatterDeviceType
 	mDeviceName                                string
 	mTcpSupported                              bool
-	mDevicePairingHint                         uint16
+	mDevicePairingHint                         string
 	mDevicePairingSecondaryHint                uint16
-	mDeviceSecondaryPairingHint                uint16
+	mDeviceSecondaryPairingHint                string
 	mDeviceConfigPairingInitialInstruction     string
 	mDeviceConfigPairingSecondaryInstruction   string
 	deviceConfigEnableCommissionableDeviceType bool
+	mDiscriminator                             uint16
 }
 
 func newConfigurationManager(conf Config) *ConfigurationManager {
@@ -70,11 +71,15 @@ func (c ConfigurationManager) GetVendorId() (uint16, error) {
 	return c.mVendorId, nil
 }
 
+func (c ConfigurationManager) GetSetupDiscriminator() (uint16, error) {
+	return c.mDiscriminator, nil
+}
+
 func (c ConfigurationManager) GetVendorName() string {
 	return c.mVendorName
 }
 
-func (c ConfigurationManager) GetProductId() (int16, error) {
+func (c ConfigurationManager) GetProductId() (uint16, error) {
 	return c.mProductId, nil
 }
 
@@ -116,7 +121,7 @@ func (c ConfigurationManager) GetCommissionableDeviceName() (string, error) {
 	return c.mDeviceName, nil
 }
 
-func (c ConfigurationManager) GetInitialPairingHint() uint16 {
+func (c ConfigurationManager) GetInitialPairingHint() string {
 	return c.mDevicePairingHint
 }
 
@@ -124,7 +129,7 @@ func (c ConfigurationManager) GetInitialPairingInstruction() string {
 	return c.mDeviceConfigPairingInitialInstruction
 }
 
-func (c ConfigurationManager) GetSecondaryPairingHint() uint16 {
+func (c ConfigurationManager) GetSecondaryPairingHint() string {
 	return c.mDeviceSecondaryPairingHint
 }
 

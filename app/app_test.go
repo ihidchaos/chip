@@ -14,7 +14,7 @@ func TestDnssdServer(t *testing.T) {
 	initParams := server.InitializeStaticResourcesBeforeServerInit()
 	initParams.OperationalServicePort = config.ChipPort
 	initParams.UserDirectedCommissioningPort = config.ChipUdcPort
-	chip := server.DefaultServer().Init(initParams)
+	chip := server.Server{}.Init(initParams)
 	err := chip.StartServer()
 	if err != nil {
 		return

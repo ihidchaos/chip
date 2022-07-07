@@ -91,7 +91,7 @@ func (e *UDPEndpoint) Listen(funct OnMessageReceivedFunct, errorFunct OnReceiveE
 	return nil
 }
 
-func (e *UDPEndpoint) SendTo(addr netip.Addr, port int, msg *system.PacketBufferHandle, interfaceId Interface.Id) error {
+func (e *UDPEndpoint) SendTo(addr netip.Addr, port uint16, msg *system.PacketBufferHandle, interfaceId Interface.Id) error {
 	pktInfo := &IPPacket.Info{
 		DestAddress: IP.Address{Addr: addr},
 		InterfaceId: interfaceId,

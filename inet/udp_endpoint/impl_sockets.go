@@ -43,7 +43,7 @@ func (s *UDPEndPointImplSockets) SendMsgImpl(pktInfo *IPPacket.Info, msg *system
 		Zone: "",
 	}, &net.UDPAddr{
 		IP:   pktInfo.DestAddress.AsSlice(),
-		Port: pktInfo.DestPort,
+		Port: int(pktInfo.DestPort),
 		Zone: "",
 	})
 	if err != nil {

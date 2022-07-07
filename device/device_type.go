@@ -1,6 +1,6 @@
 package device
 
-type MatterDeviceType = int
+type MatterDeviceType = uint32
 
 const (
 	DimmableBulb MatterDeviceType = 257

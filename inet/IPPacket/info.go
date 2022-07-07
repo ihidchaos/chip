@@ -9,6 +9,6 @@ type Info struct {
 	SrcAddress  IP.Address
 	DestAddress IP.Address
 	InterfaceId Interface.Id
-	SrcPort     int
-	DestPort    int
+	SrcPort     uint16
+	DestPort    uint16
 }

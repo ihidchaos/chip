@@ -5,14 +5,14 @@ import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/controller"
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/inet/Interface"
 	"github.com/galenliu/chip/inet/udp_endpoint"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/server/dnssd/manager"
 	"github.com/galenliu/chip/transport"
 	"github.com/galenliu/gateway/pkg/errors"
 	"log"
-	"sync"
+	"net"
 )
 
 type Config struct {
@@ -25,11 +25,11 @@ type Server struct {
 	mUnsecuredServicePort          uint16
 	mOperationalServicePort        uint16
 	mUserDirectedCommissioningPort uint16
-	mInterfaceId                   Interface.Id
+	mInterfaceId                   net.Interface
 	config                         Config
-	dnssdServer                    *MDNS
+	mDnssd                         *DnssdServer
 	mFabrics                       *credentials.FabricTable
-	mCommissioningWindowManager    *CommissioningWindowManager
+	mCommissioningWindowManager    *manager.CommissioningWindowManager
 	mDeviceStorage                 lib.PersistentStorageDelegate //unknown
 	mAccessControl                 access.AccessControler
 	mSessionResumptionStorage      any
@@ -40,11 +40,7 @@ type Server struct {
 	mListener                      any
 }
 
-func DefaultServer() *Server {
-	return &Server{}
-}
-
-func (s *Server) Init(initParams InitParams) *Server {
+func (s Server) Init(initParams *InitParams) *Server {
 
 	log.Printf("AppServer initializing")
 	var err error
@@ -53,10 +49,9 @@ func (s *Server) Init(initParams InitParams) *Server {
 	s.mSecuredServicePort = initParams.UserDirectedCommissioningPort
 	s.mInterfaceId = initParams.InterfaceId
 
-	s.dnssdServer = DefaultDnssd()
-	s.dnssdServer.SetFabricTable(s.mFabrics)
-
-	s.mCommissioningWindowManager = NewCommissioningWindowManager(s)
+	s.mDnssd = DnssdServer{}.Init()
+	s.mDnssd.SetFabricTable(s.mFabrics)
+	s.mCommissioningWindowManager = manager.CommissioningWindowManager{}.Init(&s)
 	s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
 	// Initialize PersistentStorageDelegate-based storage
@@ -85,8 +80,8 @@ func (s *Server) Init(initParams InitParams) *Server {
 	err = s.mAclStorage.Init(s.mDeviceStorage, s.mFabrics)
 	errors.SuccessOrExit(err)
 
-	DnssdInstance().SetFabricTable(s.mFabrics)
-	DnssdInstance().SetCommissioningModeProvider(s.mCommissioningWindowManager)
+	s.mDnssd.SetFabricTable(s.mFabrics)
+	s.mDnssd.SetCommissioningModeProvider(s.mCommissioningWindowManager)
 
 	//mGroupsProvider = initParams.groupDataProvider;
 	//SetGroupDataProvider(mGroupsProvider);
@@ -112,9 +107,9 @@ func (s *Server) Init(initParams InitParams) *Server {
 
 	//dnssd.ResolverInstance().Init(udp_endpoint.UDPEndpoint{})
 
-	DnssdInstance().SetSecuredPort(s.mOperationalServicePort)
-	DnssdInstance().SetUnsecuredPort(s.mUserDirectedCommissioningPort)
-	DnssdInstance().SetInterfaceId(s.mInterfaceId)
+	s.mDnssd.SetSecuredPort(s.mOperationalServicePort)
+	s.mDnssd.SetUnsecuredPort(s.mUserDirectedCommissioningPort)
+	s.mDnssd.SetInterfaceId(s.mInterfaceId)
 
 	if s.GetFabricTable() != nil {
 		if s.GetFabricTable().FabricCount() != 0 {
@@ -132,20 +127,9 @@ func (s *Server) Init(initParams InitParams) *Server {
 		err = s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
 		errors.SuccessOrExit(err)
 	}
-	err = DnssdInstance().StartServer()
+	err = s.mDnssd.StartServer()
 	errors.SuccessOrExit(err)
-	return s
-}
-
-var ins *Server
-var once sync.Once
-
-// GetInstance CHIP服务，单例模式，一个应用中只会存在一个实例
-func GetInstance() *Server {
-	once.Do(func() {
-		ins = DefaultServer()
-	})
-	return ins
+	return &s
 }
 
 // GetFabricTable 返回CHIP服务中的Fabric
@@ -158,5 +142,6 @@ func (s Server) Shutdown() {
 }
 
 func (s *Server) StartServer() error {
+
 	return nil
 }

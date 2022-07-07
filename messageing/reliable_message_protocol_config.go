@@ -13,6 +13,12 @@ type ReliableMessageProtocolConfig struct {
 	mActiveRetransTimeout time.Duration
 }
 
+func (c ReliableMessageProtocolConfig) Init() *ReliableMessageProtocolConfig {
+	c.mActiveRetransTimeout = time.Duration(0)
+	c.mActiveRetransTimeout = time.Duration(0)
+	return &c
+}
+
 var insRMPC *ReliableMessageProtocolConfig
 var rmpcOnce = sync.Once{}
 

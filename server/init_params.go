@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
-	"github.com/galenliu/chip/inet/Interface"
 	"github.com/galenliu/chip/lib"
 	"net"
 )
@@ -11,7 +10,7 @@ import (
 type InitParams struct {
 	OperationalServicePort        uint16
 	UserDirectedCommissioningPort uint16
-	InterfaceId                   Interface.Id
+	InterfaceId                   net.Interface
 	AppDelegate                   any //unknown
 	PersistentStorageDelegate     lib.PersistentStorageDelegate
 	SessionResumptionStorage      any
@@ -20,24 +19,12 @@ type InitParams struct {
 	EndpointNativeParams          func()
 }
 
-func DefaultServerInitParams() *InitParams {
-	return &InitParams{
-		OperationalServicePort:        config.ChipPort,
-		UserDirectedCommissioningPort: config.ChipUdcPort,
-	}
+func (i InitParams) Default() *InitParams {
+	i.OperationalServicePort = config.ChipPort
+	i.UserDirectedCommissioningPort = config.ChipUdcPort
+	return &i
 }
 
-func InitializeStaticResourcesBeforeServerInit() (initParams InitParams) {
-	initParams = InitParams{
-		OperationalServicePort:        0,
-		UserDirectedCommissioningPort: 0,
-	}
-	list, _ := net.Interfaces()
-	for _, inter := range list {
-		adders, _ := inter.Addrs()
-		if len(adders) > 1 {
-			initParams.InterfaceId = Interface.Id{Interface: inter}
-		}
-	}
-	return
+func InitializeStaticResourcesBeforeServerInit() (initParams *InitParams) {
+	return InitParams{}.Default()
 }
