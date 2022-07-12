@@ -6,9 +6,54 @@ import (
 	"net"
 )
 
+type OPT struct {
+	Name  string
+	Key   string
+	Usage string
+}
+
+var Keys = map[string]string{
+	KDeviceOption_Version:                   "version",
+	KDeviceOption_VendorID:                  "vendor-id",
+	KDeviceOption_ProductID:                 "product-id",
+	KDeviceOption_CustomFlow:                "custom-flow",
+	KDeviceOption_Capabilities:              "capabilities",
+	KDeviceOption_Discriminator:             "discriminator",
+	KDeviceOption_Passcode:                  "passcode",
+	KDeviceOption_Spake2pVerifierBase64:     "spake2p-verifier-base64",
+	KDeviceOption_Spake2pSaltBase64:         "spake2p-salt-base64",
+	KDeviceOption_Spake2pIterations:         "spake2p-iterations",
+	KDeviceOption_SecuredDevicePort:         "secured-device-port",
+	KDeviceOption_SecuredCommissionerPort:   "secured-commissioner-port",
+	KDeviceOption_UnsecuredCommissionerPort: "unsecured-commissioner-port",
+	KDeviceOption_Command:                   "command",
+	KDeviceOption_PICS:                      "PICS",
+	KDeviceOption_KVS:                       "KVS",
+	KDeviceOption_InterfaceId:               "interface-id",
+}
+
+var Usages = map[string]string{
+	KDeviceOption_Version:                   "version",
+	KDeviceOption_VendorID:                  "vendor-id",
+	KDeviceOption_ProductID:                 "product-id",
+	KDeviceOption_CustomFlow:                "custom-flow",
+	KDeviceOption_Capabilities:              "capabilities",
+	KDeviceOption_Discriminator:             "discriminator",
+	KDeviceOption_Passcode:                  "passcode",
+	KDeviceOption_Spake2pVerifierBase64:     "spake2p-verifier-base64",
+	KDeviceOption_Spake2pSaltBase64:         "spake2p-salt-base64",
+	KDeviceOption_Spake2pIterations:         "spake2p-iterations",
+	KDeviceOption_SecuredDevicePort:         "secured-device-port",
+	KDeviceOption_SecuredCommissionerPort:   "secured-commissioner-port",
+	KDeviceOption_UnsecuredCommissionerPort: "unsecured-commissioner-port",
+	KDeviceOption_Command:                   "command",
+	KDeviceOption_PICS:                      "PICS",
+	KDeviceOption_KVS:                       "KVS",
+	KDeviceOption_InterfaceId:               "interface-id",
+}
+
 const (
 	KDeviceOption_Version                   = "version"
-	VDeviceOption_Version                   = "0"
 	KDeviceOption_VendorID                  = "vendor-id"
 	KDeviceOption_ProductID                 = "product-id"
 	KDeviceOption_CustomFlow                = "custom-flow"
@@ -28,7 +73,6 @@ const (
 )
 
 func GetDeviceOptions(config *viper.Viper) *options.DeviceOptions {
-
 	deviceOptions := &options.DeviceOptions{
 		Spake2pIterations: 0,
 		Payload: options.PayloadContents{

@@ -15,7 +15,7 @@ func (c *command) initTestCmd() (err error) {
 		Short: "chip test",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
-			deviceOptions := config.getDeviceOptions(c.config)
+			deviceOptions := config.GetDeviceOptions(c.config)
 			info := &DeviceLayer.DeviceInfo{
 				VendorId:        0xFFF0,
 				ProductId:       0x123,
@@ -25,11 +25,13 @@ func (c *command) initTestCmd() (err error) {
 			}
 			err = app.AppMainInit(info, deviceOptions)
 			if err != nil {
+				log.Infof(err.Error())
 				return err
 			}
 
 			err = app.AppMainLoop(deviceOptions, info)
 			if err != nil {
+				log.Infof(err.Error())
 				return err
 			}
 
@@ -65,10 +67,12 @@ func (c *command) initTestCmd() (err error) {
 			return nil
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return c.config.BindPFlags(cmd.Flags())
+			initDeviceOptionsFlags(cmd)
+			config.SetCHIPConfig(cmd)
+			err := c.config.BindPFlags(cmd.Flags())
+			return err
 		},
 	}
-	c.initDeviceOptionsFlags(cmd)
 	c.root.AddCommand(cmd)
 	return nil
 }

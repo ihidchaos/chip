@@ -18,8 +18,6 @@ func (c *command) initInitCmd() (err error) {
 			return c.config.BindPFlags(cmd.Flags())
 		},
 	}
-
-	c.initDeviceOptionsFlags(cmd)
 	c.root.AddCommand(cmd)
 	return nil
 }

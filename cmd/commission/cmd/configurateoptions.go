@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/galenliu/chip/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -15,7 +16,6 @@ func (c *command) initConfiguratorOptionsCmd() (err error) {
 			if len(args) > 0 {
 				return cmd.Help()
 			}
-
 			d := c.config.AllSettings()
 			ym, err := yaml.Marshal(d)
 			if err != nil {
@@ -26,14 +26,13 @@ func (c *command) initConfiguratorOptionsCmd() (err error) {
 
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return c.config.BindPFlags(cmd.Flags())
+			initDeviceOptionsFlags(cmd)
+			config.SetCHIPConfig(cmd)
+			err := c.config.BindPFlags(cmd.Flags())
+			return err
 		},
 	}
-
-	c.initDeviceOptionsFlags(cmd)
-
 	c.root.AddCommand(cmd)
-
 	return nil
 
 }
