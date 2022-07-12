@@ -11,6 +11,13 @@ func GetPrimaryWiFiMACAddress() (i []net.Interface) {
 	return ifs
 }
 
+func TestMac(t *testing.T) {
+	mgr := ConfigurationMgr()
+	for i := 0; i < 100; i++ {
+		t.Log(mgr.GetPrimaryMACAddress())
+	}
+}
+
 func TestThingMarshal(t *testing.T) {
 	is := GetPrimaryWiFiMACAddress()
 	for _, i := range is {

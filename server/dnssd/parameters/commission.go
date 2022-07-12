@@ -1,9 +1,9 @@
 package parameters
 
 import (
+	"fmt"
 	"github.com/galenliu/chip/core"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/server/dnssd/costants/commissioning_mode"
 	"github.com/galenliu/chip/server/dnssd/costants/commssion_advertise_mode"
 )
 
@@ -20,7 +20,7 @@ type CommissionAdvertisingParameters struct {
 	mPairingInstr       string  //设备配对指南
 	mDeviceName         string  //设备名称
 	mMode               CommssionAdvertiseMode.T
-	mCommissioningMode  CommissioningMode.T
+	mCommissioningMode  uint8
 	mPeerId             *core.PeerId
 	mShortDiscriminator uint8
 	mLongDiscriminator  uint16
@@ -32,11 +32,11 @@ func (c CommissionAdvertisingParameters) Init() *CommissionAdvertisingParameters
 	return &c
 }
 
-func (c *CommissionAdvertisingParameters) SetCommissioningMode(mode CommissioningMode.T) {
+func (c *CommissionAdvertisingParameters) SetCommissioningMode(mode uint8) {
 	c.mCommissioningMode = mode
 }
 
-func (c *CommissionAdvertisingParameters) GetCommissioningMode() CommissioningMode.T {
+func (c *CommissionAdvertisingParameters) GetCommissioningMode() uint8 {
 	return c.mCommissioningMode
 }
 
@@ -85,16 +85,27 @@ func (c *CommissionAdvertisingParameters) SetMRPConfig(config *messageing.Reliab
 	c.mMRPConfig = config
 }
 
-func (c *CommissionAdvertisingParameters) GetVendorId() *uint16 {
-	return c.mVendorId
+func (c *CommissionAdvertisingParameters) GetVendorId() (uint16, error) {
+	if c.mVendorId == nil {
+		return 0, fmt.Errorf("vendor id not set")
+	}
+	return *c.mVendorId, nil
 }
 
-func (c *CommissionAdvertisingParameters) GetDeviceType() *uint32 {
-	return c.mDeviceType
+func (c *CommissionAdvertisingParameters) GetDeviceType() (t uint32, e error) {
+	if c.mDeviceType == nil {
+		e = fmt.Errorf("value not set")
+		return
+	}
+	t = *c.mDeviceType
+	return
 }
 
-func (c *CommissionAdvertisingParameters) GetProductId() *uint16 {
-	return c.mProductId
+func (c *CommissionAdvertisingParameters) GetProductId() (uint16, error) {
+	if c.mProductId == nil {
+		return 0, fmt.Errorf("product id not set")
+	}
+	return *c.mProductId, nil
 }
 
 func (c *CommissionAdvertisingParameters) GetDeviceName() string {

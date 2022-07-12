@@ -2,13 +2,12 @@ package parameters
 
 import (
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/pkg"
 	"net"
 )
 
 type BaseAdvertisingParams struct {
 	mPort           uint16
-	mMac            net.HardwareAddr
+	mMac            string
 	mEnableIPv4     bool
 	mInterfaceId    net.Interface
 	mMRPConfig      *messageing.ReliableMessageProtocolConfig
@@ -46,22 +45,16 @@ func (b *BaseAdvertisingParams) GetPort() uint16 {
 	return b.mPort
 }
 
-func (b *BaseAdvertisingParams) SetMaC(mac net.HardwareAddr) {
+func (b *BaseAdvertisingParams) SetMaC(mac string) {
 	b.mMac = mac
 }
 
-func (b *BaseAdvertisingParams) GetMac() net.HardwareAddr {
-	if b.mMac == nil || len(b.mMac) == 0 {
-		b.mMac = net.HardwareAddr(pkg.Mac48Address(pkg.RandHex()))
-	}
+func (b *BaseAdvertisingParams) GetMac() string {
 	return b.mMac
 }
 
 func (b *BaseAdvertisingParams) GetUUID() string {
-	if b.mMac == nil || len(b.mMac) == 0 {
-		b.mMac = net.HardwareAddr(pkg.Mac48Address(pkg.RandHex()))
-	}
-	return b.mMac.String()
+	return b.mMac
 }
 
 func (b *BaseAdvertisingParams) EnableIpV4(enable bool) {

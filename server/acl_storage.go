@@ -1,13 +1,7 @@
 package server
 
-import (
-	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/lib"
-)
-
-type AclStorage struct {
+type AclStorage interface {
 }
 
-func (s AclStorage) Init(storage lib.PersistentStorageDelegate, fabrics *credentials.FabricTable) error {
-	return nil
+type DefaultAclStorage struct {
 }

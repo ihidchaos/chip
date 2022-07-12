@@ -1,6 +1,8 @@
 package credentials
 
-import "github.com/galenliu/chip/lib"
+import (
+	"github.com/galenliu/chip/platform/storage"
+)
 
 type FabricTable struct {
 	mState []FabricInfo
@@ -11,7 +13,7 @@ func (f FabricTable) FabricCount() int {
 	panic("implement me")
 }
 
-func (f FabricTable) Init(storage lib.PersistentStorageDelegate) (err error) {
+func (f FabricTable) Init(storage storage.PersistentStorageDelegate) (err error) {
 	return
 }
 

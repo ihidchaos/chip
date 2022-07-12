@@ -2,18 +2,27 @@ package server
 
 import (
 	"github.com/galenliu/chip/access"
-	"github.com/galenliu/chip/config"
+	"github.com/galenliu/chip/config/costant"
 	"github.com/galenliu/chip/controller"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/inet/udp_endpoint"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/platform/storage"
+	"github.com/galenliu/chip/server/dnssd"
 	"github.com/galenliu/chip/server/dnssd/manager"
 	"github.com/galenliu/chip/transport"
 	"github.com/galenliu/gateway/pkg/errors"
 	"log"
 	"net"
 )
+
+type AppDelegate interface {
+	OnCommissioningSessionStarted()
+	OnCommissioningSessionStopped()
+	OnCommissioningWindowOpened()
+	OnCommissioningWindowClosed()
+}
 
 type Config struct {
 	UnsecureServicePort int
@@ -27,32 +36,34 @@ type Server struct {
 	mUserDirectedCommissioningPort uint16
 	mInterfaceId                   net.Interface
 	config                         Config
-	mDnssd                         *DnssdServer
+	mDnssd                         *dnssd.Server
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    *manager.CommissioningWindowManager
-	mDeviceStorage                 lib.PersistentStorageDelegate //unknown
+	mDeviceStorage                 storage.PersistentStorageDelegate //unknown
 	mAccessControl                 access.AccessControler
 	mSessionResumptionStorage      any
 	mExchangeMgr                   messageing.ExchangeManager
 	mAttributePersister            lib.AttributePersistenceProvider //unknown
-	mAclStorage                    AclStorage
+	mAclStorage                    *AclStorage
 	mTransports                    transport.TransportManager
 	mListener                      any
 }
 
-func (s Server) Init(initParams *InitParams) *Server {
+func NewServer(initParams *CommonCaseDeviceServerInitParams) *Server {
+	s := &Server{}
+	log.Printf("app server initializing")
 
-	log.Printf("AppServer initializing")
 	var err error
-
 	s.mUnsecuredServicePort = initParams.OperationalServicePort
 	s.mSecuredServicePort = initParams.UserDirectedCommissioningPort
 	s.mInterfaceId = initParams.InterfaceId
 
-	s.mDnssd = DnssdServer{}.Init()
+	s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
+
+	s.mDnssd = dnssd.Server{}.Init()
 	s.mDnssd.SetFabricTable(s.mFabrics)
 	s.mCommissioningWindowManager = manager.CommissioningWindowManager{}.Init(&s)
-	s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
+	//s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
 	// Initialize PersistentStorageDelegate-based storage
 	s.mDeviceStorage = initParams.PersistentStorageDelegate
@@ -76,8 +87,6 @@ func (s Server) Init(initParams *InitParams) *Server {
 		errors.SuccessOrExit(err)
 	}
 
-	s.mAclStorage = initParams.AclStorage
-	err = s.mAclStorage.Init(s.mDeviceStorage, s.mFabrics)
 	errors.SuccessOrExit(err)
 
 	s.mDnssd.SetFabricTable(s.mFabrics)
@@ -100,7 +109,6 @@ func (s Server) Init(initParams *InitParams) *Server {
 	params.SetListenPort(s.mOperationalServicePort)
 	params.SetNativeParams(initParams.EndpointNativeParams)
 	s.mTransports, err = transport.NewUdpTransport(udp_endpoint.UDPEndpoint{}, params)
-	errors.SuccessOrExit(err)
 
 	//s.mListener, err = mdns.IntGroupDataProviderListener(s.mTransports)
 	errors.SuccessOrExit(err)
@@ -113,7 +121,7 @@ func (s Server) Init(initParams *InitParams) *Server {
 
 	if s.GetFabricTable() != nil {
 		if s.GetFabricTable().FabricCount() != 0 {
-			if config.ConfigNetworkLayerBle {
+			if costant.ConfigNetworkLayerBle {
 				//TODO
 				//如果Fabric不为零，那么设备已经被添加
 				//可以在这里关闭蓝牙
@@ -122,14 +130,14 @@ func (s Server) Init(initParams *InitParams) *Server {
 	}
 
 	//如果设备开启了自动配对模式，进入模式
-	if config.ChipDeviceConfigEnablePairingAutostart {
+	if costant.ChipDeviceConfigEnablePairingAutostart {
 		s.GetFabricTable().DeleteAllFabrics()
 		err = s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
 		errors.SuccessOrExit(err)
 	}
-	err = s.mDnssd.StartServer()
-	errors.SuccessOrExit(err)
-	return &s
+	s.mDnssd.StartServer()
+
+	return s
 }
 
 // GetFabricTable 返回CHIP服务中的Fabric
