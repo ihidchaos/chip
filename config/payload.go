@@ -1,4 +1,4 @@
-package options
+package config
 
 type PayloadContents struct {
 	Version               uint8

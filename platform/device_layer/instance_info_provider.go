@@ -19,10 +19,9 @@ type DeviceInstanceInfo struct {
 	info          *DeviceInfo
 }
 
-func NewDeviceInstanceInfo(configManager *platform.ConfigurationManager, info *DeviceInfo) *DeviceInstanceInfo {
+func NewDeviceInstanceInfo(configManager *platform.ConfigurationManager) *DeviceInstanceInfo {
 	return &DeviceInstanceInfo{
 		configManager: configManager,
-		info:          info,
 	}
 }
 

@@ -2,7 +2,7 @@ package platform
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/platform/options"
+	"github.com/galenliu/chip/config"
 	"net"
 	"sync"
 )
@@ -35,7 +35,7 @@ type ConfigurationManager struct {
 
 }
 
-func NewConfigurationManager(options *options.DeviceOptions) *ConfigurationManager {
+func NewConfigurationManager(options *config.DeviceOptions) *ConfigurationManager {
 	mgr := &ConfigurationManager{}
 	if options.Payload.VendorID != 0 {
 		mgr.StoreVendorId(options.Payload.VendorID)

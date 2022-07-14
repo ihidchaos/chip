@@ -2,8 +2,8 @@ package DeviceLayer
 
 import (
 	"fmt"
+	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/platform/options"
 	"github.com/galenliu/gateway/pkg/log"
 )
 
@@ -31,7 +31,7 @@ type CommissionableData struct {
 	mIsInitialized          bool
 }
 
-func NewCommissionableData(options *options.DeviceOptions) (*CommissionableData, error) {
+func NewCommissionableData(options *config.DeviceOptions) (*CommissionableData, error) {
 
 	var setupPasscode uint32 = 0
 	if options.Payload.SetUpPINCode != 0 {

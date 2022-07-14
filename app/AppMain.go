@@ -1,15 +1,15 @@
 package app
 
 import (
+	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/platform"
 	"github.com/galenliu/chip/platform/device_layer"
-	"github.com/galenliu/chip/platform/options"
 	"github.com/galenliu/chip/platform/storage"
 	"github.com/galenliu/chip/server"
 	"github.com/galenliu/gateway/pkg/log"
 )
 
-func AppMainInit(info *DeviceLayer.DeviceInfo, options *options.DeviceOptions) error {
+func AppMainInit(options *config.DeviceOptions) error {
 
 	err := storage.KeyValueStoreMgr().Init(options.KVS)
 	if err != nil {
@@ -17,7 +17,7 @@ func AppMainInit(info *DeviceLayer.DeviceInfo, options *options.DeviceOptions) e
 		return err
 	}
 	mgr := platform.NewConfigurationManager(options)
-	_ = DeviceLayer.NewDeviceInstanceInfo(mgr, info)
+	_ = DeviceLayer.NewDeviceInstanceInfo(mgr)
 
 	_, err = DeviceLayer.NewCommissionableData(options)
 	if err != nil {
@@ -26,7 +26,7 @@ func AppMainInit(info *DeviceLayer.DeviceInfo, options *options.DeviceOptions) e
 	return nil
 }
 
-func AppMainLoop(options *options.DeviceOptions, info *DeviceLayer.DeviceInfo) error {
+func AppMainLoop(options *config.DeviceOptions) error {
 
 	initParams := server.NewCommonCaseDeviceServerInitParams(options)
 

@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/galenliu/chip/app"
 	"github.com/galenliu/chip/config"
-	DeviceLayer "github.com/galenliu/chip/platform/device_layer"
 	"github.com/galenliu/gateway/pkg/log"
 	"github.com/spf13/cobra"
 )
@@ -16,20 +15,14 @@ func (c *command) initTestCmd() (err error) {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
 			deviceOptions := config.GetDeviceOptions(c.config)
-			info := &DeviceLayer.DeviceInfo{
-				VendorId:        0xFFF0,
-				ProductId:       0x123,
-				ProductName:     "34234",
-				VendorName:      "234234",
-				HardwareVersion: "234234",
-			}
-			err = app.AppMainInit(info, deviceOptions)
+
+			err = app.AppMainInit(deviceOptions)
 			if err != nil {
 				log.Infof(err.Error())
 				return err
 			}
 
-			err = app.AppMainLoop(deviceOptions, info)
+			err = app.AppMainLoop(deviceOptions)
 			if err != nil {
 				log.Infof(err.Error())
 				return err
@@ -67,7 +60,7 @@ func (c *command) initTestCmd() (err error) {
 			return nil
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			initDeviceOptionsFlags(cmd)
+			config.InitDeviceOptions(cmd)
 			config.SetCHIPConfig(cmd)
 			err := c.config.BindPFlags(cmd.Flags())
 			return err

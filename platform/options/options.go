@@ -1,10 +1,5 @@
 package options
 
-import (
-	"net"
-	"sync"
-)
-
 const (
 	kDeviceOption_BleDevice                             = 0x1000
 	kDeviceOption_WiFi                                  = 0x1001
@@ -40,69 +35,69 @@ const (
 	kDeviceOption_TestEventTriggerEnableKey             = 0x101f
 )
 
-type DeviceOptions struct {
-	Spake2pIterations         uint32
-	Spake2pVerifier           []byte
-	Spake2pSalt               []byte
-	Discriminator             uint16
-	Payload                   PayloadContents
-	BleDevice                 uint32
-	WiFi                      bool
-	Thread                    bool
-	SecuredDevicePort         uint16
-	SecuredCommissionerPort   uint16
-	UnsecuredCommissionerPort uint16
-	Command                   string
-	PICS                      string
-	KVS                       string
-	InterfaceId               net.Interface
-	TraceStreamDecodeEnabled  bool
-	TraceStreamToLogEnabled   bool
-	TraceStreamFilename       string
-	TestEventTriggerEnableKey []byte
-}
+//type DeviceOptions struct {
+//	Spake2pIterations         uint32
+//	Spake2pVerifier           []byte
+//	Spake2pSalt               []byte
+//	Discriminator             uint16
+//	Payload                   config.PayloadContents
+//	BleDevice                 uint32
+//	WiFi                      bool
+//	Thread                    bool
+//	SecuredDevicePort         uint16
+//	SecuredCommissionerPort   uint16
+//	UnsecuredCommissionerPort uint16
+//	Command                   string
+//	PICS                      string
+//	KVS                       string
+//	InterfaceId               net.Interface
+//	TraceStreamDecodeEnabled  bool
+//	TraceStreamToLogEnabled   bool
+//	TraceStreamFilename       string
+//	TestEventTriggerEnableKey []byte
+//}
 
-var once sync.Once
-var _instance *DeviceOptions
-
-func GetInstance() *DeviceOptions {
-	once.Do(func() {
-		_instance = &DeviceOptions{
-			Spake2pIterations:         0,
-			Payload:                   PayloadContents{},
-			BleDevice:                 0,
-			WiFi:                      false,
-			Thread:                    false,
-			SecuredDevicePort:         0,
-			SecuredCommissionerPort:   0,
-			UnsecuredCommissionerPort: 0,
-			Command:                   "",
-			PICS:                      "",
-			KVS:                       "",
-			InterfaceId:               net.Interface{},
-			TraceStreamDecodeEnabled:  false,
-			TraceStreamToLogEnabled:   false,
-			TraceStreamFilename:       "",
-			TestEventTriggerEnableKey: nil,
-		}
-	})
-	return _instance
-}
-
-func (option *DeviceOptions) HandleOption(optionSet map[string]string, aIdentifier int, aValue string) {
-	switch aIdentifier {
-	case kDeviceOption_BleDevice:
-		break
-	case kDeviceOption_WiFi:
-		//option.mWiFi = true
-		break
-	case kDeviceOption_Thread:
-		//option.mThread = true
-		break
-	case kDeviceOption_Version:
-		//v, _ := strconv.Atoi(aValue)
-		//option.Payload.version = uint8(v)
-		break
-	}
-
-}
+//var once sync.Once
+//var _instance *DeviceOptions
+//
+//func GetInstance() *DeviceOptions {
+//	once.Do(func() {
+//		_instance = &DeviceOptions{
+//			Spake2pIterations:         0,
+//			Payload:                   config.PayloadContents{},
+//			BleDevice:                 0,
+//			WiFi:                      false,
+//			Thread:                    false,
+//			SecuredDevicePort:         0,
+//			SecuredCommissionerPort:   0,
+//			UnsecuredCommissionerPort: 0,
+//			Command:                   "",
+//			PICS:                      "",
+//			KVS:                       "",
+//			InterfaceId:               net.Interface{},
+//			TraceStreamDecodeEnabled:  false,
+//			TraceStreamToLogEnabled:   false,
+//			TraceStreamFilename:       "",
+//			TestEventTriggerEnableKey: nil,
+//		}
+//	})
+//	return _instance
+//}
+//
+//func (option *DeviceOptions) HandleOption(optionSet map[string]string, aIdentifier int, aValue string) {
+//	switch aIdentifier {
+//	case kDeviceOption_BleDevice:
+//		break
+//	case kDeviceOption_WiFi:
+//		//option.mWiFi = true
+//		break
+//	case kDeviceOption_Thread:
+//		//option.mThread = true
+//		break
+//	case kDeviceOption_Version:
+//		//v, _ := strconv.Atoi(aValue)
+//		//option.Payload.version = uint8(v)
+//		break
+//	}
+//
+//}
