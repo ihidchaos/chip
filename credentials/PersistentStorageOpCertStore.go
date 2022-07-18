@@ -2,7 +2,7 @@ package credentials
 
 import (
 	"github.com/galenliu/chip/core"
-	"github.com/galenliu/chip/platform/storage"
+	"github.com/galenliu/chip/storage"
 )
 
 type PersistentStorageOpCertStore interface {

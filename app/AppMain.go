@@ -1,34 +1,44 @@
 package app
 
 import (
+	"fmt"
 	"github.com/galenliu/chip/config"
+	"github.com/galenliu/chip/device_layer"
 	"github.com/galenliu/chip/platform"
-	"github.com/galenliu/chip/platform/device_layer"
-	"github.com/galenliu/chip/platform/storage"
 	"github.com/galenliu/chip/server"
-	"github.com/galenliu/gateway/pkg/log"
+	"github.com/galenliu/chip/storage"
+	log "github.com/sirupsen/logrus"
+
+	"time"
 )
 
-func AppMainInit(options *config.DeviceOptions) error {
+func AppMainInit() error {
 
-	err := storage.KeyValueStoreMgr().Init(options.KVS)
+	err := storage.KeyValueStoreMgr().Init(config.GetDeviceOptionsInstance().KVS)
 	if err != nil {
-		log.Infof("store init err: %s", err.Error())
-		return err
+		log.Panic(err.Error())
 	}
-	mgr := platform.NewConfigurationManager(options)
-	_ = DeviceLayer.NewDeviceInstanceInfo(mgr)
 
-	_, err = DeviceLayer.NewCommissionableData(options)
+	for i := 0; i < 100; i++ {
+		err = storage.KeyValueStoreMgr().WriteValueStr(fmt.Sprintf("%d", i), time.Now().String())
+		if err != nil {
+			log.Infof(err.Error())
+		}
+	}
+
+	mgr := platform.NewConfigurationManager()
+	_ = platform.NewDeviceInstanceInfo(mgr)
+
+	_, err = DeviceLayer.NewCommissionableData(config.GetDeviceOptionsInstance())
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func AppMainLoop(options *config.DeviceOptions) error {
+func AppMainLoop() error {
 
-	initParams := server.NewCommonCaseDeviceServerInitParams(options)
+	initParams := server.NewCommonCaseDeviceServerInitParams()
 
 	err := initParams.InitializeStaticResourcesBeforeServerInit()
 	if err != nil {

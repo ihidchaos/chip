@@ -2,11 +2,21 @@ package dnssd
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/config/costant"
+	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/server/dnssd/costants/discovery"
 	"math/rand"
 	"net"
 	"time"
+)
+
+const (
+	SubtypeServiceNamePart    = "_sub"
+	CommissionableServiceName = "_matterc"
+	CommissionerServiceName   = "_matterd"
+	OperationalServiceName    = "_matter"
+	CommissionProtocol        = "_udp"
+	LocalDomain               = "local"
+	OperationalProtocol       = "_tcp"
 )
 
 const kMaxRetryInterval = time.Millisecond * 3600000
@@ -72,7 +82,7 @@ func (s *Server) GetCommissionableInstanceName() uint64 {
 
 func (s *Server) GetExtendedDiscoveryTimeoutSecs() time.Duration {
 	if s.mExtendedDiscoveryTimeoutSecs == 0 {
-		return time.Duration(costant.ChipDeviceConfigExtendedDiscoveryTimeoutSecs) * time.Second
+		return time.Duration(config.ChipDeviceConfigExtendedDiscoveryTimeoutSecs) * time.Second
 	}
 	return s.mExtendedDiscoveryTimeoutSecs
 }

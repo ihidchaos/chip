@@ -2,23 +2,23 @@ package dnssd
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/config/costant"
+	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
+	"github.com/galenliu/chip/device_layer"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/platform"
-	"github.com/galenliu/chip/platform/device_layer"
 	"github.com/galenliu/chip/server/dnssd/costants/commissioning_mode"
 	"github.com/galenliu/chip/server/dnssd/costants/commssion_advertise_mode"
 	"github.com/galenliu/chip/server/dnssd/costants/discovery"
 	"github.com/galenliu/chip/server/dnssd/parameters"
 	"github.com/galenliu/dnssd"
-	"github.com/galenliu/dnssd/QName"
-	"github.com/galenliu/dnssd/chip"
 	"github.com/galenliu/dnssd/responders"
 	"github.com/galenliu/gateway/pkg/errors"
 	"github.com/galenliu/gateway/pkg/log"
 	"github.com/galenliu/gateway/pkg/util"
+	"github.com/miekg/dns"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -113,7 +113,7 @@ func (s *Server) startServer(mode uint8) {
 			log.Infof("Failed to advertise commissionable node: %s", err.Error())
 		}
 	}
-	if costant.ChipDeviceConfigEnableExtendedDiscovery {
+	if config.ChipDeviceConfigEnableExtendedDiscovery {
 		//if s.GetExtendedDiscoveryTimeoutSecs() != costant.ChipDeviceConfigDiscoveryDisabled {
 		//	alwaysAdvertiseExtended := s.GetExtendedDiscoveryTimeoutSecs() == costant.ChipDeviceConfigDiscoveryNoTimeout
 		//	if alwaysAdvertiseExtended || s.mCurrentCommissioningMode != CommissioningMode.Disabled || s.mExtendedDiscoveryExpiration != kTimeoutCleared {
@@ -129,7 +129,7 @@ func (s *Server) startServer(mode uint8) {
 		//}
 	}
 
-	if costant.ChipDeviceConfigEnableCommissionerDiscovery {
+	if config.ChipDeviceConfigEnableCommissionerDiscovery {
 		err := s.advertiseCommissioner()
 		if err != nil {
 			log.Infof(err.Error())
@@ -167,7 +167,7 @@ func (s *Server) advertise(commissionAbleNode bool, mode uint8) error {
 	}
 
 	//Set device vendor id
-	vid, err := DeviceLayer.GetDeviceInstanceInfoProvider().GetVendorId()
+	vid, err := platform.GetDeviceInstanceInfoProvider().GetVendorId()
 	if err != nil {
 		log.Infof("Vendor ID not known")
 	} else {
@@ -175,7 +175,7 @@ func (s *Server) advertise(commissionAbleNode bool, mode uint8) error {
 	}
 
 	// set  productId
-	pid, err := DeviceLayer.GetDeviceInstanceInfoProvider().GetProductId()
+	pid, err := platform.GetDeviceInstanceInfoProvider().GetProductId()
 	if err != nil {
 		log.Infof("Product ID not known")
 	} else {
@@ -267,7 +267,7 @@ func (s *Server) AdvertiseOperational() error {
 		advertiseParameters.SetPort(s.GetSecuredPort())
 		advertiseParameters.SetInterfaceId(s.GetInterfaceId())
 		advertiseParameters.SetLocalMRPConfig(messageing.GetLocalMRPConfig())
-		advertiseParameters.SetTcpSupported(costant.InetConfigEnableTcpEndpoint)
+		advertiseParameters.SetTcpSupported(config.InetConfigEnableTcpEndpoint)
 		advertiseParameters.EnableIpV4(true)
 
 		log.Infof("advertise operational node %d - %d", advertiseParameters.GetPeerId().GetCompressedFabricId(),
@@ -395,15 +395,15 @@ func (s *Server) advCommission(params *parameters.CommissionAdvertisingParameter
 
 	var sType string
 	if params.GetCommissionAdvertiseMode() == CommssionAdvertiseMode.CommissionableNode {
-		sType = chip.CommissionableServiceName
+		sType = CommissionableServiceName
 	} else {
-		sType = chip.CommissionerServiceName
+		sType = CommissionerServiceName
 	}
 
-	serviceName := QName.Fqdn(sType, chip.CommissionProtocol, chip.LocalDomain)
+	serviceName := Fqdn(sType, CommissionProtocol, LocalDomain)
 	name, _ := MakeServiceSubtype(discovery.InstanceName, s.GetCommissionableInstanceName())
-	instanceName := QName.Fqdn(name, sType, chip.CommissionProtocol, chip.LocalDomain)
-	hostName := QName.Fqdn(params.GetMac(), chip.LocalDomain)
+	instanceName := Fqdn(name, sType, CommissionProtocol, LocalDomain)
+	hostName := Fqdn(params.GetMac(), LocalDomain)
 
 	if !s.mAdvertiser.AddResponder(responders.NewPtrResponder(serviceName, instanceName)).
 		SetReportAdditional(instanceName).
@@ -433,7 +433,7 @@ func (s *Server) advCommission(params *parameters.CommissionAdvertisingParameter
 	vid, err := params.GetVendorId()
 	if err == nil {
 		name, _ := MakeServiceSubtype(discovery.VendorId, vid)
-		vendorServiceName := QName.Fqdn(name, chip.SubtypeServiceNamePart, sType, chip.CommissionProtocol, chip.LocalDomain)
+		vendorServiceName := Fqdn(name, SubtypeServiceNamePart, sType, CommissionProtocol, LocalDomain)
 		if !s.mAdvertiser.AddResponder(responders.NewPtrResponder(vendorServiceName, instanceName)).
 			SetReportAdditional(instanceName).
 			SetReportInServiceListing(true).
@@ -445,7 +445,7 @@ func (s *Server) advCommission(params *parameters.CommissionAdvertisingParameter
 	dType, err := params.GetDeviceType()
 	if err == nil {
 		name, _ := MakeServiceSubtype(discovery.DeviceType, dType)
-		typeServiceName := QName.Fqdn(name, chip.SubtypeServiceNamePart, sType, chip.CommissionProtocol, chip.LocalDomain)
+		typeServiceName := Fqdn(name, SubtypeServiceNamePart, sType, CommissionProtocol, LocalDomain)
 		if !s.mAdvertiser.AddResponder(responders.NewPtrResponder(typeServiceName, instanceName)).
 			SetReportAdditional(instanceName).
 			SetReportInServiceListing(true).
@@ -464,7 +464,7 @@ func (s *Server) advCommission(params *parameters.CommissionAdvertisingParameter
 		return errors.New("failed to add TXT record mDNS responder")
 	}
 	s.advertiseRecords(dnssd.KStarted)
-	log.Infof("mDNS service published: %s", instanceName.String())
+	log.Infof("mDNS service published: %s", instanceName)
 	return nil
 }
 
@@ -473,9 +473,9 @@ func (s *Server) advOperational(params *parameters.OperationalAdvertisingParamet
 	s.advertiseRecords(dnssd.KRemovingAll)
 
 	var name = params.GetPeerId().String()
-	serviceName := QName.Fqdn(chip.OperationalServiceName, chip.OperationalProtocol, chip.LocalDomain)
-	instanceName := QName.Fqdn(name, chip.OperationalServiceName, chip.OperationalProtocol, chip.LocalDomain)
-	hostName := QName.Fqdn(name, chip.LocalDomain)
+	serviceName := Fqdn(OperationalServiceName, OperationalProtocol, LocalDomain)
+	instanceName := Fqdn(name, OperationalServiceName, OperationalProtocol, LocalDomain)
+	hostName := Fqdn(name, LocalDomain)
 
 	if !s.mAdvertiser.AddResponder(responders.NewPtrResponder(serviceName, instanceName)).
 		SetReportAdditional(instanceName).SetReportInServiceListing(true).IsValid() {
@@ -509,7 +509,7 @@ func (s *Server) advOperational(params *parameters.OperationalAdvertisingParamet
 
 	id := params.GetPeerId().GetCompressedFabricId()
 	fabricId, _ := MakeServiceSubtype(discovery.CompressedFabricId, id)
-	compressedFabricIdSubtype := QName.Fqdn(fabricId, chip.SubtypeServiceNamePart, chip.OperationalServiceName, chip.OperationalProtocol, chip.LocalDomain)
+	compressedFabricIdSubtype := Fqdn(fabricId, SubtypeServiceNamePart, OperationalServiceName, OperationalProtocol, LocalDomain)
 	if !s.mAdvertiser.AddResponder(responders.NewPtrResponder(compressedFabricIdSubtype, instanceName)).
 		SetReportAdditional(instanceName).
 		IsValid() {
@@ -523,7 +523,7 @@ func (s *Server) advOperational(params *parameters.OperationalAdvertisingParamet
 }
 
 func (s *Server) AdvertiseCommissionableNode(mode uint8) error {
-	if costant.ChipDeviceConfigEnableExtendedDiscovery {
+	if config.ChipDeviceConfigEnableExtendedDiscovery {
 		s.mCurrentCommissioningMode = mode
 		if mode == CommissioningMode.Disabled {
 			s.HandleExtendedDiscoveryExpiration()
@@ -531,4 +531,12 @@ func (s *Server) AdvertiseCommissionableNode(mode uint8) error {
 		}
 	}
 	return s.advertise(true, mode)
+}
+
+func Fqdn(args ...string) string {
+	var name = ""
+	for _, arg := range args {
+		name = name + dns.Fqdn(strings.TrimSpace(arg))
+	}
+	return dns.Fqdn(name)
 }

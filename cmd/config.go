@@ -9,10 +9,9 @@ import (
 func (c *command) initConfiguratorOptionsCmd() (err error) {
 
 	cmd := &cobra.Command{
-		Use:   "print-config",
+		Use:   "config",
 		Short: "Print default or provided configuration in yaml format",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			if len(args) > 0 {
 				return cmd.Help()
 			}
@@ -25,10 +24,10 @@ func (c *command) initConfiguratorOptionsCmd() (err error) {
 			return nil
 
 		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			config.InitDeviceOptions(cmd)
-			config.SetCHIPConfig(cmd)
-			err := c.config.BindPFlags(cmd.Flags())
+		PreRunE: func(i *cobra.Command, args []string) error {
+			config.FlagsDeviceOptions(i)
+			config.HandleCHIPConfig(i)
+			err := c.config.BindPFlags(i.Flags())
 			return err
 		},
 	}

@@ -1,0 +1,15 @@
+package clusters
+
+const (
+	BootReasonType_kUnspecified = iota
+	BootReasonType_kPowerOnReboot
+	BootReasonType_kBrownOutReset
+	BootReasonType_kSoftwareWatchdogReset
+	BootReasonType_kHardwareWatchdogReset
+	BootReasonType_kSoftwareUpdateCompleted
+	BootReasonType_kSoftwareReset
+
+	RegulatoryLocationType_kIndoor = iota
+	RegulatoryLocationType_kOutdoor
+	RegulatoryLocationType_kIndoorOutdoor
+)

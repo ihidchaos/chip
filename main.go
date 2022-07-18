@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/cmd/commission/cmd"
+	"github.com/galenliu/chip/cmd"
 	"os"
 )
 

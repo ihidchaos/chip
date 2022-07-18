@@ -1,79 +1,124 @@
 package config
 
 import (
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"net"
+	"os"
+	"path"
+	"sync"
 )
 
-const (
-	KDeviceOption_Version       = "version"
-	KDeviceOption_Version_DEF   = 0
-	KDeviceOption_Version_USAGE = "The version indication provides versioning of the setup payload.\n"
+func getDefaultKVS() string {
+	dir, _ := os.UserHomeDir()
+	return path.Join(dir, "/chip.ini")
+}
 
-	KDeviceOption_VendorID              = "vendor-id"
-	KDeviceOption_VendorID_DEF   uint64 = 0
-	KDeviceOption_VendorID_USAGE        = "The Vendor ID is assigned by the Connectivity Standards Alliance.\n"
+type ConfigFlag struct {
+	Key          string
+	DefaultValue any
+	Usage        string
+}
 
-	KDeviceOption_ProductID              = "product-id"
-	KDeviceOption_ProductID_DEF   uint64 = 0
-	KDeviceOption_ProductID_USAGE        = "       The Product ID is specified by vendor.\n"
+var (
+	DeviceOption_Version = ConfigFlag{
+		Key:          "version",
+		DefaultValue: 0,
+		Usage:        "The version indication provides versioning of the setup payload.\n",
+	}
 
-	KDeviceOption_CustomFlow             = "custom-flow"
-	KDeviceOption_CustomFlow_DEF   uint8 = 0
-	KDeviceOption_CustomFlow_USAGE       = "A 2-bit unsigned enumeration specifying manufacturer-specific custom flow options.\n"
+	DeviceOption_VendorID = ConfigFlag{
+		"vendor-id",
+		0,
+		"The Vendor ID is assigned by the Connectivity Standards Alliance.\n",
+	}
 
-	KDeviceOption_Capabilities             = "capabilities"
-	KDeviceOption_Capabilities_DEF   uint8 = 0
-	KDeviceOption_Capabilities_USAGE       = "Discovery Capabilities Bitmask which contains information about Device’s available technologies for device discovery.\\n\""
+	DeviceOption_ProductID = ConfigFlag{
+		"product-id",
+		0,
+		"The Product ID is specified by vendor.\n",
+	}
 
-	KDeviceOption_Discriminator              = "discriminator"
-	KDeviceOption_Discriminator_DEF   uint16 = 0
-	KDeviceOption_Discriminator_USAGE        = "A 12-bit unsigned integer match the value which a device advertises during commissioning.\n"
+	DeviceOption_CustomFlow = ConfigFlag{
+		"custom-flow",
+		0,
+		"A 2-bit unsigned enumeration specifying manufacturer-specific custom flow options.\n",
+	}
 
-	KDeviceOption_Passcode              = "passcode"
-	KDeviceOption_Passcode_DEF   uint32 = 0xFFFFFFF
-	KDeviceOption_Passcode_USAGE        = "A 27-bit unsigned integer, which serves as proof of possession during commissioning. If not provided to compute a verifier, the --spake2p-verifier-base64 must be provided. \n"
+	DeviceOption_Capabilities = ConfigFlag{
+		"capabilities",
+		0,
+		"Discovery Capabilities Bitmask which contains information about Device’s available technologies for device discovery.\n",
+	}
 
-	KDeviceOption_Spake2pVerifierBase64              = "spake2p-verifier-base64"
-	KDeviceOption_Spake2pVerifierBase64_DEF   uint32 = 0xFFFFF
-	KDeviceOption_Spake2pVerifierBase64_USAGE        = "A raw concatenation of 'W0' and 'L' (67 bytes) as base64 to override the verifier auto-computed from the passcode, if provided."
+	DeviceOption_Discriminator = ConfigFlag{
+		"discriminator",
+		0,
+		"A 12-bit unsigned integer match the value which a device advertises during commissioning.\n",
+	}
 
-	KDeviceOption_Spake2pSaltBase64              = "spake2p-salt-base64"
-	KDeviceOption_Spake2pSaltBase64_DEF   uint32 = 0
-	KDeviceOption_Spake2pSaltBase64_USAGE        = "16-32 bytes of salt to use for the PASE verifier, as base64. If omitted, will be generated randomly. If a --spake2p-verifier-base64 is passed, it must match against the salt otherwise failure will arise."
+	DeviceOption_Passcode = ConfigFlag{
+		"passcode",
+		0xFFFFFFF,
+		"A 27-bit unsigned integer, which serves as proof of possession during commissioning. If not provided to compute a verifier, the --spake2p-verifier-base64 must be provided. \n",
+	}
 
-	KDeviceOption_Spake2pIterations              = "spake2p-iterations"
-	KDeviceOption_Spake2pIterations_DEF   uint64 = 0
-	KDeviceOption_Spake2pIterations_USAGE        = "Number of PBKDF iterations to use. If omitted, will be 1000. If a --spake2p-verifier-base64 is passed, the iteration counts must match that used to generate the verifier otherwise failure will arise."
+	DeviceOption_Spake2pVerifierBase64 = ConfigFlag{
+		"spake2p-verifier-base64",
+		0xFFFFF,
+		"A raw concatenation of 'W0' and 'L' (67 bytes) as base64 to override the verifier auto-computed from the passcode, if provided.\n",
+	}
 
-	KDeviceOption_SecuredDevicePort              = "secured-device-port"
-	KDeviceOption_SecuredDevicePort_DEF   uint16 = 5540
-	KDeviceOption_SecuredDevicePort_USAGE        = "A 16-bit unsigned integer specifying the listen port to use for secure device messages (default is 5540)."
+	DeviceOption_Spake2pSaltBase64 = ConfigFlag{
+		"spake2p-salt-base64",
+		0,
+		"16-32 bytes of salt to use for the PASE verifier, as base64. If omitted, will be generated randomly. If a --spake2p-verifier-base64 is passed, it must match against the salt otherwise failure will arise.\n",
+	}
 
-	KDeviceOption_SecuredCommissionerPort              = "secured-commissioner-port"
-	KDeviceOption_SecuredCommissionerPort_DEF   uint16 = 5542
-	KDeviceOption_SecuredCommissionerPort_USAGE        = "A 16-bit unsigned integer specifying the listen port to use for secure commissioner messages (default is 5542). Only valid when app is both device and commissioner"
+	DeviceOption_Spake2pIterations = ConfigFlag{
+		"spake2p-iterations",
+		0,
+		"Number of PB DF iterations to use. If omitted, will be 1000. If a --spake2p-verifier-base64 is passed, the iteration counts must match that used to generate the verifier otherwise failure will arise.\n",
+	}
 
-	KDeviceOption_UnsecuredCommissionerPort       = "unsecured-commissioner-port"
-	KDeviceOption_UnsecuredCommissionerPort_DEF   = 5550
-	KDeviceOption_UnsecuredCommissionerPort_USAGE = "A 16-bit unsigned integer specifying the port to use for unsecured commissioner messages (default is 5550)."
+	DeviceOption_SecuredDevicePort = ConfigFlag{
+		"secured-device-port",
+		5540,
+		"A 16-bit unsigned integer specifying the listen port to use for secure device messages (default is 5540).\n",
+	}
 
-	KDeviceOption_Command       = "command"
-	KDeviceOption_Command_DEF   = "command"
-	KDeviceOption_Command_USAGE = "A name for a command to execute during startup."
+	DeviceOption_SecuredCommissionerPort = ConfigFlag{
+		"secured-commissioner-port",
+		5542,
+		"A 16-bit unsigned integer specifying the listen port to use for secure commissioner messages (default is 5542). Only valid when app is both device and commissioner.\n",
+	}
 
-	KDeviceOption_PICS       = "PICS"
-	KDeviceOption_PICS_DEF   = ""
-	KDeviceOption_PICS_USAGE = "A file containing PICS items."
+	DeviceOption_UnsecuredCommissionerPort = ConfigFlag{
+		"unsecured-commissioner-port",
+		5550,
+		"A 16-bit unsigned integer specifying the port to use for unsecured commissioner messages (default is 5550).\n",
+	}
 
-	KDeviceOption_KVS       = "KVS"
-	KDeviceOption_KVS_DEF   = ""
-	KDeviceOption_KVS_USAGE = "A file to store Key Value Store items."
+	DeviceOption_Command = ConfigFlag{
+		"command",
+		"command",
+		"A name for a command to execute during startup.\n"}
 
-	KDeviceOption_InterfaceId       = "interface-id"
-	KDeviceOption_InterfaceId_DEF   = "interface-id"
-	KDeviceOption_InterfaceId_USAGE = "A interface id to advertise on."
+	DeviceOption_PICS = ConfigFlag{
+		"PICS",
+		"",
+		"A file containing PICS items.\n"}
+
+	DeviceOption_KVS = ConfigFlag{
+		"KVS",
+		getDefaultKVS(),
+		"A file to store Key Value Store items.\n"}
+
+	DeviceOption_InterfaceId = ConfigFlag{
+		"interface-id",
+		"interface-id",
+		"A interface id to advertise on.\n"}
 )
 
 type DeviceOptions struct {
@@ -98,54 +143,53 @@ type DeviceOptions struct {
 	TestEventTriggerEnableKey []byte
 }
 
-func InitDeviceOptions(c *cobra.Command) {
-	c.Flags().Uint8(KDeviceOption_Version, KDeviceOption_Version_DEF, KDeviceOption_Version_USAGE)
-	c.Flags().Uint64(KDeviceOption_VendorID, KDeviceOption_VendorID_DEF, KDeviceOption_VendorID_USAGE)
-	c.Flags().Uint64(KDeviceOption_ProductID, KDeviceOption_ProductID_DEF, KDeviceOption_ProductID_USAGE)
-	c.Flags().Uint8(KDeviceOption_CustomFlow, KDeviceOption_CustomFlow_DEF, KDeviceOption_CustomFlow_USAGE)
-	c.Flags().Uint8(KDeviceOption_Capabilities, KDeviceOption_Capabilities_DEF, KDeviceOption_Capabilities_USAGE)
-	c.Flags().Uint16(KDeviceOption_Discriminator, KDeviceOption_Discriminator_DEF, KDeviceOption_Discriminator_USAGE)
-	c.Flags().Uint32(KDeviceOption_Passcode, KDeviceOption_Passcode_DEF, KDeviceOption_Passcode_USAGE)
-	c.Flags().Uint32(KDeviceOption_Spake2pVerifierBase64, KDeviceOption_Spake2pVerifierBase64_DEF, KDeviceOption_Spake2pVerifierBase64_USAGE)
-	c.Flags().Uint32(KDeviceOption_Spake2pSaltBase64, KDeviceOption_Spake2pSaltBase64_DEF, KDeviceOption_Spake2pSaltBase64_USAGE)
-	c.Flags().Uint64(KDeviceOption_Spake2pIterations, KDeviceOption_Spake2pIterations_DEF, KDeviceOption_Spake2pIterations_USAGE)
-	c.Flags().Uint16(KDeviceOption_SecuredDevicePort, KDeviceOption_SecuredDevicePort_DEF, KDeviceOption_SecuredDevicePort_USAGE)
-	c.Flags().Uint16(KDeviceOption_SecuredCommissionerPort, KDeviceOption_SecuredCommissionerPort_DEF, KDeviceOption_SecuredCommissionerPort_USAGE)
-	c.Flags().Uint16(KDeviceOption_UnsecuredCommissionerPort, KDeviceOption_UnsecuredCommissionerPort_DEF, KDeviceOption_UnsecuredCommissionerPort_USAGE)
-	c.Flags().String(KDeviceOption_Command, KDeviceOption_Command_DEF, KDeviceOption_Command_USAGE)
-	c.Flags().String(KDeviceOption_PICS, KDeviceOption_PICS_DEF, KDeviceOption_PICS_USAGE)
-	c.Flags().String(KDeviceOption_KVS, KDeviceOption_KVS_DEF, KDeviceOption_KVS_USAGE)
-	c.Flags().String(KDeviceOption_InterfaceId, KDeviceOption_InterfaceId_DEF, KDeviceOption_InterfaceId_USAGE)
+var _instance *DeviceOptions
+var _once sync.Once
+
+func GetDeviceOptionsInstance() *DeviceOptions {
+	_once.Do(func() {
+		if _instance == nil {
+			_instance = &DeviceOptions{}
+		}
+	})
+	return _instance
 }
 
-func GetDeviceOptions(config *viper.Viper) *DeviceOptions {
-	deviceOptions := &DeviceOptions{
-		Spake2pIterations: 0,
-		Payload: PayloadContents{
-			Version:               uint8(config.GetUint(KDeviceOption_Version)),
-			VendorID:              uint16(config.GetUint32(KDeviceOption_VendorID)),
-			CommissioningFlow:     0,
-			RendezvousInformation: 0,
-			Discriminator:         uint16(config.GetUint32(KDeviceOption_Discriminator)),
-			SetUpPINCode:          0,
-			IsValidQRCodePayload:  false,
-			IsValidManualCode:     false,
-			IsShortDiscriminator:  false,
-		},
-		BleDevice:                 0,
-		WiFi:                      false,
-		Thread:                    false,
-		SecuredDevicePort:         uint16(config.GetUint32(KDeviceOption_SecuredDevicePort)),
-		SecuredCommissionerPort:   uint16(config.GetUint32(KDeviceOption_SecuredCommissionerPort)),
-		UnsecuredCommissionerPort: uint16(config.GetUint32(KDeviceOption_UnsecuredCommissionerPort)),
-		Command:                   config.GetString(KDeviceOption_Command),
-		PICS:                      config.GetString(KDeviceOption_PICS),
-		KVS:                       config.GetString(KDeviceOption_KVS),
-		InterfaceId:               net.Interface{},
-		TraceStreamDecodeEnabled:  false,
-		TraceStreamToLogEnabled:   false,
-		TraceStreamFilename:       "",
-		TestEventTriggerEnableKey: nil,
-	}
-	return deviceOptions
+func FlagsDeviceOptions(c *cobra.Command) {
+	c.Flags().Uint8(DeviceOption_Version.Key, cast.ToUint8(DeviceOption_Version.DefaultValue), DeviceOption_Version.Usage)
+	c.Flags().Uint64(DeviceOption_VendorID.Key, cast.ToUint64(DeviceOption_VendorID.DefaultValue), DeviceOption_VendorID.Usage)
+	c.Flags().Uint64(DeviceOption_ProductID.Key, cast.ToUint64(DeviceOption_ProductID.DefaultValue), DeviceOption_ProductID.Usage)
+	c.Flags().Uint8(DeviceOption_CustomFlow.Key, cast.ToUint8(DeviceOption_CustomFlow.DefaultValue), DeviceOption_CustomFlow.Usage)
+	c.Flags().Uint8(DeviceOption_Capabilities.Key, cast.ToUint8(DeviceOption_Capabilities.DefaultValue), DeviceOption_Capabilities.Usage)
+	c.Flags().Uint16(DeviceOption_Discriminator.Key, cast.ToUint16(DeviceOption_Discriminator.DefaultValue), DeviceOption_Discriminator.Usage)
+	c.Flags().Uint32(DeviceOption_Passcode.Key, cast.ToUint32(DeviceOption_Passcode.DefaultValue), DeviceOption_Passcode.Usage)
+	c.Flags().Uint32(DeviceOption_Spake2pVerifierBase64.Key, cast.ToUint32(DeviceOption_Spake2pVerifierBase64.DefaultValue), DeviceOption_Spake2pVerifierBase64.Usage)
+	c.Flags().Uint32(DeviceOption_Spake2pSaltBase64.Key, cast.ToUint32(DeviceOption_Spake2pSaltBase64.DefaultValue), DeviceOption_Spake2pSaltBase64.Usage)
+	c.Flags().Uint64(DeviceOption_Spake2pIterations.Key, cast.ToUint64(DeviceOption_Spake2pIterations.DefaultValue), DeviceOption_Spake2pIterations.Usage)
+	c.Flags().Uint16(DeviceOption_SecuredDevicePort.Key, cast.ToUint16(DeviceOption_SecuredDevicePort.DefaultValue), DeviceOption_SecuredDevicePort.Usage)
+	c.Flags().Uint16(DeviceOption_SecuredCommissionerPort.Key, cast.ToUint16(DeviceOption_SecuredCommissionerPort.DefaultValue), DeviceOption_SecuredCommissionerPort.Usage)
+	c.Flags().Uint16(DeviceOption_UnsecuredCommissionerPort.Key, cast.ToUint16(DeviceOption_UnsecuredCommissionerPort.DefaultValue), DeviceOption_UnsecuredCommissionerPort.Usage)
+	c.Flags().String(DeviceOption_Command.Key, cast.ToString(DeviceOption_Command.DefaultValue), DeviceOption_Command.Usage)
+	c.Flags().String(DeviceOption_PICS.Key, cast.ToString(DeviceOption_PICS.DefaultValue), DeviceOption_PICS.Usage)
+	c.Flags().String(DeviceOption_KVS.Key, cast.ToString(DeviceOption_KVS.DefaultValue), DeviceOption_KVS.Usage)
+	c.Flags().String(DeviceOption_InterfaceId.Key, cast.ToString(DeviceOption_InterfaceId.DefaultValue), DeviceOption_InterfaceId.Usage)
+}
+
+func InitDeviceOptions(config *viper.Viper) *DeviceOptions {
+
+	GetDeviceOptionsInstance().Payload.Version = uint8(config.GetUint(DeviceOption_Version.Key))
+	GetDeviceOptionsInstance().Payload.VendorID = uint16(config.GetUint32(DeviceOption_VendorID.Key))
+	GetDeviceOptionsInstance().Payload.Discriminator = uint16(config.GetUint32(DeviceOption_Discriminator.Key))
+
+	GetDeviceOptionsInstance().SecuredDevicePort = uint16(config.GetUint32(DeviceOption_SecuredDevicePort.Key))
+	GetDeviceOptionsInstance().SecuredCommissionerPort = uint16(config.GetUint32(DeviceOption_SecuredCommissionerPort.Key))
+	GetDeviceOptionsInstance().UnsecuredCommissionerPort = uint16(config.GetUint32(DeviceOption_UnsecuredCommissionerPort.Key))
+	GetDeviceOptionsInstance().Command = config.GetString(DeviceOption_Command.Key)
+	GetDeviceOptionsInstance().PICS = config.GetString(DeviceOption_PICS.Key)
+	GetDeviceOptionsInstance().KVS = config.GetString(DeviceOption_KVS.Key)
+	GetDeviceOptionsInstance().InterfaceId = net.Interface{}
+	GetDeviceOptionsInstance().TraceStreamDecodeEnabled = false
+	GetDeviceOptionsInstance().TraceStreamToLogEnabled = false
+
+	return GetDeviceOptionsInstance()
 }

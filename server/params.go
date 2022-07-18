@@ -5,7 +5,7 @@ import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/platform/storage"
+	"github.com/galenliu/chip/storage"
 	"net"
 )
 
@@ -64,13 +64,13 @@ type ServerInitParams struct {
 	OpCertStore credentials.PersistentStorageOpCertStore
 }
 
-func NewCommonCaseDeviceServerInitParams(options *config.DeviceOptions) *CommonCaseDeviceServerInitParams {
+func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 	c := &CommonCaseDeviceServerInitParams{
 		ServerInitParams: ServerInitParams{
 			OperationalKeystore:           nil,
-			OperationalServicePort:        options.SecuredDevicePort,
-			UserDirectedCommissioningPort: options.UnsecuredCommissionerPort,
-			InterfaceId:                   options.InterfaceId,
+			OperationalServicePort:        config.GetDeviceOptionsInstance().SecuredDevicePort,
+			UserDirectedCommissioningPort: config.GetDeviceOptionsInstance().UnsecuredCommissionerPort,
+			InterfaceId:                   config.GetDeviceOptionsInstance().InterfaceId,
 		},
 	}
 	return c

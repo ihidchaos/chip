@@ -13,8 +13,8 @@ func KeyValueStoreMgr() *KeyValueStoreManager {
 	once.Do(func() {
 		_instance = &KeyValueStoreManager{
 			KvsPersistentStorageImpl: KvsPersistentStorageImpl{
-				StorageImpl: StorageImpl{
-					storage:      &Ini{},
+				PersistentStorageImpl: PersistentStorageImpl{
+					storage:      &iniStorageImpl{},
 					mConfigPath:  "",
 					mLock:        new(sync.Mutex),
 					mDirty:       false,

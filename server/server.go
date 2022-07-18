@@ -2,18 +2,17 @@ package server
 
 import (
 	"github.com/galenliu/chip/access"
-	"github.com/galenliu/chip/config/costant"
+	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/controller"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/inet/udp_endpoint"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/platform/storage"
 	"github.com/galenliu/chip/server/dnssd"
 	"github.com/galenliu/chip/server/dnssd/manager"
+	"github.com/galenliu/chip/storage"
 	"github.com/galenliu/chip/transport"
-	"github.com/galenliu/gateway/pkg/errors"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 )
 
@@ -65,7 +64,7 @@ func NewServer(initParams *CommonCaseDeviceServerInitParams) *Server {
 	s.mCommissioningWindowManager = manager.CommissioningWindowManager{}.Init(&s)
 	//s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
-	// Initialize PersistentStorageDelegate-based storage
+	// Initialize KvsPersistentStorageDelegate-based storage
 	s.mDeviceStorage = initParams.PersistentStorageDelegate
 	s.mSessionResumptionStorage = initParams.SessionResumptionStorage
 
@@ -73,21 +72,25 @@ func NewServer(initParams *CommonCaseDeviceServerInitParams) *Server {
 	// handler.
 	if s.mAttributePersister != nil {
 		err = s.mAttributePersister.Init(s.mDeviceStorage)
-		errors.SuccessOrExit(err)
+		if err != nil {
+			log.Panic(err.Error())
+		}
 	}
 
 	if s.mFabrics != nil {
 		err = s.mFabrics.Init(s.mDeviceStorage)
-		errors.SuccessOrExit(err)
+		if err != nil {
+			log.Panic(err.Error())
+		}
 	}
 
 	//少sDeviceTypeResolver参数
 	if s.mAccessControl != nil {
 		err = s.mAccessControl.Init(initParams.AccessDelegate)
-		errors.SuccessOrExit(err)
+		if err != nil {
+			log.Panic(err.Error())
+		}
 	}
-
-	errors.SuccessOrExit(err)
 
 	s.mDnssd.SetFabricTable(s.mFabrics)
 	s.mDnssd.SetCommissioningModeProvider(s.mCommissioningWindowManager)
@@ -111,7 +114,9 @@ func NewServer(initParams *CommonCaseDeviceServerInitParams) *Server {
 	s.mTransports, err = transport.NewUdpTransport(udp_endpoint.UDPEndpoint{}, params)
 
 	//s.mListener, err = mdns.IntGroupDataProviderListener(s.mTransports)
-	errors.SuccessOrExit(err)
+	if err != nil {
+		log.Panic(err.Error())
+	}
 
 	//dnssd.ResolverInstance().Init(udp_endpoint.UDPEndpoint{})
 
@@ -121,7 +126,7 @@ func NewServer(initParams *CommonCaseDeviceServerInitParams) *Server {
 
 	if s.GetFabricTable() != nil {
 		if s.GetFabricTable().FabricCount() != 0 {
-			if costant.ConfigNetworkLayerBle {
+			if config.ChipConfigNetworkLayerBle {
 				//TODO
 				//如果Fabric不为零，那么设备已经被添加
 				//可以在这里关闭蓝牙
@@ -130,10 +135,12 @@ func NewServer(initParams *CommonCaseDeviceServerInitParams) *Server {
 	}
 
 	//如果设备开启了自动配对模式，进入模式
-	if costant.ChipDeviceConfigEnablePairingAutostart {
+	if config.ChipDeviceConfigEnablePairingAutostart {
 		s.GetFabricTable().DeleteAllFabrics()
 		err = s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
-		errors.SuccessOrExit(err)
+		if err != nil {
+			log.Panic(err.Error())
+		}
 	}
 	s.mDnssd.StartServer()
 
@@ -150,6 +157,5 @@ func (s Server) Shutdown() {
 }
 
 func (s *Server) StartServer() error {
-
 	return nil
 }

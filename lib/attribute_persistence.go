@@ -1,6 +1,8 @@
 package lib
 
-import "github.com/galenliu/chip/platform/storage"
+import (
+	"github.com/galenliu/chip/storage"
+)
 
 type AttributePersistenceProvider interface {
 	Init(storage storage.PersistentStorageDelegate) error

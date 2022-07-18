@@ -38,43 +38,43 @@ var (
 	InetConfigEnableTcpEndpointUsage      = "Inet Config Enable Tcp Endpoint 0/1(able/disable)"
 )
 
-func SetCHIPConfig(config *cobra.Command) {
-	config.Flags().BoolVar(&ChipConfigNetworkLayerBle,
+func HandleCHIPConfig(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&ChipConfigNetworkLayerBle,
 		ChipConfigNetworkLayerBleName,
 		ChipConfigNetworkLayerBle,
 		ChipConfigNetworkLayerBleUsage)
 
-	config.Flags().BoolVar(&ChipDeviceConfigEnablePairingAutostart,
+	cmd.Flags().BoolVar(&ChipDeviceConfigEnablePairingAutostart,
 		ChipDeviceConfigEnablePairingAutostartName,
 		ChipDeviceConfigEnablePairingAutostart,
 		ChipDeviceConfigEnablePairingAutostartUsage)
 
-	config.Flags().BoolVar(&ChipDeviceConfigEnableCommissionerDiscovery,
+	cmd.Flags().BoolVar(&ChipDeviceConfigEnableCommissionerDiscovery,
 		ChipDeviceConfigEnableCommissionerDiscoveryName,
 		ChipDeviceConfigEnableCommissionerDiscovery,
 		ChipDeviceConfigEnableCommissionerDiscoveryUsage)
 
-	config.Flags().BoolVar(&ChipDeviceConfigEnableExtendedDiscovery,
+	cmd.Flags().BoolVar(&ChipDeviceConfigEnableExtendedDiscovery,
 		ChipDeviceConfigEnableExtendedDiscoveryName,
 		ChipDeviceConfigEnableExtendedDiscovery,
 		ChipDeviceConfigEnableExtendedDiscoveryUsage)
 
-	config.Flags().Uint64Var(&ChipDeviceConfigExtendedDiscoveryTimeoutSecs,
+	cmd.Flags().Uint64Var(&ChipDeviceConfigExtendedDiscoveryTimeoutSecs,
 		ChipDeviceConfigExtendedDiscoveryTimeoutSecsName,
 		ChipDeviceConfigExtendedDiscoveryTimeoutSecs,
 		ChipDeviceConfigExtendedDiscoveryTimeoutSecsUsage)
 
-	config.Flags().Uint8Var(&ChipDeviceConfigDiscoveryDisabled,
+	cmd.Flags().Uint8Var(&ChipDeviceConfigDiscoveryDisabled,
 		ChipDeviceConfigDiscoveryDisabledName,
 		ChipDeviceConfigDiscoveryDisabled,
 		ChipDeviceConfigDiscoveryDisabledUsage)
 
-	config.Flags().Int8Var(&ChipDeviceConfigDiscoveryNoTimeout,
+	cmd.Flags().Int8Var(&ChipDeviceConfigDiscoveryNoTimeout,
 		ChipDeviceConfigDiscoveryNoTimeoutName,
 		ChipDeviceConfigDiscoveryNoTimeout,
 		ChipDeviceConfigDiscoveryNoTimeoutUsage)
 
-	config.Flags().Int8Var(&InetConfigEnableTcpEndpoint,
+	cmd.Flags().Int8Var(&InetConfigEnableTcpEndpoint,
 		InetConfigEnableTcpEndpointName,
 		ChipDeviceConfigDiscoveryNoTimeout,
 		InetConfigEnableTcpEndpointUsage)

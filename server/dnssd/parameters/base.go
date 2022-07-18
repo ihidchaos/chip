@@ -65,6 +65,10 @@ func (b *BaseAdvertisingParams) GetTcpSupported() *bool {
 	return b.mTcpSupported
 }
 
-func (b *BaseAdvertisingParams) SetTcpSupported(s bool) {
-	b.mTcpSupported = &s
+func (b *BaseAdvertisingParams) SetTcpSupported(i int8) {
+	var value = true
+	if i == 0 {
+		value = false
+	}
+	b.mTcpSupported = &value
 }

@@ -1,3 +1,3 @@
-module  github.com/galenliu/chip
+module github.com/galenliu/chip
 
-go 1.18
+go 1.19

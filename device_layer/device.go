@@ -7,10 +7,6 @@ import (
 	"github.com/galenliu/gateway/pkg/log"
 )
 
-const (
-	kMaxDiscriminatorValue = 0xFFF
-)
-
 var _CommissionDataProvider CommissionableDataProvider
 
 func InitCommissionableDataProvider(provider CommissionableDataProvider) CommissionableDataProvider {
@@ -152,10 +148,6 @@ func newProvider(serializedSpake2pVerifier []byte, spake2pSalt []byte, spake2pIt
 	}
 	data.mIsInitialized = true
 	return data, nil
-}
-
-func GeneratePaseSalt() ([]byte, error) {
-	return nil, nil
 }
 
 func (c CommissionableData) GetProductId() (uint16, error) {
