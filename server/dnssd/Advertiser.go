@@ -2,12 +2,13 @@ package DnssdServer
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/server/dnssd/params"
 	"github.com/galenliu/dnssd"
 	"github.com/galenliu/dnssd/responder"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
+
 	"strings"
 	"sync"
 )
@@ -63,9 +64,11 @@ func GetServiceAdvertiserInstance() *DiscoveryImplPlatform {
 }
 
 func (d *DiscoveryImplPlatform) Init() error {
+	dnssd.GlobalMdnsServer().ShutdownServer()
 	if !d.mInitialized {
-		return lib.CHIP_ERROR_INCORRECT_STATE
+		_ = d.UpdateCommissionableInstanceName()
 	}
+	d.mResponseSender.SetServer(dnssd.GlobalMdnsServer())
 	return nil
 }
 
@@ -142,7 +145,6 @@ func (d *DiscoveryImplPlatform) AdvertiseOperational(params *params.OperationalA
 func (d *DiscoveryImplPlatform) AdvertiseCommission(params *params.CommissionAdvertisingParameters) error {
 
 	_ = d.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
-
 	allocator := func() QueryResponderAllocator {
 		if params.GetCommissioningMode() == AdvertiseMode_CommissionableNode {
 			return d.mQueryResponderAllocatorCommissionable
@@ -264,9 +266,8 @@ func (d DiscoveryImplPlatform) FinalizeServiceUpdate() error {
 	panic("implement me")
 }
 
-func (d DiscoveryImplPlatform) GetCommissionableInstanceName() (string, error) {
-	//TODO implement me
-	panic("implement me")
+func (d *DiscoveryImplPlatform) GetCommissionableInstanceName() (string, error) {
+	return d.mCommissionableInstanceName, nil
 }
 
 func (d *DiscoveryImplPlatform) GetCommissioningTxtEntries(params *params.CommissionAdvertisingParameters) []string {
@@ -356,8 +357,8 @@ func (d *DiscoveryImplPlatform) AddCommonTxtEntries(params params.BaseAdvertisin
 }
 
 func (d *DiscoveryImplPlatform) UpdateCommissionableInstanceName() error {
-	//TODO implement me
-	panic("implement me")
+	d.mCommissionableInstanceName = fmt.Sprintf("%016X", rand.Uint64())
+	return nil
 }
 
 func (d *DiscoveryImplPlatform) AddResponder(responder responder.RecordResponder) *responder.QueryResponderSettings {

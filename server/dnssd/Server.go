@@ -9,8 +9,8 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/platform"
 	"github.com/galenliu/chip/server/dnssd/params"
-	"github.com/galenliu/gateway/pkg/log"
 	"github.com/galenliu/gateway/pkg/util"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"time"
 )
