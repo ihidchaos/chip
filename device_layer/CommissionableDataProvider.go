@@ -9,7 +9,10 @@ import (
 )
 
 const (
-	kMaxDiscriminatorValue = 0xFFF
+	KMaxDiscriminatorValue uint16 = 0xFFF
+
+	KMinSetupPasscode uint32 = 1
+	KMaxSetupPasscode uint32 = 0x5F5E0FE
 )
 
 type CommissionableDataProvider interface {
@@ -88,7 +91,7 @@ func (c *CommissionableDataImpl) Init(serializedSpake2pVerifier, spake2pSalt []b
 	if c.mIsInitialized {
 		return lib.CHIP_ERROR_INCORRECT_STATE
 	}
-	if discriminator > kMaxDiscriminatorValue {
+	if discriminator > KMaxDiscriminatorValue {
 		log.Infof("Discriminator value invalid: %d", discriminator)
 		return lib.CHIP_ERROR_INVALID_ARGUMENT
 	}

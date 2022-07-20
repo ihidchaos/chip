@@ -26,7 +26,7 @@ func AppMainInit() error {
 		}
 	}
 
-	mgr := platform.NewConfigurationManager()
+	mgr, err := platform.ConfigurationMgr().Init(platform.GetConfigProviderInstance())
 	_ = platform.NewDeviceInstanceInfo(mgr)
 
 	_, err = DeviceLayer.NewCommissionableData(config.GetDeviceOptionsInstance())

@@ -1,8 +1,4 @@
-package manager
-
-import (
-	"github.com/galenliu/chip/server/dnssd/costants/commissioning_mode"
-)
+package DnssdServer
 
 type AppDelegate interface {
 	OnCommissioningSessionStarted()
@@ -32,6 +28,6 @@ func (m *CommissioningWindowManager) OpenBasicCommissioningWindow() error {
 	return nil
 }
 
-func (m *CommissioningWindowManager) GetCommissioningMode() uint8 {
-	return CommissioningMode.Disabled
+func (m *CommissioningWindowManager) GetCommissioningMode() int {
+	return CommissioningMode_Disabled
 }

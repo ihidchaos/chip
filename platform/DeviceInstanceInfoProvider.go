@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/galenliu/chip/config"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -26,6 +27,18 @@ type DeviceInstanceInfoProvider interface {
 
 type DeviceInstanceInfoImpl struct {
 	mConfigManager ConfigurationManager
+}
+
+var _deviceInstanceInfo *DeviceInstanceInfoImpl
+var _deviceInstanceInfoOnce sync.Once
+
+func GetDeviceInstanceInfoProvider() *DeviceInstanceInfoImpl {
+	_deviceInstanceInfoOnce.Do(func() {
+		if _deviceInstanceInfo == nil {
+			_deviceInstanceInfo = &DeviceInstanceInfoImpl{}
+		}
+	})
+	return _deviceInstanceInfo
 }
 
 func (c *DeviceInstanceInfoImpl) Init(configMgr ConfigurationManager) (*DeviceInstanceInfoImpl, error) {

@@ -7,12 +7,12 @@ import (
 	"github.com/galenliu/gateway/pkg/log"
 )
 
-var _CommissionDataProvider CommissionableDataProvider
-
 func InitCommissionableDataProvider(provider CommissionableDataProvider) CommissionableDataProvider {
 	_CommissionDataProvider = provider
 	return _CommissionDataProvider
 }
+
+var _CommissionDataProvider CommissionableDataProvider
 
 func GetCommissionableDataProvider() CommissionableDataProvider {
 	return _CommissionDataProvider
@@ -67,7 +67,7 @@ func NewCommissionableData(options *config.DeviceOptions) (*CommissionableData, 
 
 func newProvider(serializedSpake2pVerifier []byte, spake2pSalt []byte, spake2pIterationCount uint32, setupPasscode uint32, discriminator uint16) (*CommissionableData, error) {
 
-	if discriminator > kMaxDiscriminatorValue {
+	if discriminator > KMaxDiscriminatorValue {
 		return nil, fmt.Errorf("discriminator value invalid: %d", discriminator)
 	}
 	if spake2pIterationCount < crypto.KSpake2p_Min_PBKDF_Iterations || spake2pIterationCount > crypto.KSpake2p_Max_PBKDF_Iterations {

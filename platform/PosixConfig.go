@@ -5,6 +5,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/storage"
 	log "github.com/sirupsen/logrus"
+	"sync"
 )
 
 const KConfigNamespace_ChipFactory = "chip-factory"
@@ -35,6 +36,18 @@ type ConfigProvider interface {
 	FactoryResetCounters() error
 	RunConfigUnitTest()
 	EnsureNamespace(k string) error
+}
+
+var _ConfigProviderInstance *PosixConfigImpl
+var _ConfigProviderInstanceOnce sync.Once
+
+func GetConfigProviderInstance() *PosixConfigImpl {
+	_ConfigProviderInstanceOnce.Do(func() {
+		if _ConfigProviderInstance == nil {
+			_ConfigProviderInstance = &PosixConfigImpl{}
+		}
+	})
+	return _ConfigProviderInstance
 }
 
 type PosixConfigImpl struct {

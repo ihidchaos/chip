@@ -8,8 +8,7 @@ import (
 	"github.com/galenliu/chip/inet/udp_endpoint"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/server/dnssd"
-	"github.com/galenliu/chip/server/dnssd/manager"
+	sd "github.com/galenliu/chip/server/dnssd"
 	"github.com/galenliu/chip/storage"
 	"github.com/galenliu/chip/transport"
 	log "github.com/sirupsen/logrus"
@@ -23,21 +22,15 @@ type AppDelegate interface {
 	OnCommissioningWindowClosed()
 }
 
-type Config struct {
-	UnsecureServicePort int
-	SecureServicePort   int
-}
-
 type Server struct {
 	mSecuredServicePort            uint16
 	mUnsecuredServicePort          uint16
 	mOperationalServicePort        uint16
 	mUserDirectedCommissioningPort uint16
 	mInterfaceId                   net.Interface
-	config                         Config
-	mDnssd                         *dnssd.Server
+	mDnssd                         sd.DnssdServer
 	mFabrics                       *credentials.FabricTable
-	mCommissioningWindowManager    *manager.CommissioningWindowManager
+	mCommissioningWindowManager    *sd.CommissioningWindowManager
 	mDeviceStorage                 storage.PersistentStorageDelegate //unknown
 	mAccessControl                 access.AccessControler
 	mSessionResumptionStorage      any
@@ -59,9 +52,9 @@ func NewServer(initParams *CommonCaseDeviceServerInitParams) *Server {
 
 	s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
-	s.mDnssd = dnssd.Server{}.Init()
+	s.mDnssd = sd.NewServer()
 	s.mDnssd.SetFabricTable(s.mFabrics)
-	s.mCommissioningWindowManager = manager.CommissioningWindowManager{}.Init(&s)
+	s.mCommissioningWindowManager = sd.CommissioningWindowManager{}.Init(&s)
 	//s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
 	// Initialize KvsPersistentStorageDelegate-based storage

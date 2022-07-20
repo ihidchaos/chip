@@ -1,6 +1,7 @@
-package parameters
+package params
 
 import (
+	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
 	"net"
 )
@@ -10,23 +11,26 @@ type BaseAdvertisingParams struct {
 	mMac            string
 	mEnableIPv4     bool
 	mInterfaceId    net.Interface
-	mMRPConfig      *messageing.ReliableMessageProtocolConfig
+	mMRPConfig      messageing.ReliableMessageProtocolConfig
 	mTcpSupported   *bool
-	mLocalMRPConfig *messageing.ReliableMessageProtocolConfig
+	mLocalMRPConfig messageing.ReliableMessageProtocolConfig
 }
 
-func (b BaseAdvertisingParams) Init() *BaseAdvertisingParams {
-	b.mMRPConfig = messageing.ReliableMessageProtocolConfig{}.Init()
-	b.mLocalMRPConfig = messageing.ReliableMessageProtocolConfig{}.Init()
-	return &b
+func NewBaseAdvertisingParams() BaseAdvertisingParams {
+	return BaseAdvertisingParams{}
+}
+
+func (b BaseAdvertisingParams) Init() BaseAdvertisingParams {
+	b.mMRPConfig = messageing.ReliableMessageProtocolConfig{}
+	return b
 }
 
 func (b *BaseAdvertisingParams) GetLocalMRPConfig() *messageing.ReliableMessageProtocolConfig {
-	return b.mLocalMRPConfig
+	return &b.mLocalMRPConfig
 }
 
 func (b *BaseAdvertisingParams) SetLocalMRPConfig(config *messageing.ReliableMessageProtocolConfig) {
-	b.mLocalMRPConfig = config
+	b.mLocalMRPConfig = *config
 }
 
 func (b *BaseAdvertisingParams) IsIPv4Enabled() bool {
@@ -49,8 +53,8 @@ func (b *BaseAdvertisingParams) SetMaC(mac string) {
 	b.mMac = mac
 }
 
-func (b *BaseAdvertisingParams) GetMac() string {
-	return b.mMac
+func (b *BaseAdvertisingParams) GetMac() (string, error) {
+	return b.mMac, nil
 }
 
 func (b *BaseAdvertisingParams) GetUUID() string {
@@ -61,8 +65,11 @@ func (b *BaseAdvertisingParams) EnableIpV4(enable bool) {
 	b.mEnableIPv4 = enable
 }
 
-func (b *BaseAdvertisingParams) GetTcpSupported() *bool {
-	return b.mTcpSupported
+func (b *BaseAdvertisingParams) GetTcpSupported() (bool, error) {
+	if b.mTcpSupported == nil {
+		return false, lib.CHIP_ERROR_INCORRECT_STATE
+	}
+	return *b.mTcpSupported, nil
 }
 
 func (b *BaseAdvertisingParams) SetTcpSupported(i int8) {

@@ -1,10 +1,9 @@
-package parameters
+package params
 
 import (
 	"fmt"
 	"github.com/galenliu/chip/core"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/server/dnssd/costants/commssion_advertise_mode"
 )
 
 type Mac struct {
@@ -12,39 +11,52 @@ type Mac struct {
 }
 
 type CommissionAdvertisingParameters struct {
-	*BaseAdvertisingParams
+	BaseAdvertisingParams
 	mVendorId           *uint16 //供应商口称
 	mProductId          *uint16 //产品ID
 	mDeviceType         *uint32 //设备类型
-	mPairingHint        string  //设备配提示
+	mPairingHint        uint16  //设备配提示
 	mPairingInstr       string  //设备配对指南
 	mDeviceName         string  //设备名称
-	mMode               CommssionAdvertiseMode.T
-	mCommissioningMode  uint8
+	mMode               uint16
+	mCommissioningMode  int
 	mPeerId             *core.PeerId
 	mShortDiscriminator uint8
 	mLongDiscriminator  uint16
 	mRotatingId         string
 }
 
-func (c CommissionAdvertisingParameters) Init() *CommissionAdvertisingParameters {
-	c.BaseAdvertisingParams = BaseAdvertisingParams{}.Init()
-	return &c
+func NewCommissionAdvertisingParameters() *CommissionAdvertisingParameters {
+	return &CommissionAdvertisingParameters{
+		BaseAdvertisingParams: BaseAdvertisingParams{},
+		mVendorId:             nil,
+		mProductId:            nil,
+		mDeviceType:           nil,
+		mPairingHint:          0,
+		mPairingInstr:         "",
+		mDeviceName:           "",
+		mMode:                 0,
+		mCommissioningMode:    0,
+		mPeerId:               nil,
+		mShortDiscriminator:   0,
+		mLongDiscriminator:    0,
+		mRotatingId:           "",
+	}
 }
 
-func (c *CommissionAdvertisingParameters) SetCommissioningMode(mode uint8) {
+func (c *CommissionAdvertisingParameters) SetCommissioningMode(mode int) {
 	c.mCommissioningMode = mode
 }
 
-func (c *CommissionAdvertisingParameters) GetCommissioningMode() uint8 {
+func (c *CommissionAdvertisingParameters) GetCommissioningMode() int {
 	return c.mCommissioningMode
 }
 
-func (c *CommissionAdvertisingParameters) SetCommissionAdvertiseMode(mode CommssionAdvertiseMode.T) {
+func (c *CommissionAdvertisingParameters) SetCommissionAdvertiseMode(mode uint16) {
 	c.mMode = mode
 }
 
-func (c *CommissionAdvertisingParameters) GetCommissionAdvertiseMode() CommssionAdvertiseMode.T {
+func (c *CommissionAdvertisingParameters) GetCommissionAdvertiseMode() uint16 {
 	return c.mMode
 }
 
@@ -67,12 +79,7 @@ func (c *CommissionAdvertisingParameters) SetDeviceName(name string) *Commission
 	return c
 }
 
-func (c *CommissionAdvertisingParameters) SetTcpSupported(b bool) *CommissionAdvertisingParameters {
-	c.mTcpSupported = &b
-	return c
-}
-
-func (c *CommissionAdvertisingParameters) SetPairingHint(value string) *CommissionAdvertisingParameters {
+func (c *CommissionAdvertisingParameters) SetPairingHint(value uint16) *CommissionAdvertisingParameters {
 	c.mPairingHint = value
 	return c
 }
@@ -82,7 +89,7 @@ func (c *CommissionAdvertisingParameters) SetPairingInstruction(ist string) {
 }
 
 func (c *CommissionAdvertisingParameters) SetMRPConfig(config *messageing.ReliableMessageProtocolConfig) {
-	c.mMRPConfig = config
+	c.mMRPConfig = *config
 }
 
 func (c *CommissionAdvertisingParameters) GetVendorId() (uint16, error) {
@@ -129,7 +136,7 @@ func (c *CommissionAdvertisingParameters) GetRotatingDeviceId() string {
 	return c.mRotatingId
 }
 
-func (c *CommissionAdvertisingParameters) GetPairingHint() string {
+func (c *CommissionAdvertisingParameters) GetPairingHint() uint16 {
 	return c.mPairingHint
 }
 
@@ -143,6 +150,6 @@ func (c *CommissionAdvertisingParameters) SetShortDiscriminator(discriminator ui
 }
 
 func (c *CommissionAdvertisingParameters) SetLocalMRPConfig(config *messageing.ReliableMessageProtocolConfig) *CommissionAdvertisingParameters {
-	c.mLocalMRPConfig = config
+	c.mLocalMRPConfig = *config
 	return c
 }
