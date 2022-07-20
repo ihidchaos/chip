@@ -8,7 +8,6 @@ import (
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
-
 	"strings"
 	"sync"
 )
