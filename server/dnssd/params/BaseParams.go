@@ -37,8 +37,9 @@ func (b *BaseAdvertisingParams) IsIPv4Enabled() bool {
 	return b.mEnableIPv4
 }
 
-func (b *BaseAdvertisingParams) SetPort(port uint16) {
+func (b *BaseAdvertisingParams) SetPort(port uint16) *BaseAdvertisingParams {
 	b.mPort = port
+	return b
 }
 
 func (b *BaseAdvertisingParams) SetInterfaceId(id net.Interface) {

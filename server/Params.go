@@ -56,9 +56,9 @@ type ServerInitParams struct {
 
 	// Optional. Support test event triggers when provided. Must be initialized before being
 	// provided.
-	TestEventTriggerDelegate *TestEventTriggerDelegate
+	TestEventTriggerDelegate TestEventTriggerDelegate
 	// Operational keystore with access to the operational keys: MUST be injected.
-	OperationalKeystore *crypto.PersistentStorageOperationalKeystore
+	OperationalKeystore crypto.PersistentStorageOperationalKeystore
 	// Operational certificate store with access to the operational certs in persisted storage:
 	// must not be null at timne of Server::Init().
 	OpCertStore credentials.PersistentStorageOpCertStore

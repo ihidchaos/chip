@@ -1,6 +1,8 @@
 package credentials
 
 import (
+	"github.com/galenliu/chip/crypto"
+	"github.com/galenliu/chip/server"
 	"github.com/galenliu/chip/storage"
 )
 
@@ -13,7 +15,7 @@ func (f FabricTable) FabricCount() int {
 	panic("implement me")
 }
 
-func (f FabricTable) Init(storage storage.PersistentStorageDelegate) (err error) {
+func (f FabricTable) Init(params *InitParams) (err error) {
 	return
 }
 
@@ -23,4 +25,18 @@ func (f FabricTable) GetFabricInfos() []FabricInfo {
 
 func (f FabricTable) DeleteAllFabrics() {
 
+}
+
+func (f FabricTable) AddFabricDelegate(delegate server.ServerFabricDelegate) {
+
+}
+
+type InitParams struct {
+	Storage             storage.PersistentStorageDelegate
+	OperationalKeystore crypto.PersistentStorageOperationalKeystore
+	OpCertStore         PersistentStorageOpCertStore
+}
+
+func NewFabricTableInitParams() *InitParams {
+	return &InitParams{}
 }

@@ -1,4 +1,4 @@
-package DnssdServer
+package dnssd
 
 // The mode of a Node in which it allows Commissioning.
 const (

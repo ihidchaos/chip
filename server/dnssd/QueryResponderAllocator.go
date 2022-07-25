@@ -1,24 +1,26 @@
-package DnssdServer
+package dnssd
 
-import "github.com/galenliu/dnssd/responder"
+import (
+	"github.com/galenliu/chip/server/dnssd/responder"
+)
 
 type QueryResponderAllocator struct {
 	mAllocatedResponders []responder.RecordResponder
-	mResponderInfos      []*responder.QueryResponderInfo
-	mQueryResponder      *responder.QueryResponder
+	mResponderInfos      []*QueryResponderInfo
+	mQueryResponder      *QueryResponder
 }
 
 func NewQueryResponderAllocator() *QueryResponderAllocator {
 	return &QueryResponderAllocator{
 		mAllocatedResponders: make([]responder.RecordResponder, 0),
-		mResponderInfos:      make([]*responder.QueryResponderInfo, 0),
-		mQueryResponder:      responder.NewQueryResponder(),
+		mResponderInfos:      make([]*QueryResponderInfo, 0),
+		mQueryResponder:      NewQueryResponder(),
 	}
 }
 
-func (a *QueryResponderAllocator) AddResponder(recordResponder responder.RecordResponder) *responder.QueryResponderSettings {
-	if len(a.mAllocatedResponders) >= kMaxCommissionRecords {
-		return &responder.QueryResponderSettings{}
+func (a *QueryResponderAllocator) AddResponder(recordResponder responder.RecordResponder) *QueryResponderSettings {
+	if len(a.mAllocatedResponders) >= MaxCommissionRecords {
+		return &QueryResponderSettings{}
 	}
 	a.mAllocatedResponders = append(a.mAllocatedResponders, recordResponder)
 
@@ -35,6 +37,6 @@ func (a *QueryResponderAllocator) GetResponder(typ uint16, name string) responde
 	return nil
 }
 
-func (a *QueryResponderAllocator) GetQueryResponder() *responder.QueryResponder {
+func (a *QueryResponderAllocator) GetQueryResponder() *QueryResponder {
 	return a.mQueryResponder
 }

@@ -5,6 +5,6 @@ import "github.com/galenliu/chip/core"
 type FabricInfo struct {
 }
 
-func (info *FabricInfo) GetPeerId() *core.PeerId {
-	return nil
+func (info *FabricInfo) GetPeerId() core.PeerId {
+	return core.PeerId{}
 }

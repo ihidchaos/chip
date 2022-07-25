@@ -1,154 +1,69 @@
-package DnssdServer
+package dnssd
 
 import (
 	"fmt"
+	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/server/dnssd/params"
-	"github.com/galenliu/dnssd"
-	"github.com/galenliu/dnssd/responder"
+	"github.com/galenliu/chip/server/dnssd/responder"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
+	"net"
+	"net/netip"
 	"strings"
-	"sync"
 )
 
-type ServiceAdvertiser interface {
-	Init() error
-	RemoveServices() error
-
-	AdvertiseOperational(params *params.OperationalAdvertisingParameters) error
-	AdvertiseCommission(params *params.CommissionAdvertisingParameters) error
-
-	FinalizeServiceUpdate() error
-
+type Advertise interface {
 	GetCommissionableInstanceName() (string, error)
 	UpdateCommissionableInstanceName() error
-
-	//Shutdown()
-	//SetOperationalDelegate(delegate OperationalResolveDelegate)
-	//SetCommissioningDelegate(delegate CommissioningResolveDelegate)
-	//ResolveNodeId(peerId core.PeerId, isIpV6 bool)
-	//DiscoverCommissionableNodes(filter DiscoveryFilter)
-	//DiscoverCommissioners(filter DiscoveryFilter)
-
-	AddResponder(responder responder.RecordResponder) *responder.QueryResponderSettings
-	RemoveRecords() error
-
-	AdvertiseRecords(mode int) error
+	AdvertiseOperational(params *params.OperationalAdvertisingParameters) error
+	AdvertiseCommission(params *params.CommissionAdvertisingParameters) error
+	FinalizeServiceUpdate() error
 }
 
-type DiscoveryImplPlatform struct {
-	Resolver
+type AdvertiseImpl struct {
 	mInitialized                           bool
-	mResponseSender                        dnssd.ResponseSender
+	mResponseSender                        ResponseSender
 	mQueryResponderAllocatorCommissionable QueryResponderAllocator
 	mQueryResponderAllocatorCommissioner   QueryResponderAllocator
 	mOperationalResponders                 []*QueryResponderAllocator
 	mCommissionableInstanceName            string
 	mEmptyTextEntries                      string
+
+	mSecuredPort                 uint16
+	mUnsecuredPort               uint16
+	mInterfaceId                 net.Interface
+	mFabrice                     *credentials.FabricTable
+	mCommissioningModeProvider   CommissioningModeProvider
+	mCurrentCommissioningMode    int
+	mExtendedDiscoveryExpiration any
+	mEphemeralDiscriminator      *uint16
 }
 
-var _serviceAdvertiserInstance *DiscoveryImplPlatform
-var _serviceAdvertiserInstanceOnce sync.Once
-
-func GetServiceAdvertiserInstance() *DiscoveryImplPlatform {
-	_serviceAdvertiserInstanceOnce.Do(func() {
-		if _serviceAdvertiserInstance == nil {
-			_serviceAdvertiserInstance = &DiscoveryImplPlatform{}
-			_serviceAdvertiserInstance.mEmptyTextEntries = "="
-			_serviceAdvertiserInstance.mInitialized = true
-		}
-	})
-	return _serviceAdvertiserInstance
+func NewAdvertise() *AdvertiseImpl {
+	a := &AdvertiseImpl{}
+	a.mEmptyTextEntries = "="
+	return a
 }
 
-func (d *DiscoveryImplPlatform) Init() error {
-	dnssd.GlobalMdnsServer().ShutdownServer()
-	if !d.mInitialized {
-		_ = d.UpdateCommissionableInstanceName()
-	}
-	d.mResponseSender.SetServer(dnssd.GlobalMdnsServer())
+func (d *AdvertiseImpl) GetCommissionableInstanceName() (string, error) {
+	return d.mCommissionableInstanceName, nil
+}
+
+func (d *AdvertiseImpl) UpdateCommissionableInstanceName() error {
+	d.mCommissionableInstanceName = fmt.Sprintf("%016X", rand.Uint64())
+	log.Infof("")
 	return nil
 }
 
-func (d *DiscoveryImplPlatform) RemoveServices() error {
-	//TODO implement me
-	panic("implement me")
-}
+func (a *AdvertiseImpl) AdvertiseCommission(params *params.CommissionAdvertisingParameters) error {
 
-func (d *DiscoveryImplPlatform) AdvertiseOperational(params *params.OperationalAdvertisingParameters) error {
-
-	var name = params.GetPeerId().String()
-
-	_ = d.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
-	instanceName := Fqdn(name, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
-
-	operationalAllocator := d.FindOperationalAllocator(instanceName)
-	if operationalAllocator == nil {
-		operationalAllocator := d.FindEmptyOperationalAllocator()
-		if operationalAllocator == nil {
-			return fmt.Errorf("failed to find an open operational allocator")
-		}
-	}
-
-	serviceName := Fqdn(KOperationalServiceName, KOperationalProtocol, KLocalDomain)
-	hostName := Fqdn(name, KLocalDomain)
-
-	if !operationalAllocator.AddResponder(responder.NewPtrResponder(serviceName, instanceName)).
-		SetReportAdditional(instanceName).
-		SetReportInServiceListing(true).
-		IsValid() {
-		return fmt.Errorf("failed to add service PTR record mDNS responder")
-	}
-
-	if !operationalAllocator.AddResponder(responder.NewSrvResponder(instanceName, hostName, params.GetPort())).
-		SetReportAdditional(hostName).
-		IsValid() {
-		return fmt.Errorf("failed to add SRV record mDNS responder")
-	}
-
-	if !operationalAllocator.AddResponder(responder.NewTxtResponder(instanceName, d.GetOperationalTxtEntries(params))).
-		SetReportAdditional(hostName).
-		IsValid() {
-		return fmt.Errorf("failed to add TXT record mDNS responder")
-	}
-
-	if !operationalAllocator.AddResponder(responder.NewIPv6Responder(hostName, nil)).
-		IsValid() {
-		return fmt.Errorf("failed to add IPv6 mDNS responder")
-	}
-
-	if params.IsIPv4Enabled() {
-		if !operationalAllocator.AddResponder(responder.NewIPv4Responder(hostName, nil)).
-			IsValid() {
-			return fmt.Errorf("failed to add IPv4 mDNS responder")
-
-		}
-	}
-
-	id := params.GetPeerId().GetCompressedFabricId()
-	fabricId := makeServiceSubtype(DiscoveryFilterType_kCompressedFabricId, id)
-	compressedFabricIdSubtype := Fqdn(fabricId, KSubtypeServiceNamePart, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
-	if !operationalAllocator.AddResponder(responder.NewPtrResponder(compressedFabricIdSubtype, instanceName)).
-		SetReportAdditional(instanceName).
-		IsValid() {
-		log.Infof("Failed to add device type PTR record mDNS responder")
-	}
-
-	log.Infof("CHIP minimal mDNS configured as 'Operational device'.")
-	_ = d.AdvertiseRecords(BroadcastAdvertiseType_Started)
-	log.Infof("mDNS service published: %s", instanceName)
-	return nil
-}
-
-func (d *DiscoveryImplPlatform) AdvertiseCommission(params *params.CommissionAdvertisingParameters) error {
-
-	_ = d.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
+	_ = a.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
 	allocator := func() QueryResponderAllocator {
 		if params.GetCommissioningMode() == AdvertiseMode_CommissionableNode {
-			return d.mQueryResponderAllocatorCommissionable
+			return a.mQueryResponderAllocatorCommissionable
 		}
-		return d.mQueryResponderAllocatorCommissioner
+		return a.mQueryResponderAllocatorCommissioner
 	}()
 
 	serviceType := func() string {
@@ -158,7 +73,7 @@ func (d *DiscoveryImplPlatform) AdvertiseCommission(params *params.CommissionAdv
 		return KCommissionerServiceName
 	}()
 
-	name, err := d.GetCommissionableInstanceName()
+	name, err := a.GetCommissionableInstanceName()
 	if err != nil {
 		return err
 	}
@@ -184,13 +99,13 @@ func (d *DiscoveryImplPlatform) AdvertiseCommission(params *params.CommissionAdv
 		return fmt.Errorf("failed to add SRV record mDNS responder")
 	}
 
-	if !allocator.AddResponder(responder.NewIPv6Responder(hostName, nil)).
+	if !allocator.AddResponder(responder.NewIPv6Responder(hostName)).
 		IsValid() {
 		return fmt.Errorf("failed to add IPv6 mDNS responder")
 	}
 
 	if params.IsIPv4Enabled() {
-		if !!allocator.AddResponder(responder.NewIPv4Responder(hostName, nil)).
+		if !!allocator.AddResponder(responder.NewIPv4Responder(hostName)).
 			IsValid() {
 			return fmt.Errorf("failed to add IPv6 mDNS responder")
 		}
@@ -250,26 +165,92 @@ func (d *DiscoveryImplPlatform) AdvertiseCommission(params *params.CommissionAdv
 		}
 	}
 
-	if !allocator.AddResponder(responder.NewTxtResponder(instanceName, d.GetCommissioningTxtEntries(params))).
+	if !allocator.AddResponder(responder.NewTxtResponder(instanceName, a.GetCommissioningTxtEntries(params))).
 		SetReportAdditional(hostName).
 		IsValid() {
 		return fmt.Errorf("failed to add TXT record mDNS responder")
 	}
+
+	if params.GetCommissionAdvertiseMode() == AdvertiseMode_CommissionableNode {
+		log.Infof("CHIP minimal mDNS configured as 'Commissionable node device'.")
+	} else {
+		log.Infof("CHIP minimal mDNS configured as 'Commissioner device'.")
+	}
+	_ = a.AdvertiseRecords(BroadcastAdvertiseType_Started)
+	log.Infof("mDNS service published: %s", instanceName)
+	return nil
+}
+
+func (d *AdvertiseImpl) AdvertiseOperational(params *params.OperationalAdvertisingParameters) error {
+
+	var name = params.GetPeerId().String()
+
+	_ = d.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
+	instanceName := Fqdn(name, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
+
+	operationalAllocator := d.FindOperationalAllocator(instanceName)
+	if operationalAllocator == nil {
+		operationalAllocator := d.FindEmptyOperationalAllocator()
+		if operationalAllocator == nil {
+			return fmt.Errorf("failed to find an open operational allocator")
+		}
+	}
+
+	serviceName := Fqdn(KOperationalServiceName, KOperationalProtocol, KLocalDomain)
+	hostName := Fqdn(name, KLocalDomain)
+
+	if !operationalAllocator.AddResponder(responder.NewPtrResponder(serviceName, instanceName)).
+		SetReportAdditional(instanceName).
+		SetReportInServiceListing(true).
+		IsValid() {
+		return fmt.Errorf("failed to add service PTR record mDNS responder")
+	}
+
+	if !operationalAllocator.AddResponder(responder.NewSrvResponder(instanceName, hostName, params.GetPort())).
+		SetReportAdditional(hostName).
+		IsValid() {
+		return fmt.Errorf("failed to add SRV record mDNS responder")
+	}
+
+	if !operationalAllocator.AddResponder(responder.NewTxtResponder(instanceName, d.GetOperationalTxtEntries(params))).
+		SetReportAdditional(hostName).
+		IsValid() {
+		return fmt.Errorf("failed to add TXT record mDNS responder")
+	}
+
+	if !operationalAllocator.AddResponder(responder.NewIPv6Responder(hostName)).
+		IsValid() {
+		return fmt.Errorf("failed to add IPv6 mDNS responder")
+	}
+
+	if params.IsIPv4Enabled() {
+		if !operationalAllocator.AddResponder(responder.NewIPv4Responder(hostName)).
+			IsValid() {
+			return fmt.Errorf("failed to add IPv4 mDNS responder")
+
+		}
+	}
+
+	id := params.GetPeerId().GetCompressedFabricId()
+	fabricId := makeServiceSubtype(DiscoveryFilterType_kCompressedFabricId, id)
+	compressedFabricIdSubtype := Fqdn(fabricId, KSubtypeServiceNamePart, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
+	if !operationalAllocator.AddResponder(responder.NewPtrResponder(compressedFabricIdSubtype, instanceName)).
+		SetReportAdditional(instanceName).
+		IsValid() {
+		log.Infof("Failed to add device type PTR record mDNS responder")
+	}
+
+	log.Infof("CHIP minimal mDNS configured as 'Operational device'.")
 	_ = d.AdvertiseRecords(BroadcastAdvertiseType_Started)
 	log.Infof("mDNS service published: %s", instanceName)
 	return nil
 }
 
-func (d DiscoveryImplPlatform) FinalizeServiceUpdate() error {
-	//TODO implement me
-	panic("implement me")
+func (d *AdvertiseImpl) FinalizeServiceUpdate() error {
+	return nil
 }
 
-func (d *DiscoveryImplPlatform) GetCommissionableInstanceName() (string, error) {
-	return d.mCommissionableInstanceName, nil
-}
-
-func (d *DiscoveryImplPlatform) GetCommissioningTxtEntries(params *params.CommissionAdvertisingParameters) []string {
+func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *params.CommissionAdvertisingParameters) []string {
 
 	var txtFields []string
 
@@ -317,7 +298,7 @@ func (d *DiscoveryImplPlatform) GetCommissioningTxtEntries(params *params.Commis
 	return txtFields
 }
 
-func (d *DiscoveryImplPlatform) GetOperationalTxtEntries(params *params.OperationalAdvertisingParameters) []string {
+func (d *AdvertiseImpl) GetOperationalTxtEntries(params *params.OperationalAdvertisingParameters) []string {
 	txtFields := d.AddCommonTxtEntries(params.BaseAdvertisingParams)
 	if len(txtFields) == 0 || txtFields == nil {
 		return append(txtFields, d.mEmptyTextEntries)
@@ -325,7 +306,7 @@ func (d *DiscoveryImplPlatform) GetOperationalTxtEntries(params *params.Operatio
 	return txtFields
 }
 
-func (d *DiscoveryImplPlatform) AddCommonTxtEntries(params params.BaseAdvertisingParams) []string {
+func (d *AdvertiseImpl) AddCommonTxtEntries(params params.BaseAdvertisingParams) []string {
 
 	var list []string
 	if mrp := params.GetLocalMRPConfig(); mrp != nil {
@@ -355,26 +336,7 @@ func (d *DiscoveryImplPlatform) AddCommonTxtEntries(params params.BaseAdvertisin
 	return list
 }
 
-func (d *DiscoveryImplPlatform) UpdateCommissionableInstanceName() error {
-	d.mCommissionableInstanceName = fmt.Sprintf("%016X", rand.Uint64())
-	return nil
-}
-
-func (d *DiscoveryImplPlatform) AddResponder(responder responder.RecordResponder) *responder.QueryResponderSettings {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (d *DiscoveryImplPlatform) RemoveRecords() error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (d *DiscoveryImplPlatform) AdvertiseRecords(mode int) error {
-	return nil
-}
-
-func (d *DiscoveryImplPlatform) FindOperationalAllocator(name string) *QueryResponderAllocator {
+func (d *AdvertiseImpl) FindOperationalAllocator(name string) *QueryResponderAllocator {
 	for _, allocator := range d.mOperationalResponders {
 		r := allocator.GetResponder(dns.TypeSRV, name)
 		if r != nil {
@@ -384,11 +346,55 @@ func (d *DiscoveryImplPlatform) FindOperationalAllocator(name string) *QueryResp
 	return nil
 }
 
-func (d *DiscoveryImplPlatform) FindEmptyOperationalAllocator() *QueryResponderAllocator {
+func (d *AdvertiseImpl) FindEmptyOperationalAllocator() *QueryResponderAllocator {
 	OperationalQueryAllocator := NewQueryResponderAllocator()
 	_ = d.mResponseSender.AddQueryResponder(OperationalQueryAllocator.GetQueryResponder())
 	d.mOperationalResponders = append(d.mOperationalResponders, OperationalQueryAllocator)
 	return OperationalQueryAllocator
+}
+
+func (d *AdvertiseImpl) AdvertiseRecords(typ int) error {
+
+	var responseConfiguration = &responder.ResponseConfiguration{}
+	if typ == BroadcastAdvertiseType_RemovingAll {
+		responseConfiguration.SetTtlSecondsOverride(0)
+	}
+	queryData := NewQueryData(dns.TypePTR, dns.ClassINET, false)
+	queryData.SetIsInternalBroadcast(true)
+
+	interfaceIds, err := net.Interfaces()
+	if err == nil {
+		for _, interfaceId := range interfaceIds {
+			adders, err := interfaceId.Addrs()
+			if err == nil {
+				for _, addr := range adders {
+					if cidr, _, err := net.ParseCIDR(addr.String()); err == nil {
+						if ip, err := netip.ParseAddr(cidr.String()); err == nil {
+							if ip.IsGlobalUnicast() {
+								if ip.Is4() {
+									queryData.SetSrcAddr(netip.AddrPortFrom(ip, MdnsPort))
+									queryData.SetDestAddr(netip.AddrPortFrom(IPv4LinkLocalMulticast, MdnsPort))
+									err := d.mResponseSender.Respond(queryData, responseConfiguration, interfaceId)
+									if err != nil {
+										log.Infof("Failed to advertise records: %s", err.Error())
+									}
+								}
+								if ip.Is6() {
+									queryData.SetSrcAddr(netip.AddrPortFrom(ip, MdnsPort))
+									queryData.SetDestAddr(netip.AddrPortFrom(IPv6LinkLocalMulticast, MdnsPort))
+									err := d.mResponseSender.Respond(queryData, responseConfiguration, interfaceId)
+									if err != nil {
+										log.Infof("Failed to advertise records: %s", err.Error())
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func Fqdn(args ...string) string {

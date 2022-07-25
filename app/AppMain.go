@@ -44,7 +44,7 @@ func AppMainLoop() error {
 	if err != nil {
 		return err
 	}
-	chip := server.NewServer(initParams)
+	chip := server.NewCHIPServer(initParams)
 	chip.Shutdown()
 	return nil
 }

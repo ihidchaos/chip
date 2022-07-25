@@ -1,4 +1,4 @@
-package DnssdServer
+package dnssd
 
 import (
 	"github.com/galenliu/chip/core"
