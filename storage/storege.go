@@ -33,8 +33,15 @@ type PersistentStorageImpl struct {
 	mInitialized bool
 }
 
+func NewPersistentStorageImpl() *PersistentStorageImpl {
+	impl := &PersistentStorageImpl{}
+	impl.storage = NewIniStorage()
+	return impl
+}
+
 func (s *PersistentStorageImpl) Init(mConfigPath string) error {
 	s.mConfigPath = mConfigPath
+	s.storage = NewIniStorage()
 	err := s.storage.AddConfig(mConfigPath)
 	if err != nil {
 		return err
@@ -44,8 +51,7 @@ func (s *PersistentStorageImpl) Init(mConfigPath string) error {
 }
 
 func (s *PersistentStorageImpl) ReadBoolValue(key string) (bool, error) {
-	s.mLock.Lock()
-	defer s.mLock.Unlock()
+
 	value, err := s.storage.GetUIntValue(key)
 	if value == 0 {
 		return true, err
@@ -112,8 +118,12 @@ func (s *PersistentStorageImpl) WriteValueUint64(key string, v uint64) error {
 
 func (s *PersistentStorageImpl) WriteValueStr(key string, v string) error {
 	err := s.storage.AddEntry(key, v)
+	if err != nil {
+		return err
+	}
 	s.mDirty = true
-	return err
+	return s.Commit()
+
 }
 
 func (s *PersistentStorageImpl) WriteValueBin(key string, v []byte) error {
@@ -123,24 +133,21 @@ func (s *PersistentStorageImpl) WriteValueBin(key string, v []byte) error {
 }
 
 func (s PersistentStorageImpl) ClearValue(key string) error {
-	s.mLock.Lock()
-	defer s.mLock.Unlock()
+
 	err := s.storage.RemoveEntry(key)
 	s.mDirty = true
 	return err
 }
 
 func (s PersistentStorageImpl) ClearAll() error {
-	s.mLock.Lock()
-	defer s.mLock.Unlock()
+
 	err := s.storage.RemoveAll()
 	s.mDirty = true
 	return err
 }
 
-func (s PersistentStorageImpl) Commit() error {
-	s.mLock.Lock()
-	defer s.mLock.Unlock()
+func (s *PersistentStorageImpl) Commit() error {
+
 	if s.mConfigPath != "" && s.mDirty {
 		return s.storage.CommitConfig(s.mConfigPath)
 	}
@@ -148,6 +155,6 @@ func (s PersistentStorageImpl) Commit() error {
 	return nil
 }
 
-func (s PersistentStorageImpl) HasValue(key string) bool {
+func (s *PersistentStorageImpl) HasValue(key string) bool {
 	return s.storage.HasValue(key)
 }

@@ -1,30 +1,31 @@
 package credentials
 
 import (
-	"github.com/galenliu/chip/server"
 	"github.com/galenliu/chip/storage"
 )
 
 type GroupDataProvider interface {
 	SetStorageDelegate(delegate storage.PersistentStorageDelegate)
 	Init() error
-	SetListener(listener server.GroupDataProviderListener)
+	SetListener(listener GroupDataProviderListener)
 }
 
 type GroupDataProviderImpl struct {
+	mStorage storage.PersistentStorageDelegate
 }
 
-func (g GroupDataProviderImpl) SetListener(listener server.GroupDataProviderListener) {
-	//TODO implement me
-	panic("implement me")
+func NewGroupDataProviderImpl() *GroupDataProviderImpl {
+	return &GroupDataProviderImpl{}
 }
 
-func (g GroupDataProviderImpl) SetStorageDelegate(delegate storage.PersistentStorageDelegate) {
-	//TODO implement me
-	panic("implement me")
+func (g GroupDataProviderImpl) SetListener(listener GroupDataProviderListener) {
+
+}
+
+func (g *GroupDataProviderImpl) SetStorageDelegate(delegate storage.PersistentStorageDelegate) {
+	g.mStorage = delegate
 }
 
 func (g GroupDataProviderImpl) Init() error {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }

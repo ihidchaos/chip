@@ -64,6 +64,10 @@ type ServerInitParams struct {
 	OpCertStore credentials.PersistentStorageOpCertStore
 }
 
+func NewServerInitParams() *ServerInitParams {
+	return &ServerInitParams{}
+}
+
 func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 	c := &CommonCaseDeviceServerInitParams{
 		ServerInitParams: ServerInitParams{
@@ -79,7 +83,7 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 func (p *CommonCaseDeviceServerInitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 	var sKvsPersistentStorageDelegate storage.PersistentStorageDelegate
-	var sPersistentStorageOperationalKeystore crypto.PersistentStorageOperationalKeystoreImpl
+	var sPersistentStorageOperationalKeystore crypto.PersistentStorageOperationalKeystore
 	var sPersistentStorageOpCertStore credentials.PersistentStorageOpCertStore
 	var sGroupDataProvider credentials.GroupDataProvider
 	var sDefaultCertValidityPolicy credentials.CertificateValidityPolicy
@@ -90,16 +94,16 @@ func (p *CommonCaseDeviceServerInitParams) InitializeStaticResourcesBeforeServer
 	}
 
 	if p.OperationalKeystore == nil {
-		sPersistentStorageOperationalKeystore = crypto.PersistentStorageOperationalKeystoreImpl{}
+		sPersistentStorageOperationalKeystore = crypto.NewPersistentStorageOperationalKeystoreImpl()
 		sPersistentStorageOperationalKeystore.Init(p.PersistentStorageDelegate)
 	}
 	if p.OpCertStore == nil {
-		sPersistentStorageOpCertStore = credentials.PersistentStorageOpCertStoreImpl{}
+		sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
 		sPersistentStorageOpCertStore.Init(p.PersistentStorageDelegate)
 		p.OpCertStore = sPersistentStorageOpCertStore
 	}
 
-	sGroupDataProvider = credentials.GroupDataProviderImpl{}
+	sGroupDataProvider = credentials.NewGroupDataProviderImpl()
 	sGroupDataProvider.SetStorageDelegate(p.PersistentStorageDelegate)
 	err := sGroupDataProvider.Init()
 	if err != nil {

@@ -124,7 +124,7 @@ func newProvider(serializedSpake2pVerifier []byte, spake2pSalt []byte, spake2pIt
 			return nil, fmt.Errorf("failed to serialize PASE verifier from passcode: %s", err.Error())
 		}
 	}
-	if !havePasscode && !havePaseVerifier {
+	if !havePasscode && havePaseVerifier {
 		return nil, fmt.Errorf("missing both externally provided verifier and passcode: cannot produce final verifier")
 	}
 

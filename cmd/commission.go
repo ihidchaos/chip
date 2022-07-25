@@ -7,14 +7,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (c *command) newCommission() (err error) {
+func (c *command) intCommission() (err error) {
 
 	cmd := &cobra.Command{
 		Use:   "commission",
 		Short: "commission mode",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
-			err = app.AppMainInit()
+			options := config.GetDeviceOptions(c.config)
+			err = app.AppMainInit(options)
 			if err != nil {
 				log.Infof(err.Error())
 				return err
@@ -34,8 +35,7 @@ func (c *command) newCommission() (err error) {
 		},
 
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			config.FlagsDeviceOptions(cmd)
-			config.HandleCHIPConfig(cmd)
+			config.SetDeviceOptions(cmd)
 			_ = c.config.BindPFlags(cmd.Flags())
 			return err
 		},

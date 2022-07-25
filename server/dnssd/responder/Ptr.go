@@ -38,5 +38,5 @@ func (p *PtrResponder) SetTtl(u uint32) {
 }
 
 func (p *PtrResponder) GetRecord() *Record {
-	return &Record{&p.PTR}
+	return NewRecord(&p.PTR)
 }

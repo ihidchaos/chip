@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-var ChipConfigMrpDefaultIdleRetryInterval int64 = 5000
-var ChipConfigMrpDefaultActiveRetryInterval int64 = 300
+var ConfigMrpDefaultIdleRetryInterval int64 = 5000
+var ConfigMrpDefaultActiveRetryInterval int64 = 300
 
 type ReliableMessageProtocolConfig struct {
 	IdleRetransTimeout   time.Duration
@@ -19,18 +19,20 @@ func (c ReliableMessageProtocolConfig) Init() *ReliableMessageProtocolConfig {
 	return &c
 }
 
-var insRMPC *ReliableMessageProtocolConfig
+var _rmpc *ReliableMessageProtocolConfig
 var rmpcOnce = sync.Once{}
 
 func GetLocalMRPConfig() *ReliableMessageProtocolConfig {
 	rmpcOnce.Do(func() {
-		insRMPC = newReliableMessageProtocolConfig()
-		insRMPC.IdleRetransTimeout = time.Duration(ChipConfigMrpDefaultIdleRetryInterval)
-		insRMPC.ActiveRetransTimeout = time.Duration(ChipConfigMrpDefaultActiveRetryInterval)
+		_rmpc = newReliableMessageProtocolConfig()
+
 	})
-	return insRMPC
+	return _rmpc
 }
 
 func newReliableMessageProtocolConfig() *ReliableMessageProtocolConfig {
-	return &ReliableMessageProtocolConfig{}
+	rmpc := &ReliableMessageProtocolConfig{}
+	rmpc.IdleRetransTimeout = time.Duration(ConfigMrpDefaultIdleRetryInterval)
+	rmpc.ActiveRetransTimeout = time.Duration(ConfigMrpDefaultActiveRetryInterval)
+	return rmpc
 }

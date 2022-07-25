@@ -156,7 +156,7 @@ func (a *AdvertiseImpl) AdvertiseCommission(params *params.CommissionAdvertising
 	}
 
 	if params.GetCommissioningMode() == CommissioningMode_Disabled {
-		if name := makeServiceSubtype(Subtype_CommissioningMode); name != "" {
+		if name := makeServiceSubtype[int](Subtype_CommissioningMode); name != "" {
 			commissioningModeServiceName := Fqdn(name, KSubtypeServiceNamePart, serviceType, KCommissionProtocol, KLocalDomain)
 			if !allocator.AddResponder(responder.NewPtrResponder(commissioningModeServiceName, instanceName)).
 				SetReportAdditional(instanceName).SetReportInServiceListing(true).IsValid() {

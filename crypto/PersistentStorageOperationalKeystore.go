@@ -17,10 +17,15 @@ type PersistentStorageOperationalKeystore interface {
 	SignWithOpKeypair(fabricIndex core.FabricIndex, message []byte) ([]byte, error)
 	AllocateEphemeralKeypairForCASE() crypto.PrivateKey
 	ReleaseEphemeralKeypair(key crypto.PrivateKey)
+	Init(delegate storage.PersistentStorageDelegate)
 }
 
 type PersistentStorageOperationalKeystoreImpl struct {
 	mPersistentStorage storage.PersistentStorageDelegate
+}
+
+func NewPersistentStorageOperationalKeystoreImpl() *PersistentStorageOperationalKeystoreImpl {
+	return &PersistentStorageOperationalKeystoreImpl{}
 }
 
 func (p PersistentStorageOperationalKeystoreImpl) HasPendingOpKeypair() bool {

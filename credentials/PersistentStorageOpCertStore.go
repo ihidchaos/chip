@@ -33,29 +33,28 @@ type PersistentStorageOpCertStoreImpl struct {
 	mPersistentStorage storage.PersistentStorageDelegate
 }
 
+func NewPersistentStorageOpCertStoreImpl() *PersistentStorageOpCertStoreImpl {
+	return &PersistentStorageOpCertStoreImpl{}
+}
+
 func (s PersistentStorageOpCertStoreImpl) HasPendingRootCert() bool {
-	//TODO implement me
-	panic("implement me")
+	return true
 }
 
 func (s PersistentStorageOpCertStoreImpl) HasPendingNocChain() bool {
-	//TODO implement me
-	panic("implement me")
+	return true
 }
 
 func (s PersistentStorageOpCertStoreImpl) HasCertificateForFabric(fabricIndex core.FabricIndex, element uint8) bool {
-	//TODO implement me
-	panic("implement me")
+	return true
 }
 
 func (s PersistentStorageOpCertStoreImpl) AddNewTrustedRootCertForFabric(fabricIndex core.FabricIndex, rcac []byte) error {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (s PersistentStorageOpCertStoreImpl) AddNewOpCertsForFabric(fabricIndex core.FabricIndex, noc []byte, icac []byte) error {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (s PersistentStorageOpCertStoreImpl) UpdateOpCertsForFabric(fabricIndex core.FabricIndex, noc []byte, icac []byte) error {
@@ -64,28 +63,23 @@ func (s PersistentStorageOpCertStoreImpl) UpdateOpCertsForFabric(fabricIndex cor
 }
 
 func (s PersistentStorageOpCertStoreImpl) CommitOpCertsForFabric(fabricIndex core.FabricIndex) error {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (s PersistentStorageOpCertStoreImpl) RemoveOpCertsForFabric(fabricIndex core.FabricIndex) error {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (s PersistentStorageOpCertStoreImpl) RevertPendingOpCerts() {
-	//TODO implement me
-	panic("implement me")
+
 }
 
 func (s PersistentStorageOpCertStoreImpl) RevertPendingOpCertsExceptRoot() {
-	//TODO implement me
-	panic("implement me")
+
 }
 
 func (s PersistentStorageOpCertStoreImpl) GetCertificate(fabricIndex core.FabricIndex, element uint8) []byte {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (s PersistentStorageOpCertStoreImpl) Init(delegate storage.PersistentStorageDelegate) {

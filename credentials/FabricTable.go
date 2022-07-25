@@ -2,7 +2,6 @@ package credentials
 
 import (
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/server"
 	"github.com/galenliu/chip/storage"
 )
 
@@ -27,7 +26,7 @@ func (f FabricTable) DeleteAllFabrics() {
 
 }
 
-func (f FabricTable) AddFabricDelegate(delegate server.ServerFabricDelegate) {
+func (f FabricTable) AddFabricDelegate(delegate ServerFabricDelegate) {
 
 }
 

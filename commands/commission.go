@@ -17,7 +17,6 @@ func (b *commandsBuilder) newCommssionCommand() *commissionCommand {
 		Use: "commission",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			config.HandleCHIPConfig(cmd)
-			config.FlagsDeviceOptions(cmd)
 			return nil
 		},
 	}
@@ -31,7 +30,7 @@ func (b *commandsBuilder) newCommssionCommand() *commissionCommand {
 
 func (c *commissionCommand) newDevice(cmd *cobra.Command, args []string) error {
 	err := c.config.BindPFlags(c.getCommand().Flags())
-	options := config.InitDeviceOptions(c.config)
+	options := config.GetDeviceOptions(c.config)
 	log.Infof("device options : %v", options)
 	return err
 }

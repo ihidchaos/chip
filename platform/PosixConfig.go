@@ -38,55 +38,60 @@ type ConfigProvider interface {
 	EnsureNamespace(k string) error
 }
 
-var _ConfigProviderInstance *PosixConfigImpl
+var _ConfigProviderInstance *ConfigProviderImpl
 var _ConfigProviderInstanceOnce sync.Once
 
-func GetConfigProviderInstance() *PosixConfigImpl {
+func GetConfigProviderInstance() *ConfigProviderImpl {
 	_ConfigProviderInstanceOnce.Do(func() {
 		if _ConfigProviderInstance == nil {
-			_ConfigProviderInstance = &PosixConfigImpl{}
+			_ConfigProviderInstance = &ConfigProviderImpl{}
 		}
 	})
 	return _ConfigProviderInstance
 }
 
-type PosixConfigImpl struct {
+type ConfigProviderImpl struct {
 	mChipFactoryStorage  storage.PersistentStorageDelegate
 	mChipConfigStorage   storage.PersistentStorageDelegate
 	mChipCountersStorage storage.PersistentStorageDelegate
 }
 
-func (conf *PosixConfigImpl) ReadConfigValueBool(k Key) (bool, error) {
+func NewConfigProviderImpl() *ConfigProviderImpl {
+	provider := &ConfigProviderImpl{}
+	return provider
+}
+
+func (conf *ConfigProviderImpl) ReadConfigValueBool(k Key) (bool, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadBoolValue(k.Name)
 }
 
-func (conf *PosixConfigImpl) ReadConfigValueUint16(k Key) (uint16, error) {
+func (conf *ConfigProviderImpl) ReadConfigValueUint16(k Key) (uint16, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadValueUint16(k.Name)
 }
 
-func (conf *PosixConfigImpl) ReadConfigValueUint32(k Key) (uint32, error) {
+func (conf *ConfigProviderImpl) ReadConfigValueUint32(k Key) (uint32, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadValueUint32(k.Name)
 }
 
-func (conf *PosixConfigImpl) ReadConfigValueUint64(k Key) (uint64, error) {
+func (conf *ConfigProviderImpl) ReadConfigValueUint64(k Key) (uint64, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadValueUint64(k.Name)
 }
 
-func (conf *PosixConfigImpl) ReadConfigValueStr(k Key) (string, error) {
+func (conf *ConfigProviderImpl) ReadConfigValueStr(k Key) (string, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadValueStr(k.Name)
 }
 
-func (conf *PosixConfigImpl) ReadConfigValueBin(k Key) ([]byte, error) {
+func (conf *ConfigProviderImpl) ReadConfigValueBin(k Key) ([]byte, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadValueBin(k.Name)
 }
 
-func (conf *PosixConfigImpl) WriteConfigValueBool(k Key, val bool) error {
+func (conf *ConfigProviderImpl) WriteConfigValueBool(k Key, val bool) error {
 	store := conf.GetStorageForNamespace(k)
 	err := store.WriteValueBool(k.Name, val)
 	if err != nil {
@@ -95,7 +100,7 @@ func (conf *PosixConfigImpl) WriteConfigValueBool(k Key, val bool) error {
 	return store.Commit()
 }
 
-func (conf *PosixConfigImpl) WriteConfigValueUint16(k Key, val uint16) error {
+func (conf *ConfigProviderImpl) WriteConfigValueUint16(k Key, val uint16) error {
 	store := conf.GetStorageForNamespace(k)
 	err := store.WriteValueUint16(k.Name, val)
 	if err != nil {
@@ -105,7 +110,7 @@ func (conf *PosixConfigImpl) WriteConfigValueUint16(k Key, val uint16) error {
 
 }
 
-func (conf *PosixConfigImpl) WriteConfigValueUint32(k Key, val uint32) error {
+func (conf *ConfigProviderImpl) WriteConfigValueUint32(k Key, val uint32) error {
 	store := conf.GetStorageForNamespace(k)
 	err := store.WriteValueUint32(k.Name, val)
 	if err != nil {
@@ -114,7 +119,7 @@ func (conf *PosixConfigImpl) WriteConfigValueUint32(k Key, val uint32) error {
 	return store.Commit()
 }
 
-func (conf *PosixConfigImpl) WriteConfigValueUint64(k Key, val uint64) error {
+func (conf *ConfigProviderImpl) WriteConfigValueUint64(k Key, val uint64) error {
 	store := conf.GetStorageForNamespace(k)
 	err := store.WriteValueUint64(k.Name, val)
 	if err != nil {
@@ -123,7 +128,7 @@ func (conf *PosixConfigImpl) WriteConfigValueUint64(k Key, val uint64) error {
 	return store.Commit()
 }
 
-func (conf *PosixConfigImpl) WriteConfigValueStr(k Key, val string) error {
+func (conf *ConfigProviderImpl) WriteConfigValueStr(k Key, val string) error {
 	store := conf.GetStorageForNamespace(k)
 	err := store.WriteValueStr(k.Name, val)
 	if err != nil {
@@ -132,7 +137,7 @@ func (conf *PosixConfigImpl) WriteConfigValueStr(k Key, val string) error {
 	return store.Commit()
 }
 
-func (conf *PosixConfigImpl) WriteConfigValueBin(k Key, val []byte) error {
+func (conf *ConfigProviderImpl) WriteConfigValueBin(k Key, val []byte) error {
 	store := conf.GetStorageForNamespace(k)
 	err := store.WriteValueBin(k.Name, val)
 	if err != nil {
@@ -141,17 +146,17 @@ func (conf *PosixConfigImpl) WriteConfigValueBin(k Key, val []byte) error {
 	return store.Commit()
 }
 
-func (conf *PosixConfigImpl) ClearConfigValue(k Key) error {
+func (conf *ConfigProviderImpl) ClearConfigValue(k Key) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.ClearValue(k.Name)
 }
 
-func (conf *PosixConfigImpl) ConfigValueExists(k Key) bool {
+func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
 	store := conf.GetStorageForNamespace(k)
 	return store.HasValue(k.Name)
 }
 
-func (conf *PosixConfigImpl) FactoryResetConfig() error {
+func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
 		log.Info("Storage get failed")
 		return lib.CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND
@@ -169,7 +174,7 @@ func (conf *PosixConfigImpl) FactoryResetConfig() error {
 	return nil
 }
 
-func (conf *PosixConfigImpl) FactoryResetCounters() error {
+func (conf *ConfigProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
 		log.Info("Storage get failed")
 		return lib.CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND
@@ -187,7 +192,7 @@ func (conf *PosixConfigImpl) FactoryResetCounters() error {
 	return nil
 }
 
-func (conf *PosixConfigImpl) RunConfigUnitTest() {
+func (conf *ConfigProviderImpl) RunConfigUnitTest() {
 	//TODO implement me
 	panic("implement me")
 }
@@ -197,29 +202,29 @@ type Key struct {
 	Name      string
 }
 
-func (conf *PosixConfigImpl) GetStorageForNamespace(k Key) storage.PersistentStorageDelegate {
+func (conf *ConfigProviderImpl) GetStorageForNamespace(k Key) storage.PersistentStorageDelegate {
 	if k.Namespace == KConfigNamespace_ChipFactory {
 		if conf.mChipFactoryStorage == nil {
-			conf.mChipFactoryStorage = &storage.PersistentStorageImpl{}
+			conf.mChipFactoryStorage = storage.NewPersistentStorageImpl()
 		}
 		return conf.mChipFactoryStorage
 	}
 	if k.Namespace == KConfigNamespace_ChipConfig {
 		if conf.mChipConfigStorage == nil {
-			conf.mChipConfigStorage = &storage.PersistentStorageImpl{}
+			conf.mChipConfigStorage = storage.NewPersistentStorageImpl()
 		}
 		return conf.mChipConfigStorage
 	}
-	if k.Namespace == KConfigNamespace_ChipFactory {
+	if k.Namespace == KConfigNamespace_ChipCounters {
 		if conf.mChipCountersStorage == nil {
-			conf.mChipCountersStorage = &storage.PersistentStorageImpl{}
+			conf.mChipCountersStorage = storage.NewPersistentStorageImpl()
 		}
 		return conf.mChipCountersStorage
 	}
 	return nil
 }
 
-func (conf *PosixConfigImpl) EnsureNamespace(k string) error {
+func (conf *ConfigProviderImpl) EnsureNamespace(k string) error {
 	if k == KConfigNamespace_ChipFactory {
 		if conf.mChipFactoryStorage == nil {
 			conf.mChipFactoryStorage = &storage.PersistentStorageImpl{}

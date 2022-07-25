@@ -24,7 +24,7 @@ type TxtResponder struct {
 }
 
 func (t *TxtResponder) GetRecord() *Record {
-	return &Record{&t.TXT}
+	return NewRecord(&t.TXT)
 }
 
 func (t *TxtResponder) GetClass() uint16 {

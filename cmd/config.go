@@ -25,7 +25,6 @@ func (c *command) initConfiguratorOptionsCmd() (err error) {
 
 		},
 		PreRunE: func(i *cobra.Command, args []string) error {
-			config.FlagsDeviceOptions(i)
 			config.HandleCHIPConfig(i)
 			err := c.config.BindPFlags(i.Flags())
 			return err

@@ -91,6 +91,17 @@ type ConfigurationManagerImpl struct {
 	ConfigProvider
 }
 
+var instance *ConfigurationManagerImpl
+var _once sync.Once
+
+func ConfigurationMgr() *ConfigurationManagerImpl {
+	_once.Do(func() {
+		instance = &ConfigurationManagerImpl{}
+		instance.ConfigProvider = NewConfigProviderImpl()
+	})
+	return instance
+}
+
 func (c *ConfigurationManagerImpl) GetRegulatoryLocation() (location uint8, err error) {
 	//TODO implement me
 	panic("implement me")
@@ -224,23 +235,6 @@ func (c *ConfigurationManagerImpl) GetSecondaryPairingInstruction() (string, err
 func (c *ConfigurationManagerImpl) GetLocationCapability() (uint8, error) {
 	//TODO implement me
 	panic("implement me")
-}
-
-var instance *ConfigurationManagerImpl
-var _once sync.Once
-
-func ConfigurationMgr() *ConfigurationManagerImpl {
-	_once.Do(func() {
-		instance = &ConfigurationManagerImpl{}
-	})
-	return instance
-}
-
-func GetDefaultInstance() *ConfigurationManagerImpl {
-	_once.Do(func() {
-		instance = &ConfigurationManagerImpl{}
-	})
-	return instance
 }
 
 func (c *ConfigurationManagerImpl) Init(provider ConfigProvider) (*ConfigurationManagerImpl, error) {

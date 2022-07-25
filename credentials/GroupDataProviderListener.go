@@ -1,7 +1,7 @@
-package server
+package credentials
 
 type GroupDataProviderListener interface {
-	Init(s *Server) error
+	Init(s ServerDelegate) error
 }
 
 type GroupDataProviderListenerImpl struct {

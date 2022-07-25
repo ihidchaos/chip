@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
-	"github.com/galenliu/chip/controller"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
@@ -40,14 +39,14 @@ type Server struct {
 
 	mGroupsProvider           credentials.GroupDataProvider
 	mTestEventTriggerDelegate TestEventTriggerDelegate
-	mFabricDelegate           ServerFabricDelegate
+	mFabricDelegate           credentials.ServerFabricDelegate
 	mSessionResumptionStorage any
 	mExchangeMgr              messageing.ExchangeManager
 	mAttributePersister       lib.AttributePersistenceProvider //unknown
 	mAclStorage               AclStorage
 	mTransports               transport.TransportManager
 	mSessions                 transport.SessionManager
-	mListener                 GroupDataProviderListener
+	mListener                 credentials.GroupDataProviderListener
 }
 
 func NewCHIPServer(initParams *ServerInitParams) (*Server, error) {
@@ -176,7 +175,7 @@ func NewCHIPServer(initParams *ServerInitParams) (*Server, error) {
 	//#endif // CHIP_CONFIG_ENABLE_SERVER_IM_EVENT
 
 	//// This initializes clusters, so should come after lower level initialization.
-	controller.InitDataModelHandler(s.mExchangeMgr)
+	messageing.InitDataModelHandler(s.mExchangeMgr)
 
 	//#if defined(CHIP_APP_USE_ECHO)
 	//	err = InitEchoHandler(&mExchangeMgr);

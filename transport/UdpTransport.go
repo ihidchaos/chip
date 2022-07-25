@@ -6,10 +6,9 @@ import (
 )
 
 type UdpListenParameters struct {
-	mAddr            netip.Addr
-	mPort            uint16
-	mNativeParams    func()
-	mEndPointManager udp_endpoint.UDPEndpoint
+	mAddr         netip.Addr
+	mPort         uint16
+	mNativeParams func()
 }
 
 func (p *UdpListenParameters) SetListenPort(port uint16) {

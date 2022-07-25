@@ -46,7 +46,7 @@ func newCommand(opts ...option) (c *command, err error) {
 		return nil, err
 	}
 
-	err = c.newCommission()
+	err = c.intCommission()
 	if err != nil {
 		return nil, err
 	}

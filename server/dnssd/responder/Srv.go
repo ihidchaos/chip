@@ -23,7 +23,7 @@ func NewSrvResponder(qName string, serverName string, port uint16) *SrvResponder
 }
 
 func (s *SrvResponder) GetRecord() *Record {
-	return &Record{&s.SRV}
+	return NewRecord(&s.SRV)
 }
 
 func (s SrvResponder) GetClass() uint16 {

@@ -5,13 +5,7 @@ import "fmt"
 type filterType uint8
 
 type Uint interface {
-	~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint
-}
-
-type Filter[T Uint] struct {
-	Type         filterType
-	Code         T
-	InstanceName string
+	~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint | ~int
 }
 
 const (

@@ -2,8 +2,6 @@ package responder
 
 import (
 	"github.com/miekg/dns"
-	"net"
-	"net/netip"
 )
 
 type IPv4Responder struct {
@@ -27,11 +25,6 @@ func (ip *IPv4Responder) GetTtl() uint32 {
 	return ip.Hdr.Ttl
 }
 
-func (ip *IPv4Responder) AddAllResponses(srcAddrPort, destAddrPort netip.AddrPort, interfaceId net.Interface, delegate Delegate, configuration *ResponseConfiguration) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (ip *IPv4Responder) SetTtl(ttl uint32) {
 	ip.Header().Ttl = ttl
 }
@@ -49,5 +42,5 @@ func (ip *IPv4Responder) GetType() uint16 {
 }
 
 func (ip *IPv4Responder) GetRecord() *Record {
-	return &Record{&ip.A}
+	return NewRecord(&ip.A)
 }

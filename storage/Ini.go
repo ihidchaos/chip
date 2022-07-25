@@ -26,6 +26,12 @@ type iniStorageImpl struct {
 	mConfigStore *gini.File
 }
 
+func NewIniStorage() *iniStorageImpl {
+	s := &iniStorageImpl{}
+	s.mConfigStore = gini.Empty()
+	return s
+}
+
 func (i iniStorageImpl) Init() error {
 	return i.RemoveAll()
 }
@@ -55,23 +61,16 @@ func (i iniStorageImpl) RemoveAll() error {
 
 func (i *iniStorageImpl) AddConfig(configFile string) error {
 	var err error
-	if i.mConfigStore == nil {
-		_, err = os.ReadFile(configFile)
-		if err != nil {
-			_, err = os.Create(configFile)
-			if err != nil {
-				return err
-			}
-		}
-		i.mConfigStore, err = gini.Load(configFile)
+	_, err = os.ReadFile(configFile)
+	if err != nil {
+		_, err = os.Create(configFile)
 		if err != nil {
 			return err
 		}
-	} else {
-		err := i.mConfigStore.Append(configFile)
-		if err != nil {
-			return err
-		}
+	}
+	i.mConfigStore, err = gini.Load(configFile)
+	if err != nil {
+		return err
 	}
 	return nil
 }

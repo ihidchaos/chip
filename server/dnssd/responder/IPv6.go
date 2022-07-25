@@ -17,7 +17,7 @@ func NewIPv6Responder(qname string) *IPv6Responder {
 }
 
 func (ipv6 IPv6Responder) GetRecord() *Record {
-	return &Record{&ipv6.AAAA}
+	return NewRecord(&ipv6.AAAA)
 }
 
 func (ipv6 IPv6Responder) GetClass() uint16 {
