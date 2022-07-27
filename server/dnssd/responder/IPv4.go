@@ -29,18 +29,26 @@ func (ip *IPv4Responder) SetTtl(ttl uint32) {
 	ip.Header().Ttl = ttl
 }
 
-func (ip *IPv4Responder) GetName() string {
+func (ip *IPv4Responder) GetQName() string {
 	return ip.A.Hdr.Name
 }
 
-func (ip *IPv4Responder) GetClass() uint16 {
+func (ip *IPv4Responder) GetQClass() uint16 {
 	return ip.A.Hdr.Class
 }
 
-func (ip *IPv4Responder) GetType() uint16 {
+func (ip *IPv4Responder) GetQType() uint16 {
 	return ip.A.Hdr.Rrtype
 }
 
 func (ip *IPv4Responder) GetRecord() *Record {
 	return NewRecord(&ip.A)
+}
+
+type AddResponder interface {
+	Append(rr dns.RR)
+}
+
+func (ip *IPv4Responder) AddRecord(r AddResponder) {
+	r.Append(ip.GetRecord())
 }

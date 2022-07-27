@@ -14,14 +14,15 @@ func (c *command) intCommission() (err error) {
 		Short: "commission mode",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 
-			options := config.GetDeviceOptions(c.config)
-			err = app.AppMainInit(options)
+			deviceOption := config.NewDeviceOptions()
+			deviceOption, _ = deviceOption.Init(c.config)
+			err = app.AppMainInit(deviceOption)
 			if err != nil {
 				log.Infof(err.Error())
 				return err
 			}
 
-			err = app.AppMainLoop()
+			err = app.AppMainLoop(deviceOption)
 			if err != nil {
 				log.Infof(err.Error())
 				return err

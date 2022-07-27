@@ -26,15 +26,15 @@ func (s *SrvResponder) GetRecord() *Record {
 	return NewRecord(&s.SRV)
 }
 
-func (s SrvResponder) GetClass() uint16 {
+func (s SrvResponder) GetQClass() uint16 {
 	return s.Hdr.Class
 }
 
-func (s SrvResponder) GetName() string {
+func (s SrvResponder) GetQName() string {
 	return s.Hdr.Name
 }
 
-func (s SrvResponder) GetType() uint16 {
+func (s SrvResponder) GetQType() uint16 {
 	return s.Hdr.Rrtype
 }
 

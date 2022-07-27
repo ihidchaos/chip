@@ -13,7 +13,7 @@ var (
 	ChipDeviceConfigEnablePairingAutostartName  = "pairing-autostart"
 	ChipDeviceConfigEnablePairingAutostartUsage = "Chip Device Config Enable Pairing Autostart"
 
-	ChipDeviceConfigEnableCommissionerDiscovery      bool
+	ChipDeviceConfigEnableCommissionerDiscovery      = 1
 	ChipDeviceConfigEnableCommissionerDiscoveryName  = "enable-commissioner-discover"
 	ChipDeviceConfigEnableCommissionerDiscoveryUsage = "Chip Device Config Enable Commissioner Discovery"
 
@@ -49,7 +49,7 @@ func HandleCHIPConfig(cmd *cobra.Command) {
 		ChipDeviceConfigEnablePairingAutostart,
 		ChipDeviceConfigEnablePairingAutostartUsage)
 
-	cmd.Flags().BoolVar(&ChipDeviceConfigEnableCommissionerDiscovery,
+	cmd.Flags().IntVar(&ChipDeviceConfigEnableCommissionerDiscovery,
 		ChipDeviceConfigEnableCommissionerDiscoveryName,
 		ChipDeviceConfigEnableCommissionerDiscovery,
 		ChipDeviceConfigEnableCommissionerDiscoveryUsage)

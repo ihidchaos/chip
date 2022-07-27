@@ -17,15 +17,15 @@ func NewPtrResponder(name, target string) *PtrResponder {
 	return ptr
 }
 
-func (p *PtrResponder) GetClass() uint16 {
+func (p *PtrResponder) GetQClass() uint16 {
 	return p.Hdr.Class
 }
 
-func (p *PtrResponder) GetName() string {
+func (p *PtrResponder) GetQName() string {
 	return p.Hdr.Name
 }
 
-func (p *PtrResponder) GetType() uint16 {
+func (p *PtrResponder) GetQType() uint16 {
 	return p.Hdr.Rrtype
 }
 

@@ -8,3 +8,11 @@ type ExchangeManager interface {
 
 type ExchangeManagerImpl struct {
 }
+
+func NewExchangeManagerImpl() *ExchangeManagerImpl {
+	return &ExchangeManagerImpl{}
+}
+
+func (e ExchangeManagerImpl) Init(sessions transport.SessionManager) error {
+	return nil
+}

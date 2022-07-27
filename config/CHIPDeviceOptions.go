@@ -143,6 +143,28 @@ type DeviceOptions struct {
 	TestEventTriggerEnableKey []byte
 }
 
+type PayloadContents struct {
+	Version               uint8
+	VendorID              uint16
+	ProductID             uint16
+	CommissioningFlow     uint8
+	RendezvousInformation uint8
+	Discriminator         uint16
+	SetUpPINCode          uint32
+
+	IsValidQRCodePayload bool
+	IsValidManualCode    bool
+	IsShortDiscriminator bool
+}
+
+func (p PayloadContents) CheckPayloadCommonConstraints() bool {
+	return true
+}
+
+func NewDeviceOptions() *DeviceOptions {
+	return GetDeviceOptionsInstance()
+}
+
 var _instance *DeviceOptions
 var _once sync.Once
 
@@ -175,7 +197,7 @@ func SetDeviceOptions(c *cobra.Command) {
 	c.Flags().String(DeviceOptionInterfaceId.Key, cast.ToString(DeviceOptionInterfaceId.DefaultValue), DeviceOptionInterfaceId.Usage)
 }
 
-func GetDeviceOptions(config *viper.Viper) *DeviceOptions {
+func (d *DeviceOptions) Init(config *viper.Viper) (*DeviceOptions, error) {
 
 	GetDeviceOptionsInstance().Payload.Version = uint8(config.GetUint(DeviceOptionVersion.Key))
 	GetDeviceOptionsInstance().Payload.VendorID = uint16(config.GetUint32(DeviceOptionVendorID.Key))
@@ -191,5 +213,5 @@ func GetDeviceOptions(config *viper.Viper) *DeviceOptions {
 	GetDeviceOptionsInstance().TraceStreamDecodeEnabled = false
 	GetDeviceOptionsInstance().TraceStreamToLogEnabled = false
 
-	return GetDeviceOptionsInstance()
+	return d, nil
 }

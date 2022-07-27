@@ -3,9 +3,9 @@ package lib
 import "fmt"
 
 var (
-	CHIP_ERROR_INVALID_ARGUMENT        = fmt.Errorf("CHIP_ERROR_INVALID_ARGUMENT")
-	CHIP_ERROR_INCORRECT_STATE         = fmt.Errorf("CHIP_ERROR_INCORRECT_STATE")
-	CHIP_ERROR_NOT_IMPLEMENTED         = fmt.Errorf("CHIP_ERROR_NOT_IMPLEMENTED")
-	CHIP_ERROR_INTERNAL                = fmt.Errorf("CHIP_ERROR_INTERNAL")
-	CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND = fmt.Errorf("CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND")
+	ChipErrorInvalidArgument      = fmt.Errorf("CHIP_ERROR_INVALID_ARGUMENT")
+	ChipErrorIncorrectState       = fmt.Errorf("CHIP_ERROR_INCORRECT_STATE")
+	ChipErrorNotImplemented       = fmt.Errorf("CHIP_ERROR_NOT_IMPLEMENTED")
+	ChipErrorInternal             = fmt.Errorf("CHIP_ERROR_INTERNAL")
+	ChipDeviceErrorConfigNotFound = fmt.Errorf("CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND")
 )

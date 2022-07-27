@@ -12,6 +12,10 @@ type AttributePersistence struct {
 	mStorage storage.PersistentStorageDelegate
 }
 
+func NewAttributePersistence() *AttributePersistence {
+	return &AttributePersistence{}
+}
+
 func (p AttributePersistence) Init(storage storage.PersistentStorageDelegate) (err error) {
 	p.mStorage = storage
 	return

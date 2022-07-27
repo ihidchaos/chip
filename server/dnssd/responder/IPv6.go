@@ -20,15 +20,15 @@ func (ipv6 IPv6Responder) GetRecord() *Record {
 	return NewRecord(&ipv6.AAAA)
 }
 
-func (ipv6 IPv6Responder) GetClass() uint16 {
+func (ipv6 IPv6Responder) GetQClass() uint16 {
 	return ipv6.Header().Class
 }
 
-func (ipv6 IPv6Responder) GetName() string {
+func (ipv6 IPv6Responder) GetQName() string {
 	return ipv6.Header().Name
 }
 
-func (ipv6 IPv6Responder) GetType() uint16 {
+func (ipv6 IPv6Responder) GetQType() uint16 {
 	return ipv6.Hdr.Rrtype
 }
 

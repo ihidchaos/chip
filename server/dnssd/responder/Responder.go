@@ -7,9 +7,9 @@ import (
 const DefaultTtl uint32 = 120
 
 type RecordResponder interface {
-	GetClass() uint16
-	GetName() string
-	GetType() uint16
+	GetQClass() uint16
+	GetQName() string
+	GetQType() uint16
 	GetTtl() uint32
 	SetTtl(uint32)
 	RecordProvider

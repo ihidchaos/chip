@@ -27,15 +27,15 @@ func (t *TxtResponder) GetRecord() *Record {
 	return NewRecord(&t.TXT)
 }
 
-func (t *TxtResponder) GetClass() uint16 {
+func (t *TxtResponder) GetQClass() uint16 {
 	return t.Hdr.Class
 }
 
-func (t *TxtResponder) GetName() string {
+func (t *TxtResponder) GetQName() string {
 	return t.Hdr.Name
 }
 
-func (t *TxtResponder) GetType() uint16 {
+func (t *TxtResponder) GetQType() uint16 {
 	return t.Hdr.Rrtype
 }
 

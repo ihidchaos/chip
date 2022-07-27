@@ -28,31 +28,55 @@ func AppMainInit(options *config.DeviceOptions) error {
 		log.Infof(err.Error())
 	}
 
-	mgr, err := platform.ConfigurationMgr().Init(platform.GetConfigProviderInstance())
-	_ = platform.NewDeviceInstanceInfo(mgr)
-
-	_, err = DeviceLayer.NewCommissionableData(options)
+	configProvider := config.NewConfigProviderImpl()
+	configMgr := config.NewConfigurationManagerImpl()
+	configMgr, err = configMgr.Init(configProvider, options)
 	if err != nil {
+		log.Infof(err.Error())
+		return err
+	}
+
+	deviceInstanceInfo := platform.NewDeviceInstanceInfo()
+	deviceInstanceInfo, err = deviceInstanceInfo.Init(configMgr)
+	if err != nil {
+		log.Infof(err.Error())
+		return err
+	}
+
+	commissionableDataProvider := DeviceLayer.NewCommissionableDataImpl()
+	commissionableDataProvider, err = commissionableDataProvider.Init(options)
+	if err != nil {
+		log.Infof(err.Error())
 		return err
 	}
 	return nil
 }
 
-func AppMainLoop() error {
+func AppMainLoop(options *config.DeviceOptions) error {
 
-	serverInitParams := server.NewCommonCaseDeviceServerInitParams()
+	serverInitParams := server.NewServerInitParams()
+	_, err := serverInitParams.Init(options)
+	if err != nil {
+		log.Infof(err.Error())
+		return err
+	}
 
-	err := serverInitParams.InitializeStaticResourcesBeforeServerInit()
+	err = serverInitParams.InitializeStaticResourcesBeforeServerInit()
+	if err != nil {
+		log.Infof(err.Error())
+		return err
+	}
+	chipServer := server.NewCHIPServer()
+	chipServer, err = chipServer.Init(serverInitParams)
 	if err != nil {
 		return err
 	}
-	chip, _ := server.NewCHIPServer(&serverInitParams.ServerInitParams)
-	RunLoop()
-	chip.Shutdown()
+	WaitSignal()
+	chipServer.Shutdown()
 	return nil
 }
 
-func RunLoop() {
+func WaitSignal() {
 	sigs := make(chan os.Signal, 1)
 
 	done := make(chan bool, 1)
