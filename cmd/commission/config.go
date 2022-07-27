@@ -1,4 +1,4 @@
-package cmd
+package commission
 
 import (
 	"github.com/galenliu/chip/config"

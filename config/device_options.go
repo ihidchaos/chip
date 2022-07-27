@@ -6,116 +6,116 @@ import (
 	"github.com/spf13/viper"
 	"net"
 	"os"
-	"path"
+	"path/filepath"
 	"sync"
 )
 
 func getDefaultKVS() string {
 	dir, _ := os.UserHomeDir()
-	return path.Join(dir, "chip.ini")
+	return filepath.Join(dir, "chip.ini")
 }
 
-type ConfigFlag struct {
+type Flag struct {
 	Key          string
 	DefaultValue any
 	Usage        string
 }
 
 var (
-	DeviceOptionVersion = ConfigFlag{
+	DeviceOptionVersion = Flag{
 		Key:          "version",
 		DefaultValue: 0,
 		Usage:        "The version indication provides versioning of the setup payload.\n",
 	}
 
-	DeviceOptionVendorID = ConfigFlag{
+	DeviceOptionVendorID = Flag{
 		"vendor-id",
 		0,
 		"The Vendor ID is assigned by the Connectivity Standards Alliance.\n",
 	}
 
-	DeviceOptionProductID = ConfigFlag{
+	DeviceOptionProductID = Flag{
 		"product-id",
 		0,
 		"The Product ID is specified by vendor.\n",
 	}
 
-	DeviceOptionCustomFlow = ConfigFlag{
+	DeviceOptionCustomFlow = Flag{
 		"custom-flow",
 		0,
 		"A 2-bit unsigned enumeration specifying manufacturer-specific custom flow options.\n",
 	}
 
-	DeviceOptionCapabilities = ConfigFlag{
+	DeviceOptionCapabilities = Flag{
 		"capabilities",
 		0,
 		"Discovery Capabilities Bitmask which contains information about Device’s available technologies for device discovery.\n",
 	}
 
-	DeviceOptionDiscriminator = ConfigFlag{
+	DeviceOptionDiscriminator = Flag{
 		"discriminator",
 		0,
 		"A 12-bit unsigned integer match the value which a device advertises during commissioning.\n",
 	}
 
-	DeviceOptionPasscode = ConfigFlag{
+	DeviceOptionPasscode = Flag{
 		"passcode",
 		0xFFFFFFF,
 		"A 27-bit unsigned integer, which serves as proof of possession during commissioning. If not provided to compute a verifier, the --spake2p-verifier-base64 must be provided. \n",
 	}
 
-	DeviceOptionSpake2pVerifierBase64 = ConfigFlag{
+	DeviceOptionSpake2pVerifierBase64 = Flag{
 		"spake2p-verifier-base64",
 		0xFFFFF,
 		"A raw concatenation of 'W0' and 'L' (67 bytes) as base64 to override the verifier auto-computed from the passcode, if provided.\n",
 	}
 
-	DeviceOptionSpake2pSaltBase64 = ConfigFlag{
+	DeviceOptionSpake2pSaltBase64 = Flag{
 		"spake2p-salt-base64",
 		0,
 		"16-32 bytes of salt to use for the PASE verifier, as base64. If omitted, will be generated randomly. If a --spake2p-verifier-base64 is passed, it must match against the salt otherwise failure will arise.\n",
 	}
 
-	DeviceOptionSpake2pIterations = ConfigFlag{
+	DeviceOptionSpake2pIterations = Flag{
 		"spake2p-iterations",
 		0,
 		"Number of PB DF iterations to use. If omitted, will be 1000. If a --spake2p-verifier-base64 is passed, the iteration counts must match that used to generate the verifier otherwise failure will arise.\n",
 	}
 
-	DeviceOptionSecuredDevicePort = ConfigFlag{
+	DeviceOptionSecuredDevicePort = Flag{
 		"secured-device-port",
 		5540,
 		"A 16-bit unsigned integer specifying the listen port to use for secure device messages (default is 5540).\n",
 	}
 
-	DeviceOptionSecuredCommissionerPort = ConfigFlag{
+	DeviceOptionSecuredCommissionerPort = Flag{
 		"secured-commissioner-port",
 		5542,
 		"A 16-bit unsigned integer specifying the listen port to use for secure commissioner messages (default is 5542). Only valid when app is both device and commissioner.\n",
 	}
 
-	DeviceOptionUnsecuredCommissionerPort = ConfigFlag{
+	DeviceOptionUnsecuredCommissionerPort = Flag{
 		"unsecured-commissioner-port",
 		5550,
 		"A 16-bit unsigned integer specifying the port to use for unsecured commissioner messages (default is 5550).\n",
 	}
 
-	DeviceOptionCommand = ConfigFlag{
+	DeviceOptionCommand = Flag{
 		"command",
 		"command",
 		"A name for a command to execute during startup.\n"}
 
-	DeviceOptionPics = ConfigFlag{
+	DeviceOptionPics = Flag{
 		"PICS",
 		"",
 		"A file containing PICS items.\n"}
 
-	DeviceOptionKvs = ConfigFlag{
+	DeviceOptionKvs = Flag{
 		"KVS",
 		getDefaultKVS(),
 		"A file to store Key Value Store items.\n"}
 
-	DeviceOptionInterfaceId = ConfigFlag{
+	DeviceOptionInterfaceId = Flag{
 		"interface-id",
 		"interface-id",
 		"A interface id to advertise on.\n"}

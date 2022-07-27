@@ -156,17 +156,17 @@ func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
 
 func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
-		log.Info("Storage get failed")
+		log.Printf("Storage get failed")
 		return lib.ChipDeviceErrorConfigNotFound
 	}
 	err := conf.mChipFactoryStorage.ClearAll()
 	if err != nil {
-		log.Info("Storage ClearAll failed: %s", err.Error())
+		log.Printf("Storage ClearAll failed: %s", err.Error())
 		return err
 	}
 	err = conf.mChipFactoryStorage.Commit()
 	if err != nil {
-		log.Info("Storage Commit failed: %s", err.Error())
+		log.Printf("Storage Commit failed: %s", err.Error())
 		return err
 	}
 	return nil
@@ -174,17 +174,17 @@ func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 
 func (conf *ConfigProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
-		log.Info("Storage get failed")
+		log.Printf("Storage get failed")
 		return lib.ChipDeviceErrorConfigNotFound
 	}
 	err := conf.mChipCountersStorage.ClearAll()
 	if err != nil {
-		log.Info("Storage ClearAll failed: %s", err.Error())
+		log.Printf("Storage ClearAll failed: %s", err.Error())
 		return err
 	}
 	err = conf.mChipCountersStorage.Commit()
 	if err != nil {
-		log.Info("Storage Commit failed: %s", err.Error())
+		log.Printf("Storage Commit failed: %s", err.Error())
 		return err
 	}
 	return nil

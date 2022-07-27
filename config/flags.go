@@ -1,5 +1,9 @@
 package config
 
+import (
+	"github.com/galenliu/chip/system"
+)
+
 var (
 	ChipDeviceConfigDeviceVendorId                     uint16 = 0xFFF1
 	ChipDeviceConfigDeviceProductName                         = "TEST_PRODUCT"
@@ -23,12 +27,8 @@ const (
 	kconfigkeyHardwareversion   = "hardware-ver"
 )
 
-const (
-	FatConfDir     = "/tmp"
-	SysConfDir     = "/tmp"
-	LocalStatedDir = "/tmp"
-
-	ChipDefaultFactoryPath = FatConfDir + "/chip_factory.ini"
-	ChipDefaultConfigPath  = SysConfDir + "/chip_config.ini"
-	ChipDefaultDataPath    = LocalStatedDir + "/chip_counters.ini"
+var (
+	ChipDefaultFactoryPath = system.GetFatConFile()
+	ChipDefaultConfigPath  = system.GetSysConFile()
+	ChipDefaultDataPath    = system.GetLocalConFile()
 )

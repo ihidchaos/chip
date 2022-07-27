@@ -2,7 +2,6 @@ package dnssd
 
 import (
 	"github.com/galenliu/chip/core"
-	System "github.com/galenliu/chip/system"
 )
 
 const (
@@ -42,7 +41,6 @@ type Resolver interface {
 type MinMdnsResolver struct {
 	mOperationalDelegate   OperationalResolveDelegate
 	mCommissioningDelegate CommissioningResolveDelegate
-	mSystemLayer           System.Layer
 	//ActiveResolveAttempts mActiveResolves;
 	//PacketParser mPacketParser;
 }
