@@ -6,13 +6,13 @@ import (
 )
 
 type SessionManager interface {
-	Init(transports TransportManager, storage storage.PersistentStorageDelegate, table *credentials.FabricTable) error
+	Init(transports TransportManager, storage storage.StorageDelegate, table *credentials.FabricTable) error
 }
 
 type SessionManagerImpl struct {
 }
 
-func (s SessionManagerImpl) Init(transports TransportManager, storage storage.PersistentStorageDelegate, table *credentials.FabricTable) error {
+func (s SessionManagerImpl) Init(transports TransportManager, storage storage.StorageDelegate, table *credentials.FabricTable) error {
 	return nil
 }
 

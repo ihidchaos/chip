@@ -1,6 +1,8 @@
-package core
+package device
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const kUndefinedCompressedFabricId CompressedFabricId = 0
 

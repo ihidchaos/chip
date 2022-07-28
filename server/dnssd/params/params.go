@@ -1,7 +1,7 @@
 package params
 
 import (
-	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/internal"
 	"github.com/galenliu/chip/messageing"
 	"net"
 )
@@ -68,7 +68,7 @@ func (b *BaseAdvertisingParams) EnableIpV4(enable bool) {
 
 func (b *BaseAdvertisingParams) GetTcpSupported() (bool, error) {
 	if b.mTcpSupported == nil {
-		return false, lib.ChipErrorIncorrectState
+		return false, internal.ChipErrorIncorrectState
 	}
 	return *b.mTcpSupported, nil
 }

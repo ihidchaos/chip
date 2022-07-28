@@ -1,26 +1,29 @@
-package server
+package chip
 
 import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/crypto"
+	storage2 "github.com/galenliu/chip/crypto/persistent_storage"
+	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/server"
 	"github.com/galenliu/chip/storage"
 	"net"
 )
 
-type SessionResumptionStorage interface {
-}
-
 type CommonCaseDeviceServerInitParams struct {
-	ServerInitParams
+	InitParams
 }
 
 type IgnoreCertificateValidityPolicy struct {
 	credentials.CertificateValidityPolicy
 }
 
-type ServerInitParams struct {
+func NewIgnoreCertificateValidityPolicy() *IgnoreCertificateValidityPolicy {
+	return &IgnoreCertificateValidityPolicy{}
+}
+
+type InitParams struct {
 	OperationalServicePort        uint16
 	UserDirectedCommissioningPort uint16
 	InterfaceId                   net.Interface
@@ -31,7 +34,7 @@ type ServerInitParams struct {
 	PersistentStorageDelegate storage.PersistentStorageDelegate
 	// Session resumption storage: Optional. Support session resumption when provided.
 	// Must be initialized before being provided.
-	SessionResumptionStorage SessionResumptionStorage
+	SessionResumptionStorage lib.SessionResumptionStorage
 	// Certificate validity policy: Optional. If none is injected, CHIPCert
 	// enforces a default policy.
 
@@ -46,7 +49,7 @@ type ServerInitParams struct {
 	// ACL storage: MUST be injected. Used to store ACL entries in persistent storage. Must NOT
 	// be initialized before being provided.
 	//aclStorage app::AclStorage * aclStorage = nullptr;
-	AclStorage AclStorage
+	AclStorage server.AclStorage
 	// Network native params can be injected depending on the
 	// selected Endpoint implementation
 
@@ -56,28 +59,28 @@ type ServerInitParams struct {
 
 	// Optional. Support test event triggers when provided. Must be initialized before being
 	// provided.
-	TestEventTriggerDelegate TestEventTriggerDelegate
+	TestEventTriggerDelegate server.TestEventTriggerDelegate
 	// Operational keystore with access to the operational keys: MUST be injected.
-	OperationalKeystore crypto.PersistentStorageOperationalKeystore
+	OperationalKeystore storage2.PersistentStorageOperationalKeystore
 	// Operational certificate store with access to the operational certs in persisted storage:
 	// must not be null at timne of Server::initCommissionableData().
 	OpCertStore credentials.PersistentStorageOpCertStore
 }
 
-func NewServerInitParams() *ServerInitParams {
-	return &ServerInitParams{}
+func NewServerInitParams() *InitParams {
+	return &InitParams{}
 }
 
-func (p *ServerInitParams) Init(options *config.DeviceOptions) (*ServerInitParams, error) {
-	p.OperationalServicePort = options.SecuredDevicePort
-	p.UserDirectedCommissioningPort = options.UnsecuredCommissionerPort
-	p.InterfaceId = options.InterfaceId
-	return p, nil
+func (this *InitParams) Init(options *config.DeviceOptions) (*InitParams, error) {
+	this.OperationalServicePort = options.SecuredDevicePort
+	this.UserDirectedCommissioningPort = options.UnsecuredCommissionerPort
+	this.InterfaceId = options.InterfaceId
+	return this, nil
 }
 
 func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 	c := &CommonCaseDeviceServerInitParams{
-		ServerInitParams: ServerInitParams{
+		InitParams: InitParams{
 			OperationalKeystore:           nil,
 			OperationalServicePort:        config.GetDeviceOptionsInstance().SecuredDevicePort,
 			UserDirectedCommissioningPort: config.GetDeviceOptionsInstance().UnsecuredCommissionerPort,
@@ -87,51 +90,59 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 	return c
 }
 
-func (p *ServerInitParams) InitializeStaticResourcesBeforeServerInit() error {
+func (this *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 	var sKvsPersistentStorageDelegate storage.PersistentStorageDelegate
-	var sPersistentStorageOperationalKeystore crypto.PersistentStorageOperationalKeystore
-	var sPersistentStorageOpCertStore credentials.PersistentStorageOpCertStore
-	var sGroupDataProvider credentials.GroupDataProvider
-	var sDefaultCertValidityPolicy credentials.CertificateValidityPolicy
+	var sPersistentStorageOperationalKeystore = storage2.NewPersistentStorageOperationalKeystoreImpl()
+	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
+	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
+	var sDefaultCertValidityPolicy = NewIgnoreCertificateValidityPolicy()
 
-	if p.PersistentStorageDelegate == nil {
+	var sSessionResumptionStorage = lib.NewSimpleSessionResumptionStorage()
+
+	if this.PersistentStorageDelegate == nil {
 		sKvsPersistentStorageDelegate = storage.KeyValueStoreMgr()
-		p.PersistentStorageDelegate = sKvsPersistentStorageDelegate
+		this.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 
-	if p.OperationalKeystore == nil {
-		sPersistentStorageOperationalKeystore = crypto.NewPersistentStorageOperationalKeystoreImpl()
-		sPersistentStorageOperationalKeystore.Init(p.PersistentStorageDelegate)
-	}
-	if p.OpCertStore == nil {
-		sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
-		sPersistentStorageOpCertStore.Init(p.PersistentStorageDelegate)
-		p.OpCertStore = sPersistentStorageOpCertStore
+	if this.OperationalKeystore == nil {
+		sPersistentStorageOperationalKeystore.Init(this.PersistentStorageDelegate)
+		this.OperationalKeystore = sPersistentStorageOperationalKeystore
 	}
 
-	sGroupDataProvider = credentials.NewGroupDataProviderImpl()
-	sGroupDataProvider.SetStorageDelegate(p.PersistentStorageDelegate)
+	if this.OpCertStore == nil {
+		sPersistentStorageOpCertStore.Init(this.PersistentStorageDelegate)
+		this.OpCertStore = sPersistentStorageOpCertStore
+	}
+
+	sGroupDataProvider.SetStorageDelegate(this.PersistentStorageDelegate)
 	err := sGroupDataProvider.Init()
 	if err != nil {
 		return err
 	}
-	p.GroupDataProvider = sGroupDataProvider
+	this.GroupDataProvider = sGroupDataProvider
 
 	{
-		//TODO 根据配置 CHIP_CONFIG_ENABLE_SESSION_RESUMPTION 初始化
-		p.SessionResumptionStorage = nil
+		if config.ChipConfigEnableSessionResumption {
+			err := sSessionResumptionStorage.Init(this.PersistentStorageDelegate)
+			if err != nil {
+				return err
+			}
+			this.SessionResumptionStorage = sSessionResumptionStorage
+		} else {
+			this.SessionResumptionStorage = nil
+		}
+
 	}
 
-	p.AccessDelegate = access.GetAccessControlDelegate()
+	this.AccessDelegate = access.GetAccessControlDelegate()
 
 	{
 		//TODO 未实现
-		p.AclStorage = NewAclStorageImpl()
+		this.AclStorage = server.NewAclStorageImpl()
 	}
 
-	sDefaultCertValidityPolicy = IgnoreCertificateValidityPolicy{}
-	p.CertificateValidityPolicy = sDefaultCertValidityPolicy
+	this.CertificateValidityPolicy = sDefaultCertValidityPolicy
 
 	return nil
 }
@@ -139,18 +150,17 @@ func (p *ServerInitParams) InitializeStaticResourcesBeforeServerInit() error {
 func (p *CommonCaseDeviceServerInitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 	var sKvsPersistentStorageDelegate storage.PersistentStorageDelegate
-	var sPersistentStorageOperationalKeystore crypto.PersistentStorageOperationalKeystore
+	var sPersistentStorageOperationalKeystore storage2.PersistentStorageOperationalKeystore
 	var sPersistentStorageOpCertStore credentials.PersistentStorageOpCertStore
 	var sGroupDataProvider credentials.GroupDataProvider
-	var sDefaultCertValidityPolicy credentials.CertificateValidityPolicy
+	var sDefaultCertValidityPolicy = NewIgnoreCertificateValidityPolicy()
 
 	if p.PersistentStorageDelegate == nil {
 		sKvsPersistentStorageDelegate = storage.KeyValueStoreMgr()
 		p.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
-
 	if p.OperationalKeystore == nil {
-		sPersistentStorageOperationalKeystore = crypto.NewPersistentStorageOperationalKeystoreImpl()
+		sPersistentStorageOperationalKeystore = storage2.NewPersistentStorageOperationalKeystoreImpl()
 		sPersistentStorageOperationalKeystore.Init(p.PersistentStorageDelegate)
 	}
 	if p.OpCertStore == nil {
@@ -176,10 +186,9 @@ func (p *CommonCaseDeviceServerInitParams) InitializeStaticResourcesBeforeServer
 
 	{
 		//TODO 未实现
-		p.AclStorage = NewAclStorageImpl()
+		p.AclStorage = server.NewAclStorageImpl()
 	}
 
-	sDefaultCertValidityPolicy = IgnoreCertificateValidityPolicy{}
 	p.CertificateValidityPolicy = sDefaultCertValidityPolicy
 
 	return nil

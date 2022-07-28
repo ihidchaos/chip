@@ -2,11 +2,12 @@ package storage
 
 import "github.com/spf13/cast"
 
-type KvsPersistentStorageDelegate interface {
-	SyncGetKeyValue(key string) (string, error)
+type PersistentStorageDelegate interface {
+	SyncGetKeyValue(key string) (any, error)
 	SyncSetKeyValue(key string, value any) error
 	SyncDeleteKeyValue(key string) error
 	SyncDoesKeyExist(key string) bool
+	StorageDelegate
 }
 
 type KvsPersistentStorageImpl struct {
@@ -18,7 +19,7 @@ func NewKvsPersistentStorage() *KvsPersistentStorageImpl {
 	return impl
 }
 
-func (k KvsPersistentStorageImpl) SyncGetKeyValue(key string) (string, error) {
+func (k KvsPersistentStorageImpl) SyncGetKeyValue(key string) (any, error) {
 	return k.PersistentStorageImpl.ReadValueStr(key)
 }
 

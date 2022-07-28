@@ -1,10 +1,12 @@
 package params
 
-import "github.com/galenliu/chip/core"
+import (
+	"github.com/galenliu/chip/device"
+)
 
 type OperationalAdvertisingParameters struct {
 	BaseAdvertisingParams
-	mPeerId core.PeerId
+	mPeerId device.PeerId
 }
 
 func NewOperationalAdvertisingParameters() *OperationalAdvertisingParameters {
@@ -18,15 +20,15 @@ func (o OperationalAdvertisingParameters) Init() *OperationalAdvertisingParamete
 	return &o
 }
 
-func (o *OperationalAdvertisingParameters) SetPeerId(peerId core.PeerId) *OperationalAdvertisingParameters {
+func (o *OperationalAdvertisingParameters) SetPeerId(peerId device.PeerId) *OperationalAdvertisingParameters {
 	o.mPeerId = peerId
 	return o
 }
 
-func (o *OperationalAdvertisingParameters) GetCompressedFabricId() core.CompressedFabricId {
+func (o *OperationalAdvertisingParameters) GetCompressedFabricId() device.CompressedFabricId {
 	return o.mPeerId.GetCompressedFabricId()
 }
 
-func (o *OperationalAdvertisingParameters) GetPeerId() core.PeerId {
+func (o *OperationalAdvertisingParameters) GetPeerId() device.PeerId {
 	return o.mPeerId
 }

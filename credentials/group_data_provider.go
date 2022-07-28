@@ -5,13 +5,13 @@ import (
 )
 
 type GroupDataProvider interface {
-	SetStorageDelegate(delegate storage.PersistentStorageDelegate)
+	SetStorageDelegate(delegate storage.StorageDelegate)
 	Init() error
 	SetListener(listener GroupDataProviderListener)
 }
 
 type GroupDataProviderImpl struct {
-	mStorage storage.PersistentStorageDelegate
+	mStorage storage.StorageDelegate
 }
 
 func NewGroupDataProviderImpl() *GroupDataProviderImpl {
@@ -22,7 +22,7 @@ func (g GroupDataProviderImpl) SetListener(listener GroupDataProviderListener) {
 
 }
 
-func (g *GroupDataProviderImpl) SetStorageDelegate(delegate storage.PersistentStorageDelegate) {
+func (g *GroupDataProviderImpl) SetStorageDelegate(delegate storage.StorageDelegate) {
 	g.mStorage = delegate
 }
 

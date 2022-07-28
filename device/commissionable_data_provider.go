@@ -1,18 +1,18 @@
-package DeviceLayer
+package device
 
 import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/internal"
 	log "github.com/sirupsen/logrus"
 	"sync"
 )
 
 const (
-	KMaxDiscriminatorValue uint16 = 0xFFF
-
-	KMinSetupPasscode uint32 = 1
-	KMaxSetupPasscode uint32 = 0x5F5E0FE
+	KMaxDiscriminatorValue     uint16 = 0xFFF
+	KSpake2pMinPbkdfIterations uint32 = 1000
+	KMinSetupPasscode          uint32 = 1
+	KMaxSetupPasscode          uint32 = 0x5F5E0FE
 )
 
 type CommissionableDataProvider interface {
@@ -37,7 +37,7 @@ type CommissionableDataImpl struct {
 var _instance *CommissionableDataImpl
 var _once sync.Once
 
-func GetCommissionableDateProviderInstance() *CommissionableDataImpl {
+func GetCommissionableDateProvider() *CommissionableDataImpl {
 	_once.Do(func() {
 		if _instance == nil {
 			_instance = &CommissionableDataImpl{}
@@ -47,7 +47,7 @@ func GetCommissionableDateProviderInstance() *CommissionableDataImpl {
 }
 
 func NewCommissionableDataImpl() *CommissionableDataImpl {
-	return GetCommissionableDateProviderInstance()
+	return GetCommissionableDateProvider()
 }
 
 func (c *CommissionableDataImpl) Init(options *config.DeviceOptions) (*CommissionableDataImpl, error) {
@@ -66,16 +66,16 @@ func (c *CommissionableDataImpl) Init(options *config.DeviceOptions) (*Commissio
 	}
 
 	if options.Discriminator != 0 {
-		options.Payload.Discriminator = options.Discriminator
+		options.Payload.Discriminator.SetLongValue(options.Discriminator)
 	} else {
 		var testOnlyCommissionableDataProvider = TestOnlyCommissionableDataProvider{}
 		defaultTestDiscriminator, err := testOnlyCommissionableDataProvider.GetSetupDiscriminator()
 		if err != nil {
 			log.Panic(err.Error())
 		}
-		options.Payload.Discriminator = defaultTestDiscriminator
+		options.Payload.Discriminator.SetLongValue(defaultTestDiscriminator)
 	}
-	spake2pIterationCount := crypto.KSpake2p_Min_PBKDF_Iterations
+	spake2pIterationCount := KSpake2pMinPbkdfIterations
 	if options.Spake2pIterations != 0 {
 		spake2pIterationCount = options.Spake2pIterations
 	}
@@ -93,24 +93,24 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	discriminator uint16) error {
 
 	if c.mIsInitialized {
-		return lib.ChipErrorIncorrectState
+		return internal.ChipErrorIncorrectState
 	}
 	if discriminator > KMaxDiscriminatorValue {
 		log.Infof("Discriminator value invalid: %d", discriminator)
-		return lib.ChipErrorInvalidArgument
+		return internal.ChipErrorInvalidArgument
 	}
-	if spake2pIterationCount < crypto.KSpake2p_Min_PBKDF_Iterations || spake2pIterationCount > crypto.KSpake2p_Max_PBKDF_Iterations {
+	if spake2pIterationCount < KSpake2pMinPbkdfIterations || spake2pIterationCount > crypto.KSpake2pMaxPbkdfIterations {
 		log.Printf("PASE Iteration count invalid: %d", spake2pIterationCount)
-		return lib.ChipErrorInvalidArgument
+		return internal.ChipErrorInvalidArgument
 	}
 
 	spake2pVerifier := crypto.Spake2pVerifier{}
 	havePaseVerifier := serializedSpake2pVerifier != nil && len(serializedSpake2pVerifier) > 0
 	var finalSerializedVerifier []byte
 	if havePaseVerifier {
-		if len(serializedSpake2pVerifier) != crypto.KSpake2p_VerifierSerialized_Length {
+		if len(serializedSpake2pVerifier) != crypto.KSpake2pVerifierSerializedLength {
 			log.Error("PASE verifier size invalid: %d", len(serializedSpake2pVerifier))
-			return lib.ChipErrorInvalidArgument
+			return internal.ChipErrorInvalidArgument
 		}
 		err := spake2pVerifier.Deserialize(serializedSpake2pVerifier)
 		if err != nil {
@@ -122,13 +122,13 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	havePaseSalt := spake2pSalt != nil && len(spake2pSalt) > 0
 	if havePaseVerifier && !havePaseSalt {
 		log.Infof("CommissionableDataProvider didn't get a PASE salt, but got a verifier: ambiguous data")
-		return lib.ChipErrorInvalidArgument
+		return internal.ChipErrorInvalidArgument
 	}
 
 	spake2pSaltLength := len(spake2pSalt)
-	if havePaseSalt && ((spake2pSaltLength < crypto.KSpake2p_Min_PBKDF_Salt_Length) || (spake2pSaltLength > crypto.KSpake2p_Max_PBKDF_Salt_Length)) {
+	if havePaseSalt && ((spake2pSaltLength < crypto.KSpake2pMinPbkdfSaltLength) || (spake2pSaltLength > crypto.KSpake2pMaxPbkdfSaltLength)) {
 		log.Infof("PASE salt length invalid: %d", spake2pSaltLength)
-		return lib.ChipErrorInvalidArgument
+		return internal.ChipErrorInvalidArgument
 	}
 
 	if !havePaseSalt {
@@ -190,51 +190,51 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 
 func (c *CommissionableDataImpl) GetSetupDiscriminator() (uint16, error) {
 	if !c.mIsInitialized {
-		return 0, lib.ChipErrorIncorrectState
+		return 0, internal.ChipErrorIncorrectState
 	}
 	return c.mDiscriminator, nil
 }
 
 func (c *CommissionableDataImpl) SetSetupDiscriminator(uint16) error {
-	return lib.ChipErrorNotImplemented
+	return internal.ChipErrorNotImplemented
 }
 
 func (c *CommissionableDataImpl) GetSpake2pIterationCount() (uint32, error) {
 	if !c.mIsInitialized {
-		return 0, lib.ChipErrorIncorrectState
+		return 0, internal.ChipErrorIncorrectState
 	}
 	return c.mPaseIterationCount, nil
 }
 
 func (c *CommissionableDataImpl) GetSpake2pSalt() (bytes []byte, err error) {
 	if !c.mIsInitialized {
-		return nil, lib.ChipErrorIncorrectState
+		return nil, internal.ChipErrorIncorrectState
 	}
 	return c.mPaseSalt, nil
 }
 
 func (c *CommissionableDataImpl) GetSpake2pVerifier() ([]byte, error) {
 	if !c.mIsInitialized {
-		return nil, lib.ChipErrorIncorrectState
+		return nil, internal.ChipErrorIncorrectState
 	}
-	if len(c.mSerializedPaseVerifier) != crypto.KSpake2p_VerifierSerialized_Length {
-		return nil, lib.ChipErrorInternal
+	if len(c.mSerializedPaseVerifier) != crypto.KSpake2pVerifierSerializedLength {
+		return nil, internal.ChipErrorInternal
 	}
 	return c.mSerializedPaseVerifier, nil
 }
 
 func (c CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
 	if !c.mIsInitialized {
-		return 0, lib.ChipErrorIncorrectState
+		return 0, internal.ChipErrorIncorrectState
 	}
 	if c.mSetupPasscode == 0 {
-		return 0, lib.ChipErrorNotImplemented
+		return 0, internal.ChipErrorNotImplemented
 	}
 	return c.mSetupPasscode, nil
 }
 
 func (c CommissionableDataImpl) SetSetupPasscode(uint322 uint32) error {
-	return lib.ChipErrorNotImplemented
+	return internal.ChipErrorNotImplemented
 }
 
 func GeneratePaseSalt() ([]byte, error) {

@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -148,4 +149,12 @@ func EccVerify(plainText, rText, sTest []byte, publicKeyFile string) (b bool, er
 	err = s.UnmarshalText(sTest)
 	b = ecdsa.Verify(publicKey, hash[:], &r, &s)
 	return
+}
+
+type P256PublicKey struct {
+	crypto.PublicKey
+}
+
+type P256Keypair struct {
+	crypto.PrivateKey
 }

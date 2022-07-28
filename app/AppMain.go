@@ -3,9 +3,10 @@ package app
 import (
 	"fmt"
 	"github.com/galenliu/chip/config"
-	"github.com/galenliu/chip/device_layer"
-	"github.com/galenliu/chip/platform"
+	"github.com/galenliu/chip/credentials/device_attestation"
+	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/server"
+	"github.com/galenliu/chip/server/chip"
 	"github.com/galenliu/chip/storage"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -15,17 +16,34 @@ import (
 	"time"
 )
 
-func AppMainInit(options *config.DeviceOptions) error {
+func Init(options *config.DeviceOptions) error {
+
+	var rendezvousFlags uint8
+	if config.NetworkLayerBle {
+		rendezvousFlags = config.RendezvousInformationFlagBLE
+	} else {
+		rendezvousFlags = config.RendezvousInformationFlagOnNetwork
+	}
+
+	if config.RendezvousMode {
+		log.Infof("RendezvousMode")
+	}
 
 	err := storage.KeyValueStoreMgr().Init(options.KVS)
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
-	err = storage.KeyValueStoreMgr().WriteValueStr(fmt.Sprintf("%d", time.Now().Minute()), time.Now().String())
-
+	err = storage.KeyValueStoreMgr().WriteValueStr("Reboot", time.Now().String())
 	if err != nil {
 		log.Infof(err.Error())
+	}
+
+	commissionableDataProvider := device.NewCommissionableDataImpl()
+	commissionableDataProvider, err = commissionableDataProvider.Init(options)
+	if err != nil {
+		log.Infof(err.Error())
+		return err
 	}
 
 	configProvider := config.NewConfigProviderImpl()
@@ -36,25 +54,35 @@ func AppMainInit(options *config.DeviceOptions) error {
 		return err
 	}
 
-	deviceInstanceInfo := platform.NewDeviceInstanceInfo()
+	if options.Payload.RendezvousInformation != 0 {
+		rendezvousFlags = options.Payload.RendezvousInformation
+	}
+	err = server.GetPayloadContents(&options.Payload, rendezvousFlags)
+	if err != nil {
+		return err
+	}
+
+	{
+		options.Payload.CommissioningFlow = config.CommissioningFlowCustom
+		server.PrintOnboardingCodes(options.Payload)
+
+	}
+
+	device_attestation.SetDeviceAttestationCredentialsProvider(options.DacProvider)
+
+	deviceInstanceInfo := device.NewDeviceInstanceInfo()
 	deviceInstanceInfo, err = deviceInstanceInfo.Init(configMgr)
 	if err != nil {
 		log.Infof(err.Error())
 		return err
 	}
 
-	commissionableDataProvider := DeviceLayer.NewCommissionableDataImpl()
-	commissionableDataProvider, err = commissionableDataProvider.Init(options)
-	if err != nil {
-		log.Infof(err.Error())
-		return err
-	}
 	return nil
 }
 
-func AppMainLoop(options *config.DeviceOptions) error {
+func MainLoop(options *config.DeviceOptions) error {
 
-	serverInitParams := server.NewServerInitParams()
+	serverInitParams := chip.NewServerInitParams()
 	_, err := serverInitParams.Init(options)
 	if err != nil {
 		log.Infof(err.Error())
@@ -66,7 +94,7 @@ func AppMainLoop(options *config.DeviceOptions) error {
 		log.Infof(err.Error())
 		return err
 	}
-	chipServer := server.NewCHIPServer()
+	chipServer := chip.NewCHIPServer()
 	chipServer, err = chipServer.Init(serverInitParams)
 	if err != nil {
 		return err

@@ -12,7 +12,7 @@ import (
 
 // ConfigurationManager Defines the public interface for the Device Layer ConfigurationManager object.
 type ConfigurationManager interface {
-	ConfigDelegate
+	StorageDelegate
 	StoreVendorId(vendorId uint16) error
 	StoreProductId(productId uint16) error
 
@@ -89,7 +89,7 @@ type ConfigurationManagerImpl struct {
 	mDeviceConfigPairingSecondaryInstruction   string
 	deviceConfigEnableCommissionableDeviceType bool
 	mDiscriminator                             uint16 //_L<dddd>, where <dddd> provides the full 12-bit discriminator, encoded as a variable-length decimal number in ASCII text, omitting any leading zeroes.
-	ConfigProvider
+	Provider
 }
 
 var managerImpl *ConfigurationManagerImpl
@@ -152,7 +152,7 @@ func (c *ConfigurationManagerImpl) GetTotalOperationalHours(totalOperationalHour
 }
 
 func (c *ConfigurationManagerImpl) GetBootReason() (uint32, error) {
-	return c.ConfigProvider.ReadConfigValueUint32(KCounterKey_BootReason)
+	return c.Provider.ReadConfigValueUint32(KCounterKey_BootReason)
 }
 
 func (c *ConfigurationManagerImpl) GetPartNumber() (string, error) {
@@ -237,21 +237,21 @@ func (c *ConfigurationManagerImpl) GetLocationCapability() (uint8, error) {
 	panic("implement me")
 }
 
-func (c *ConfigurationManagerImpl) Init(configProvider ConfigProvider, options *DeviceOptions) (*ConfigurationManagerImpl, error) {
-	err := configProvider.EnsureNamespace(KConfigNamespace_ChipConfig)
+func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *DeviceOptions) (*ConfigurationManagerImpl, error) {
+	err := configProvider.EnsureNamespace(KConfigNamespaceChipConfig)
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	err = configProvider.EnsureNamespace(KConfigNamespace_ChipCounters)
+	err = configProvider.EnsureNamespace(KConfigNamespaceChipCounters)
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	err = configProvider.EnsureNamespace(KConfigNamespace_ChipFactory)
+	err = configProvider.EnsureNamespace(KConfigNamespaceChipFactory)
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
-	c.ConfigProvider = configProvider
+	c.Provider = configProvider
 
 	// if  vendorId set, stored!
 	if options.Payload.VendorID != 0 {
@@ -306,21 +306,21 @@ func (c *ConfigurationManagerImpl) Init(configProvider ConfigProvider, options *
 	}
 
 	if !configProvider.ConfigValueExists(KCounterKey_BootReason) {
-		err := c.StoreBootReason(clusters.BootReasonType_kUnspecified)
+		err := c.StoreBootReason(clusters.BootreasontypeKunspecified)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if !configProvider.ConfigValueExists(KConfigKey_RegulatoryLocation) {
-		err := configProvider.WriteConfigValueUint32(KConfigKey_RegulatoryLocation, clusters.RegulatoryLocationType_kIndoor)
+		err := configProvider.WriteConfigValueUint32(KConfigKey_RegulatoryLocation, clusters.RegulatorylocationtypeKindoor)
 		if err != nil {
 			log.Panic(err.Error())
 		}
 	}
 
 	if !configProvider.ConfigValueExists(KConfigKey_LocationCapability) {
-		err := configProvider.WriteConfigValueUint32(KConfigKey_LocationCapability, clusters.RegulatoryLocationType_kIndoorOutdoor)
+		err := configProvider.WriteConfigValueUint32(KConfigKey_LocationCapability, clusters.RegulatorylocationtypeKindooroutdoor)
 		if err != nil {
 			log.Panic(err.Error())
 		}
@@ -337,7 +337,7 @@ func (c *ConfigurationManagerImpl) StoreTotalOperationalHours(totalOperationalHo
 }
 
 func (c *ConfigurationManagerImpl) GetRebootCount() (uint32, error) {
-	return c.ConfigProvider.ReadConfigValueUint32(KCounterKey_RebootCount)
+	return c.Provider.ReadConfigValueUint32(KCounterKey_RebootCount)
 }
 
 func (c *ConfigurationManagerImpl) StoreRebootCount(rebootCount uint32) error {
@@ -397,7 +397,7 @@ func (c *ConfigurationManagerImpl) RunUnitTests() error {
 }
 
 func (c ConfigurationManagerImpl) GetVendorId() (uint16, error) {
-	return c.ConfigProvider.ReadConfigValueUint16(KConfigKey_VendorId)
+	return c.Provider.ReadConfigValueUint16(KConfigKey_VendorId)
 }
 
 func (c ConfigurationManagerImpl) GetSetupDiscriminator() (uint16, error) {
@@ -409,7 +409,7 @@ func (c ConfigurationManagerImpl) GetVendorName() (string, error) {
 }
 
 func (c ConfigurationManagerImpl) GetProductId() (uint16, error) {
-	return c.ConfigProvider.ReadConfigValueUint16(KConfigKey_ProductId)
+	return c.Provider.ReadConfigValueUint16(KConfigKey_ProductId)
 }
 
 func (c ConfigurationManagerImpl) GetProductName() string {

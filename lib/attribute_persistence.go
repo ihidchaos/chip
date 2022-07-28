@@ -5,18 +5,18 @@ import (
 )
 
 type AttributePersistenceProvider interface {
-	Init(storage storage.PersistentStorageDelegate) error
+	Init(storage storage.StorageDelegate) error
 }
 
 type AttributePersistence struct {
-	mStorage storage.PersistentStorageDelegate
+	mStorage storage.StorageDelegate
 }
 
 func NewAttributePersistence() *AttributePersistence {
 	return &AttributePersistence{}
 }
 
-func (p AttributePersistence) Init(storage storage.PersistentStorageDelegate) (err error) {
+func (p AttributePersistence) Init(storage storage.StorageDelegate) (err error) {
 	p.mStorage = storage
 	return
 }

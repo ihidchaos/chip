@@ -1,4 +1,4 @@
-package platform
+package device
 
 import "sync"
 
@@ -13,14 +13,14 @@ type PlatformManager interface {
 type PlatformManagerImpl struct {
 }
 
-var _instance *PlatformManagerImpl
+var __instance *PlatformManagerImpl
 var once sync.Once
 
 func PlatformMgr() *PlatformManagerImpl {
 	once.Do(func() {
-		_instance = &PlatformManagerImpl{}
+		__instance = &PlatformManagerImpl{}
 	})
-	return _instance
+	return __instance
 }
 
 func (m *PlatformManagerImpl) AddEventHandler(funct EventHandlerFunct, uint642 uint64) {

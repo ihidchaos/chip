@@ -1,6 +1,6 @@
 //go:build windows || (js && wasm)
 
-package system
+package platform
 
 import (
 	"os"
@@ -27,6 +27,14 @@ func GetLocalConFile() string {
 	//return strings.ReplaceAll(strings.ReplaceAll(path.Join(os.TempDir(), LocalStatedDirFile), "/", string(os.PathSeparator)), "\\", string(os.PathSeparator))
 	return filepath.Join(os.TempDir(), LocalStatedDirFile)
 }
+
+func GetConfigsKvsPath() string {
+	return filepath.Join("tmp", "chip_kvs")
+}
+
+var (
+	ConfigKvsPath = filepath.Join(os.TempDir() + "/chip.ini")
+)
 
 const (
 	FatConfDir     = "tmp"

@@ -1,4 +1,4 @@
-package platform
+package device
 
 import (
 	"github.com/galenliu/chip/storage"
@@ -9,10 +9,10 @@ type DeviceInfoProvider interface {
 }
 
 type DeviceInfoProviderImpl struct {
-	storage storage.PersistentStorageDelegate
+	storage storage.StorageDelegate
 }
 
-func (i *DeviceInfoProviderImpl) SetStorageDelegate(storage storage.PersistentStorageDelegate) {
+func (i *DeviceInfoProviderImpl) SetStorageDelegate(storage storage.StorageDelegate) {
 	i.storage = storage
 }
 

@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type PersistentStorageDelegate interface {
+type StorageDelegate interface {
 	Init(file string) error
 	ReadBoolValue(key string) (bool, error)
 	ReadValueUint16(key string) (uint16, error)

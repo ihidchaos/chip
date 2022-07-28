@@ -5,9 +5,11 @@ import (
 )
 
 var (
-	ChipConfigNetworkLayerBle      = false
-	ChipConfigNetworkLayerBleName  = "ble"
-	ChipConfigNetworkLayerBleUsage = "Chip Config Network Layer Ble"
+	NetworkLayerBle      = false
+	NetworkLayerBleName  = "ble"
+	NetworkLayerBleUsage = "Chip Config Network Layer Ble"
+
+	RendezvousMode = false
 
 	ChipDeviceConfigEnablePairingAutostart      = false
 	ChipDeviceConfigEnablePairingAutostartName  = "pairing-autostart"
@@ -39,10 +41,10 @@ var (
 )
 
 func HandleCHIPConfig(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&ChipConfigNetworkLayerBle,
-		ChipConfigNetworkLayerBleName,
-		ChipConfigNetworkLayerBle,
-		ChipConfigNetworkLayerBleUsage)
+	cmd.Flags().BoolVar(&NetworkLayerBle,
+		NetworkLayerBleName,
+		NetworkLayerBle,
+		NetworkLayerBleUsage)
 
 	cmd.Flags().BoolVar(&ChipDeviceConfigEnablePairingAutostart,
 		ChipDeviceConfigEnablePairingAutostartName,

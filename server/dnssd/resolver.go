@@ -1,7 +1,7 @@
 package dnssd
 
 import (
-	"github.com/galenliu/chip/core"
+	"github.com/galenliu/chip/device"
 )
 
 const (
@@ -29,7 +29,7 @@ type Resolver interface {
 	Init() error
 	Shutdown()
 
-	ResolveNodeId(peerId core.PeerId, isIpV6 bool)
+	ResolveNodeId(peerId device.PeerId, isIpV6 bool)
 
 	SetOperationalDelegate(delegate OperationalResolveDelegate)
 	SetCommissioningDelegate(delegate CommissioningResolveDelegate)
@@ -55,7 +55,7 @@ func (m MinMdnsResolver) Shutdown() {
 	panic("implement me")
 }
 
-func (m MinMdnsResolver) ResolveNodeId(peerId core.PeerId, isIpV6 bool) {
+func (m MinMdnsResolver) ResolveNodeId(peerId device.PeerId, isIpV6 bool) {
 	//TODO implement me
 	panic("implement me")
 }

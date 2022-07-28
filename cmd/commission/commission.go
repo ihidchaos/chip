@@ -16,13 +16,13 @@ func (c *command) intCommission() (err error) {
 
 			deviceOption := config.NewDeviceOptions()
 			deviceOption, _ = deviceOption.Init(c.config)
-			err = app.AppMainInit(deviceOption)
+			err = app.Init(deviceOption)
 			if err != nil {
 				log.Infof(err.Error())
 				return err
 			}
 
-			err = app.AppMainLoop(deviceOption)
+			err = app.MainLoop(deviceOption)
 			if err != nil {
 				log.Infof(err.Error())
 				return err

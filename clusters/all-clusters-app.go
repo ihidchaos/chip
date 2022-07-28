@@ -1,7 +1,7 @@
 package clusters
 
 const (
-	BootReasonType_kUnspecified = iota
+	BootreasontypeKunspecified = iota
 	BootReasonType_kPowerOnReboot
 	BootReasonType_kBrownOutReset
 	BootReasonType_kSoftwareWatchdogReset
@@ -9,7 +9,7 @@ const (
 	BootReasonType_kSoftwareUpdateCompleted
 	BootReasonType_kSoftwareReset
 
-	RegulatoryLocationType_kIndoor = iota
+	RegulatorylocationtypeKindoor = iota
 	RegulatoryLocationType_kOutdoor
-	RegulatoryLocationType_kIndoorOutdoor
+	RegulatorylocationtypeKindooroutdoor
 )

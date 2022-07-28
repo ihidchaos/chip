@@ -1,13 +1,14 @@
-package server
+package chip
 
 import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/crypto"
+	storage2 "github.com/galenliu/chip/crypto/persistent_storage"
+	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/platform"
+	"github.com/galenliu/chip/server"
 	"github.com/galenliu/chip/server/dnssd"
 	"github.com/galenliu/chip/storage"
 	"github.com/galenliu/chip/transport"
@@ -32,19 +33,19 @@ type Server struct {
 	mDnssd                         dnssd.DnssdServer
 	mFabricTable                   *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
-	mDeviceStorage                 storage.PersistentStorageDelegate //unknown
+	mDeviceStorage                 storage.StorageDelegate //unknown
 	mAccessControl                 access.AccessControler
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
-	mOperationalKeystore           crypto.PersistentStorageOperationalKeystore
+	mOperationalKeystore           storage2.PersistentStorageOperationalKeystore
 	mCertificateValidityPolicy     credentials.CertificateValidityPolicy
 
 	mGroupsProvider           credentials.GroupDataProvider
-	mTestEventTriggerDelegate TestEventTriggerDelegate
+	mTestEventTriggerDelegate server.TestEventTriggerDelegate
 	mFabricDelegate           credentials.ServerFabricDelegate
 	mSessionResumptionStorage any
 	mExchangeMgr              messageing.ExchangeManager
 	mAttributePersister       lib.AttributePersistenceProvider //unknown
-	mAclStorage               AclStorage
+	mAclStorage               server.AclStorage
 	mTransports               transport.TransportManager
 	mSessions                 transport.SessionManager
 	mListener                 credentials.GroupDataProviderListener
@@ -67,7 +68,7 @@ func NewCHIPServer() *Server {
 	return GetChipServerInstance()
 }
 
-func (s *Server) Init(initParams *ServerInitParams) (*Server, error) {
+func (s *Server) Init(initParams *InitParams) (*Server, error) {
 
 	log.Printf("app server initializing")
 
@@ -77,7 +78,7 @@ func (s *Server) Init(initParams *ServerInitParams) (*Server, error) {
 	s.mUserDirectedCommissioningPort = initParams.UserDirectedCommissioningPort
 	s.mInterfaceId = initParams.InterfaceId
 
-	//if initParams.PersistentStorageDelegate == nil ||
+	//if initParams.StorageDelegate == nil ||
 	//	initParams.AccessDelegate == nil ||
 	//	initParams.GroupDataProvider == nil ||
 	//	initParams.OperationalKeystore == nil ||
@@ -129,7 +130,7 @@ func (s *Server) Init(initParams *ServerInitParams) (*Server, error) {
 
 	s.mTestEventTriggerDelegate = initParams.TestEventTriggerDelegate
 
-	deviceInfoProvider := platform.GetDeviceInfoProvider()
+	deviceInfoProvider := device.GetDeviceInfoProvider()
 	if deviceInfoProvider != nil {
 		deviceInfoProvider.SetStorageDelegate(s.mDeviceStorage)
 	}
@@ -222,7 +223,7 @@ func (s *Server) Init(initParams *ServerInitParams) (*Server, error) {
 
 	if s.GetFabricTable() != nil {
 		if s.GetFabricTable().FabricCount() != 0 {
-			if config.ChipConfigNetworkLayerBle {
+			if config.NetworkLayerBle {
 				//TODO
 				//如果Fabric不为零，那么设备已经被添加
 				//可以在这里关闭蓝牙

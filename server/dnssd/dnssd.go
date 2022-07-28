@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	DeviceLayer "github.com/galenliu/chip/device_layer"
-	"github.com/galenliu/chip/lib"
+	DeviceLayer "github.com/galenliu/chip/device"
+	"github.com/galenliu/chip/internal"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/platform"
 	"github.com/galenliu/chip/server/dnssd/params"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
@@ -98,7 +97,7 @@ func (d *DnssdServerImpl) GetInterfaceId() net.Interface {
 
 func (d *DnssdServerImpl) AdvertiseOperational() error {
 	if d.mFabricTable == nil {
-		return lib.ChipErrorIncorrectState
+		return internal.ChipErrorIncorrectState
 	}
 	for _, fabricInfo := range d.mFabricTable.GetFabricInfos() {
 		mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()
@@ -131,7 +130,7 @@ func (d *DnssdServerImpl) GetCommissionableInstanceName() string {
 
 func (d *DnssdServerImpl) SetEphemeralDiscriminator(discriminator uint16) error {
 	if discriminator >= DeviceLayer.KMaxDiscriminatorValue {
-		return lib.ChipErrorInvalidArgument
+		return internal.ChipErrorInvalidArgument
 	}
 	d.mEphemeralDiscriminator = &discriminator
 	return nil
@@ -242,7 +241,7 @@ func (d *DnssdServerImpl) Advertise(commissionAbleNode bool, mode int) error {
 	advertiseParameters.SetMaC(mac)
 
 	//Set device vendor id
-	vid, err := platform.GetDeviceInstanceInfoProvider().GetVendorId()
+	vid, err := DeviceLayer.GetDeviceInstanceInfoProvider().GetVendorId()
 	if err != nil {
 		log.Infof("Vendor ID not known")
 	} else {
@@ -250,7 +249,7 @@ func (d *DnssdServerImpl) Advertise(commissionAbleNode bool, mode int) error {
 	}
 
 	// set  productId
-	pid, err := platform.GetDeviceInstanceInfoProvider().GetProductId()
+	pid, err := DeviceLayer.GetDeviceInstanceInfoProvider().GetProductId()
 	if err != nil {
 		log.Infof("Product ID not known")
 	} else {
@@ -259,7 +258,7 @@ func (d *DnssdServerImpl) Advertise(commissionAbleNode bool, mode int) error {
 
 	// set discriminator
 	var discriminator uint16 = 0
-	discriminator, err = DeviceLayer.GetCommissionableDateProviderInstance().GetSetupDiscriminator()
+	discriminator, err = DeviceLayer.GetCommissionableDateProvider().GetSetupDiscriminator()
 	if err != nil {
 		log.Infof(
 			"Setup discriminator read error: (%s )! Critical error, will not be commissionable.",

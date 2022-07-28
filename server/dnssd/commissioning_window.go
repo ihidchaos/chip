@@ -40,7 +40,7 @@ func (m *CommissioningWindowManagerImpl) SetAppDelegate(delegate AppDelegate) {
 }
 
 func (m *CommissioningWindowManagerImpl) OpenBasicCommissioningWindow() error {
-	if config.ChipConfigNetworkLayerBle {
+	if config.NetworkLayerBle {
 	}
 	m.mFailedCommissioningAttempts = 0
 	m.mUseECM = false

@@ -2,7 +2,7 @@ package params
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/core"
+	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/messageing"
 )
 
@@ -20,7 +20,7 @@ type CommissionAdvertisingParameters struct {
 	mDeviceName         string  //设备名称
 	mMode               uint16
 	mCommissioningMode  int
-	mPeerId             *core.PeerId
+	mPeerId             *device.PeerId
 	mShortDiscriminator uint8
 	mLongDiscriminator  uint16
 	mRotatingId         string

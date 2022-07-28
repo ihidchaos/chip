@@ -1,6 +1,6 @@
 //go:build unix || (js && wasm)
 
-package System
+package platform
 
 func GetFatConDir() string {
 	return FatConfDir
@@ -17,6 +17,10 @@ func GetSysConFile() string {
 func GetLocalConFile() string {
 	return strings.ReplaceAll(strings.ReplaceAll(path.Join(os.TempDir(), LocalStatedDirFile), "/", string(os.PathSeparator)), "\\", string(os.PathSeparator))
 }
+
+var (
+	ChipConfigKvsPath = "/tmp/chip_kvs"
+)
 
 const (
 	FatConfDir     = "tmp"

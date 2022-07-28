@@ -1,4 +1,4 @@
-package DeviceLayer
+package device
 
 type TestOnlyCommissionableDataProvider struct {
 }
