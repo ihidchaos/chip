@@ -11,11 +11,13 @@ type PersistentStorageDelegate interface {
 }
 
 type KvsPersistentStorageImpl struct {
-	PersistentStorageImpl
+	*PersistentStorageImpl
 }
 
 func NewKvsPersistentStorage() *KvsPersistentStorageImpl {
-	impl := &KvsPersistentStorageImpl{}
+	impl := &KvsPersistentStorageImpl{
+		PersistentStorageImpl: NewPersistentStorageImpl(),
+	}
 	return impl
 }
 

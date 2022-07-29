@@ -1,4 +1,4 @@
-package device_attestation
+package dac
 
 type DeviceAttestationCredentialsProvider interface {
 	GetCertificationDeclaration()

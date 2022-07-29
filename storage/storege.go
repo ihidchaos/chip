@@ -34,9 +34,13 @@ type PersistentStorageImpl struct {
 }
 
 func NewPersistentStorageImpl() *PersistentStorageImpl {
-	impl := &PersistentStorageImpl{}
-	impl.storage = NewIniStorage()
-	return impl
+	return &PersistentStorageImpl{
+		storage:      NewIniStorage(),
+		mConfigPath:  "",
+		mLock:        &sync.Mutex{},
+		mDirty:       false,
+		mInitialized: false,
+	}
 }
 
 func (s *PersistentStorageImpl) Init(mConfigPath string) error {
@@ -51,7 +55,6 @@ func (s *PersistentStorageImpl) Init(mConfigPath string) error {
 }
 
 func (s *PersistentStorageImpl) ReadBoolValue(key string) (bool, error) {
-
 	value, err := s.storage.GetUIntValue(key)
 	if value == 0 {
 		return true, err

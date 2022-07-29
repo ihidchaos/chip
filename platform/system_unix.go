@@ -2,6 +2,13 @@
 
 package platform
 
+import (
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+)
+
 func GetFatConDir() string {
 	return FatConfDir
 }
@@ -19,7 +26,11 @@ func GetLocalConFile() string {
 }
 
 var (
-	ChipConfigKvsPath = "/tmp/chip_kvs"
+	ConfigKvsPath = "/tmp/chip_kvs"
+
+	DefaultFactoryPath = filepath.Join(os.TempDir(), "chip_factory.ini")
+	DefaultConfigPath  = filepath.Join(os.TempDir(), "chip_config.ini")
+	DefaultDataPath    = filepath.Join(os.TempDir(), "chip_counters.ini")
 )
 
 const (

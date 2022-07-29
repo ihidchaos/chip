@@ -54,7 +54,7 @@ type ConfigurationManager interface {
 	GetFailSafeArmed() bool
 	SetFailSafeArmed(val bool) error
 	//
-	GetBLEDeviceIdentificationInfo() (ble.ChipBLEDeviceIdentificationInfo, error)
+	GetBLEDeviceIdentificationInfo() (ble.DeviceIdentificationInfo, error)
 
 	IsFullyProvisioned() bool
 	InitiateFactoryReset()
@@ -195,7 +195,7 @@ func (c *ConfigurationManagerImpl) SetFailSafeArmed(val bool) error {
 	panic("implement me")
 }
 
-func (c *ConfigurationManagerImpl) GetBLEDeviceIdentificationInfo() (ble.ChipBLEDeviceIdentificationInfo, error) {
+func (c *ConfigurationManagerImpl) GetBLEDeviceIdentificationInfo() (ble.DeviceIdentificationInfo, error) {
 	//TODO implement me
 	panic("implement me")
 }

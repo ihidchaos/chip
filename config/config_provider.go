@@ -227,18 +227,21 @@ func (conf *ConfigProviderImpl) EnsureNamespace(k string) error {
 		if conf.mChipFactoryStorage == nil {
 			conf.mChipFactoryStorage = storage.NewPersistentStorageImpl()
 		}
+		log.Infof("init factory storage: %s", ChipDefaultFactoryPath)
 		return conf.mChipFactoryStorage.Init(ChipDefaultFactoryPath)
 	}
 	if k == KConfigNamespaceChipConfig {
 		if conf.mChipConfigStorage == nil {
 			conf.mChipConfigStorage = storage.NewPersistentStorageImpl()
 		}
+		log.Infof("init config storage: %s", ChipDefaultConfigPath)
 		return conf.mChipConfigStorage.Init(ChipDefaultConfigPath)
 	}
-	if k == KConfigNamespaceChipFactory {
+	if k == KConfigNamespaceChipCounters {
 		if conf.mChipCountersStorage == nil {
 			conf.mChipCountersStorage = storage.NewPersistentStorageImpl()
 		}
+		log.Infof("init counters storage: %s", ChipDefaultDataPath)
 		return conf.mChipCountersStorage.Init(ChipDefaultDataPath)
 	}
 	return nil

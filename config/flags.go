@@ -25,7 +25,7 @@ var (
 )
 
 var (
-	ChipDefaultFactoryPath = platform.GetFatConFile()
-	ChipDefaultConfigPath  = platform.GetSysConFile()
-	ChipDefaultDataPath    = platform.GetLocalConFile()
+	ChipDefaultFactoryPath = platform.DefaultFactoryPath
+	ChipDefaultConfigPath  = platform.DefaultConfigPath
+	ChipDefaultDataPath    = platform.DefaultDataPath
 )

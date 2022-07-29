@@ -2,6 +2,7 @@ package params
 
 import (
 	"github.com/galenliu/chip/device"
+	"github.com/galenliu/chip/lib"
 )
 
 type OperationalAdvertisingParameters struct {
@@ -25,7 +26,7 @@ func (o *OperationalAdvertisingParameters) SetPeerId(peerId device.PeerId) *Oper
 	return o
 }
 
-func (o *OperationalAdvertisingParameters) GetCompressedFabricId() device.CompressedFabricId {
+func (o *OperationalAdvertisingParameters) GetCompressedFabricId() lib.CompressedFabricId {
 	return o.mPeerId.GetCompressedFabricId()
 }
 

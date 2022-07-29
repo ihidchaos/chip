@@ -2,15 +2,20 @@ package device
 
 import (
 	"fmt"
+	"github.com/galenliu/chip/lib"
 )
 
-const kUndefinedCompressedFabricId CompressedFabricId = 0
+const kUndefinedCompressedFabricId lib.CompressedFabricId = 0
 
-const kUndefinedFabricId FabricId = 0
+const kUndefinedFabricId lib.FabricId = 0
 
 type PeerId struct {
-	mNodeId             NodeId
-	mCompressedFabricId CompressedFabricId
+	mNodeId             lib.NodeID
+	mCompressedFabricId lib.CompressedFabricId
+}
+
+func NewPeerId(mNodeId lib.NodeID, mCompressedFabricId lib.CompressedFabricId) PeerId {
+	return PeerId{mNodeId: mNodeId, mCompressedFabricId: mCompressedFabricId}
 }
 
 func (p PeerId) Default() *PeerId {
@@ -20,7 +25,7 @@ func (p PeerId) Default() *PeerId {
 	}
 }
 
-func (p PeerId) Init(compressedFabricId CompressedFabricId, nodeId NodeId) *PeerId {
+func (p PeerId) Init(compressedFabricId lib.CompressedFabricId, nodeId lib.NodeID) *PeerId {
 	return &PeerId{
 		mNodeId:             nodeId,
 		mCompressedFabricId: compressedFabricId,
@@ -28,7 +33,7 @@ func (p PeerId) Init(compressedFabricId CompressedFabricId, nodeId NodeId) *Peer
 }
 
 func (p PeerId) SetNodeId(id uint64) {
-	p.mNodeId = NodeId(id)
+	p.mNodeId = lib.NodeID(id)
 }
 
 func (p PeerId) String() string {
@@ -41,18 +46,18 @@ func (p PeerId) String() string {
 	return fmt.Sprintf("%08x%08x%08x%08x", fabricIdH32, fabricIdL32, nodeIdH32, nodeIdL32)
 }
 
-func (p PeerId) GetNodeId() NodeId {
+func (p PeerId) GetNodeId() lib.NodeID {
 	return p.mNodeId
 }
 
-func (p PeerId) GetCompressedFabricId() CompressedFabricId {
+func (p PeerId) GetCompressedFabricId() lib.CompressedFabricId {
 	return p.mCompressedFabricId
 }
 
-func (p PeerId) SetCompressedFabricId() NodeId {
+func (p PeerId) SetCompressedFabricId() lib.NodeID {
 	return p.mNodeId
 }
 
-func IsValidFabricId(aFabricId FabricId) bool {
+func IsValidFabricId(aFabricId lib.FabricId) bool {
 	return aFabricId != kUndefinedFabricId
 }
