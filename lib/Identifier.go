@@ -8,21 +8,21 @@ package lib
 type CompressedFabricId uint64
 type FabricId uint64
 
-type VendorID uint16
+type VendorId uint16
 
-type ProductID uint16
+type ProductId uint16
 
-type GroupID uint16
+type GroupId uint16
 
 type UniversalGroupID uint16
 
-type NodeID uint64
+type NodeId uint64
 
-type OperationalNodeID uint64
+type OperationalNodeId uint64
 
 type GroupNodeID uint64
 
-type TemporaryLocalNodeID uint64
+type TemporaryLocalNodeId uint64
 
 type ScopedNodeId struct {
 }

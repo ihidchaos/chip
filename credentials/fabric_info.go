@@ -13,17 +13,17 @@ type FabricInfoProvider interface {
 	SetFabricLabel(label string)
 
 	GetScopedNodeId() lib.ScopedNodeId
-	GetScopedNodeIdForNode(node lib.NodeID) lib.ScopedNodeId
+	GetScopedNodeIdForNode(node lib.NodeId) lib.ScopedNodeId
 
 	GetPeerId() device.PeerId
-	GetPeerIdForNode(id lib.NodeID) device.PeerId
+	GetPeerIdForNode(id lib.NodeId) device.PeerId
 
 	GetFabricId() lib.FabricId
 	GetFabricIndex() FabricIndex
 
 	GetCompressedFabricId() lib.CompressedFabricId
 
-	GetVendorId() lib.VendorID
+	GetVendorId() lib.VendorId
 
 	IsInitialized() bool
 	HasOperationalKey() bool
@@ -32,11 +32,11 @@ type FabricInfoProvider interface {
 type FabricInfo struct {
 	mFabricLabel         string
 	mRootPublicKey       crypto.P256PublicKey
-	mNodeId              lib.NodeID
+	mNodeId              lib.NodeId
 	mFabricId            lib.FabricId
 	mFabricIndex         FabricIndex
 	mCompressedFabriceId lib.CompressedFabricId
-	mVendorId            lib.VendorID
+	mVendorId            lib.VendorId
 }
 
 func (info *FabricInfo) GetFabricLabel() string {
@@ -54,12 +54,12 @@ func (info *FabricInfo) GetScopedNodeId() lib.ScopedNodeId {
 	panic("implement me")
 }
 
-func (info *FabricInfo) GetScopedNodeIdForNode(node lib.NodeID) lib.ScopedNodeId {
+func (info *FabricInfo) GetScopedNodeIdForNode(node lib.NodeId) lib.ScopedNodeId {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (info *FabricInfo) GetPeerIdForNode(id lib.NodeID) device.PeerId {
+func (info *FabricInfo) GetPeerIdForNode(id lib.NodeId) device.PeerId {
 	return device.NewPeerId(id, info.mCompressedFabriceId)
 }
 
@@ -75,7 +75,7 @@ func (info *FabricInfo) GetCompressedFabricId() lib.CompressedFabricId {
 	return info.mCompressedFabriceId
 }
 
-func (info *FabricInfo) GetVendorId() lib.VendorID {
+func (info *FabricInfo) GetVendorId() lib.VendorId {
 	return info.mVendorId
 }
 
@@ -94,7 +94,7 @@ func (info *FabricInfo) GetPeerId() device.PeerId {
 }
 
 type FabricInfoInitParams struct {
-	NodeId                    lib.NodeID
+	NodeId                    lib.NodeId
 	FabriceId                 lib.FabricId
 	FabricIndex               FabricIndex
 	CompressedFabricId        lib.CompressedFabricId

@@ -46,7 +46,7 @@ type Server struct {
 	mExchangeMgr              messageing.ExchangeManager
 	mAttributePersister       lib.AttributePersistenceProvider //unknown
 	mAclStorage               server.AclStorage
-	mTransports               transport.TransportManager
+	mTransports               transport.Transport
 	mSessions                 transport.SessionManager
 	mListener                 credentials.GroupDataProviderListener
 	mInitialized              bool
@@ -135,7 +135,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		deviceInfoProvider.SetStorageDelegate(s.mDeviceStorage)
 	}
 
-	s.mTransports = transport.NewTransportImpl()
+	s.mTransports = transport.NewUdbTransportImpl()
 	err = s.mTransports.Init()
 
 	s.mListener = credentials.NewGroupDataProviderListenerImpl()

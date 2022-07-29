@@ -10,11 +10,11 @@ const kUndefinedCompressedFabricId lib.CompressedFabricId = 0
 const kUndefinedFabricId lib.FabricId = 0
 
 type PeerId struct {
-	mNodeId             lib.NodeID
+	mNodeId             lib.NodeId
 	mCompressedFabricId lib.CompressedFabricId
 }
 
-func NewPeerId(mNodeId lib.NodeID, mCompressedFabricId lib.CompressedFabricId) PeerId {
+func NewPeerId(mNodeId lib.NodeId, mCompressedFabricId lib.CompressedFabricId) PeerId {
 	return PeerId{mNodeId: mNodeId, mCompressedFabricId: mCompressedFabricId}
 }
 
@@ -25,7 +25,7 @@ func (p PeerId) Default() *PeerId {
 	}
 }
 
-func (p PeerId) Init(compressedFabricId lib.CompressedFabricId, nodeId lib.NodeID) *PeerId {
+func (p PeerId) Init(compressedFabricId lib.CompressedFabricId, nodeId lib.NodeId) *PeerId {
 	return &PeerId{
 		mNodeId:             nodeId,
 		mCompressedFabricId: compressedFabricId,
@@ -33,7 +33,7 @@ func (p PeerId) Init(compressedFabricId lib.CompressedFabricId, nodeId lib.NodeI
 }
 
 func (p PeerId) SetNodeId(id uint64) {
-	p.mNodeId = lib.NodeID(id)
+	p.mNodeId = lib.NodeId(id)
 }
 
 func (p PeerId) String() string {
@@ -46,7 +46,7 @@ func (p PeerId) String() string {
 	return fmt.Sprintf("%08x%08x%08x%08x", fabricIdH32, fabricIdL32, nodeIdH32, nodeIdL32)
 }
 
-func (p PeerId) GetNodeId() lib.NodeID {
+func (p PeerId) GetNodeId() lib.NodeId {
 	return p.mNodeId
 }
 
@@ -54,7 +54,7 @@ func (p PeerId) GetCompressedFabricId() lib.CompressedFabricId {
 	return p.mCompressedFabricId
 }
 
-func (p PeerId) SetCompressedFabricId() lib.NodeID {
+func (p PeerId) SetCompressedFabricId() lib.NodeId {
 	return p.mNodeId
 }
 
