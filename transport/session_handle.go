@@ -29,7 +29,3 @@ func (s SessionHandleImpl) AsUnauthenticatedSession() *UnauthenticatedSession {
 	session, _ := s.Session.(*UnauthenticatedSession)
 	return session
 }
-
-func NewSessionHandleImpl() {
-
-}

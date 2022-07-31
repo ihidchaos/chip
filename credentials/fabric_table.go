@@ -24,7 +24,7 @@ type FabricTableDelegate interface {
 type FabricTableContainer interface {
 	Init(FabricTableInitParams) error
 	Delete(index lib.FabricIndex)
-	DeleteAllFabrics() error
+	DeleteAllFabrics()
 	GetDeletedFabricFromCommitMarker() lib.FabricIndex
 	ClearCommitMarker()
 	Forget(index lib.FabricIndex)
@@ -42,7 +42,6 @@ type FabricTableContainer interface {
 	FetchNOCCert(index lib.FabricIndex) ([]byte, error)
 	FetchRootPubkey(index lib.FabricIndex) ([]byte, error)
 	FetchCATs(index lib.FabricIndex) ([]byte, error)
-
 	SignWithOpKeypair(lib.FabricIndex) crypto.P256ECDSASignature
 }
 
@@ -50,28 +49,112 @@ type FabricTable struct {
 	mState []FabricInfo
 }
 
+func (f FabricTable) Init(params *FabricTableInitParams) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) Delete(index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) DeleteAllFabrics() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) GetDeletedFabricFromCommitMarker() lib.FabricIndex {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) ClearCommitMarker() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) Forget(index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) AddFabricDelegate(delegate ServerFabricDelegate) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) RemoveFabricDelegate(delegate FabricTableDelegate) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) SetFabricLabel(index lib.FabricIndex, label string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) GetFabricLabel(index lib.FabricIndex) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) GetLastKnownGoodChipEpochTime() (time.Time, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) SetLastKnownGoodChipEpochTime(t time.Time) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) FabricCount() uint8 {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) FetchRootCert(index lib.FabricIndex) ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) FetchPendingNonFabricAssociatedRootCert() ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) FetchICACert(index lib.FabricIndex) ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) FetchNOCCert(index lib.FabricIndex) ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) FetchRootPubkey(index lib.FabricIndex) ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) FetchCATs(index lib.FabricIndex) ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f FabricTable) SignWithOpKeypair(index lib.FabricIndex) crypto.P256ECDSASignature {
+	//TODO implement me
+	panic("implement me")
+}
+
 func NewFabricTable() *FabricTable {
 	return &FabricTable{}
 }
 
-func (f FabricTable) FabricCount() int {
-	return len(f.mState)
-}
-
-func (f FabricTable) Init(params *FabricTableInitParams) (err error) {
-	return
-}
-
 func (f FabricTable) GetFabricInfos() []FabricInfo {
 	return f.mState
-}
-
-func (f FabricTable) DeleteAllFabrics() {
-
-}
-
-func (f FabricTable) AddFabricDelegate(delegate ServerFabricDelegate) {
-
 }
 
 func NewFabricTableInitParams() *FabricTableInitParams {

@@ -33,7 +33,7 @@ type Server struct {
 	mUserDirectedCommissioningPort uint16
 	mInterfaceId                   net.Interface
 	mDnssd                         dnssd.DnssdServer
-	mFabricTable                   *credentials.FabricTable
+	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
 	mDeviceStorage                 storage.StorageDelegate //unknown
 	mAccessControl                 access.AccessControler
@@ -44,11 +44,15 @@ type Server struct {
 	mGroupsProvider           credentials.GroupDataProvider
 	mTestEventTriggerDelegate server.TestEventTriggerDelegate
 	mFabricDelegate           credentials.ServerFabricDelegate
+	mCASEClientPool           CASEClientPool
+	mCASEServer               *secure_channel.CASEServer
 	mSessionResumptionStorage any
 	mMessageCounterManager    *secure_channel.MessageCounterManager
 	mUnsolicitedStatusHandler *secure_channel.UnsolicitedStatusHandler
 
 	mAttributePersister lib.AttributePersistenceProvider //unknown
+	mCASESessionManager *CASESessionManager
+	mDevicePool         OperationalDeviceProxyPool
 	mAclStorage         server.AclStorage
 	mTransports         transport.Transport
 	mExchangeMgr        messageing.ExchangeManager
@@ -110,8 +114,8 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		fabricTableInitParams.OperationalKeystore = s.mOperationalKeystore
 		fabricTableInitParams.OpCertStore = s.mOpCerStore
 
-		s.mFabricTable = credentials.NewFabricTable()
-		err := s.mFabricTable.Init(fabricTableInitParams)
+		s.mFabrics = credentials.NewFabricTable()
+		err := s.mFabrics.Init(fabricTableInitParams)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +129,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	access.SetAccessControl(s.mAccessControl)
 
 	s.mAclStorage = initParams.AclStorage
-	err = s.mAclStorage.Init(s.mDeviceStorage, s.mFabricTable)
+	err = s.mAclStorage.Init(s.mDeviceStorage, s.mFabrics)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +146,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 
 	var udpParams transport.UdpListenParameters
 	s.mTransports = transport.NewUdbTransportImpl()
-	err = s.mTransports.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), initParams.UserDirectedCommissioningPort)))
+	err = s.mTransports.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), s.mOperationalServicePort)))
 
 	s.mListener = credentials.NewGroupDataProviderListenerImpl()
 	err = s.mListener.Init(s) // TODO
@@ -163,7 +167,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		return nil, err
 	}
 
-	s.mFabricTable.AddFabricDelegate(s.mFabricDelegate)
+	s.mFabrics.AddFabricDelegate(s.mFabricDelegate)
 
 	s.mExchangeMgr = messageing.NewExchangeManagerImpl()
 	err = s.mExchangeMgr.Init(s.mSessions)
@@ -191,7 +195,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
 	discoveryService := dnssd.NewDnssdServer()
-	discoveryService.SetFabricTable(s.mFabricTable)
+	discoveryService.SetFabricTable(s.mFabrics)
 	discoveryService.SetCommissioningModeProvider(s.mCommissioningWindowManager)
 
 	//err = chip::app::InteractionModelEngine::GetInstance()->initCommissionableData(&mExchangeMgr, &GetFabricTable());
@@ -242,6 +246,31 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 			}
 		}
 	}
+	caseSessionManagerConfig := &CASESessionManagerConfig{
+		SessionInitParams: DeviceProxyInitParams{
+			SessionManager:            s.mSessions,
+			SessionResumptionStorage:  s.mSessionResumptionStorage,
+			CertificateValidityPolicy: s.mCertificateValidityPolicy,
+			ExchangeMgr:               s.mExchangeMgr,
+			FabricTable:               s.mFabrics,
+			ClientPool:                s.mCASEClientPool,
+			GroupDataProvider:         s.mGroupsProvider,
+			MrpLocalConfig:            messageing.GetLocalMRPConfig(),
+		},
+		DevicePool: s.mDevicePool,
+	}
+
+	s.mCASESessionManager = NewCASESessionManager()
+	err = s.mCASESessionManager.Init(SystemLayer(), caseSessionManagerConfig)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+
+	s.mCASEServer = secure_channel.NewCASEServer()
+	err = s.mCASEServer.ListenForSessionEstablishment(s.mExchangeMgr, s.mSessions, s.mFabrics, s.mSessionResumptionStorage, s.mCertificateValidityPolicy, s.mGroupsProvider)
+	if err != nil {
+		log.Panic(err.Error())
+	}
 
 	//如果设备开启了自动配对模式，进入模式
 	if config.ChipDeviceConfigEnablePairingAutostart {
@@ -257,11 +286,11 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 }
 
 // GetFabricTable 返回CHIP服务中的Fabric
-func (s Server) GetFabricTable() *credentials.FabricTable {
-	return s.mFabricTable
+func (s *Server) GetFabricTable() *credentials.FabricTable {
+	return s.mFabrics
 }
 
-func (s Server) Shutdown() {
+func (s *Server) Shutdown() {
 
 }
 
