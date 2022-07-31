@@ -5,8 +5,8 @@ import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
 	DeviceLayer "github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/internal"
 	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/pkg"
 	"github.com/galenliu/chip/server/dnssd/params"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
@@ -97,7 +97,7 @@ func (d *DnssdServerImpl) GetInterfaceId() net.Interface {
 
 func (d *DnssdServerImpl) AdvertiseOperational() error {
 	if d.mFabricTable == nil {
-		return internal.ChipErrorIncorrectState
+		return pkg.ChipErrorIncorrectState
 	}
 	for _, fabricInfo := range d.mFabricTable.GetFabricInfos() {
 		mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()
@@ -130,7 +130,7 @@ func (d *DnssdServerImpl) GetCommissionableInstanceName() string {
 
 func (d *DnssdServerImpl) SetEphemeralDiscriminator(discriminator uint16) error {
 	if discriminator >= DeviceLayer.KMaxDiscriminatorValue {
-		return internal.ChipErrorInvalidArgument
+		return pkg.ChipErrorInvalidArgument
 	}
 	d.mEphemeralDiscriminator = &discriminator
 	return nil

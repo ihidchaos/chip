@@ -8,12 +8,14 @@ import (
 	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/secure_channel"
 	"github.com/galenliu/chip/server"
 	"github.com/galenliu/chip/server/dnssd"
 	"github.com/galenliu/chip/storage"
 	"github.com/galenliu/chip/transport"
 	log "github.com/sirupsen/logrus"
 	"net"
+	"net/netip"
 	"sync"
 )
 
@@ -43,13 +45,16 @@ type Server struct {
 	mTestEventTriggerDelegate server.TestEventTriggerDelegate
 	mFabricDelegate           credentials.ServerFabricDelegate
 	mSessionResumptionStorage any
-	mExchangeMgr              messageing.ExchangeManager
-	mAttributePersister       lib.AttributePersistenceProvider //unknown
-	mAclStorage               server.AclStorage
-	mTransports               transport.Transport
-	mSessions                 transport.SessionManager
-	mListener                 credentials.GroupDataProviderListener
-	mInitialized              bool
+	mMessageCounterManager    *secure_channel.MessageCounterManager
+	mUnsolicitedStatusHandler *secure_channel.UnsolicitedStatusHandler
+
+	mAttributePersister lib.AttributePersistenceProvider //unknown
+	mAclStorage         server.AclStorage
+	mTransports         transport.Transport
+	mExchangeMgr        messageing.ExchangeManager
+	mSessions           transport.SessionManager
+	mListener           credentials.GroupDataProviderListener
+	mInitialized        bool
 }
 
 var _chipServerInstance *Server
@@ -135,8 +140,9 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		deviceInfoProvider.SetStorageDelegate(s.mDeviceStorage)
 	}
 
+	var udpParams transport.UdpListenParameters
 	s.mTransports = transport.NewUdbTransportImpl()
-	err = s.mTransports.Init()
+	err = s.mTransports.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), initParams.UserDirectedCommissioningPort)))
 
 	s.mListener = credentials.NewGroupDataProviderListenerImpl()
 	err = s.mListener.Init(s) // TODO
@@ -165,11 +171,17 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		return nil, err
 	}
 
-	//err = mMessageCounterManager.initCommissionableData(&mExchangeMgr);
-	//SuccessOrExit(err);
+	s.mMessageCounterManager = secure_channel.NewMessageCounterManager()
+	err = s.mMessageCounterManager.Init(s.mExchangeMgr)
+	if err != nil {
+		return s, err
+	}
 
-	//err = mUnsolicitedStatusHandler.initCommissionableData(&mExchangeMgr);
-	//SuccessOrExit(err);
+	s.mUnsolicitedStatusHandler = secure_channel.NewUnsolicitedStatusHandler()
+	err = s.mUnsolicitedStatusHandler.Init(s.mExchangeMgr)
+	if err != nil {
+		return s, err
+	}
 
 	s.mCommissioningWindowManager = dnssd.NewCommissioningWindowManagerImpl()
 	err = s.mCommissioningWindowManager.Init(s)

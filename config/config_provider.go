@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/galenliu/chip/internal"
+	"github.com/galenliu/chip/pkg"
 	"github.com/galenliu/chip/storage"
 	log "github.com/sirupsen/logrus"
 	"sync"
@@ -157,7 +157,7 @@ func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
 func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
 		log.Printf("Storage get failed")
-		return internal.ChipDeviceErrorConfigNotFound
+		return pkg.ChipDeviceErrorConfigNotFound
 	}
 	err := conf.mChipFactoryStorage.ClearAll()
 	if err != nil {
@@ -175,7 +175,7 @@ func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 func (conf *ConfigProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
 		log.Printf("Storage get failed")
-		return internal.ChipDeviceErrorConfigNotFound
+		return pkg.ChipDeviceErrorConfigNotFound
 	}
 	err := conf.mChipCountersStorage.ClearAll()
 	if err != nil {

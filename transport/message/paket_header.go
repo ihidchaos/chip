@@ -2,8 +2,8 @@ package message
 
 import (
 	"encoding/binary"
-	"github.com/galenliu/chip/internal"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/pkg"
 )
 
 const (
@@ -245,7 +245,7 @@ func (h Header) Len() uint8 {
 func DecodeHeader(data []byte) (*Header, error) {
 
 	if len(data) < 36 {
-		return nil, internal.ChipErrorInvalidArgument
+		return nil, pkg.ChipErrorInvalidArgument
 	}
 	header := &Header{}
 	header.mLength = 0

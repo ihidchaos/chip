@@ -59,3 +59,7 @@ func (header *PayloadHeader) NeedsAck() bool {
 func (header *PayloadHeader) HaveVendorId() bool {
 	return header.mExchangeFlags&kExchangeFlagVendorIdPresent != 0
 }
+
+func (header *PayloadHeader) DecodeAndConsume(data []byte) {
+
+}

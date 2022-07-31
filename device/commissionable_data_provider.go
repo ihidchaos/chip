@@ -3,7 +3,7 @@ package device
 import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/internal"
+	"github.com/galenliu/chip/pkg"
 	log "github.com/sirupsen/logrus"
 	"sync"
 )
@@ -93,15 +93,15 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	discriminator uint16) error {
 
 	if c.mIsInitialized {
-		return internal.ChipErrorIncorrectState
+		return pkg.ChipErrorIncorrectState
 	}
 	if discriminator > KMaxDiscriminatorValue {
 		log.Infof("Discriminator value invalid: %d", discriminator)
-		return internal.ChipErrorInvalidArgument
+		return pkg.ChipErrorInvalidArgument
 	}
 	if spake2pIterationCount < KSpake2pMinPbkdfIterations || spake2pIterationCount > crypto.KSpake2pMaxPbkdfIterations {
 		log.Printf("PASE Iteration count invalid: %d", spake2pIterationCount)
-		return internal.ChipErrorInvalidArgument
+		return pkg.ChipErrorInvalidArgument
 	}
 
 	spake2pVerifier := crypto.Spake2pVerifier{}
@@ -110,7 +110,7 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	if havePaseVerifier {
 		if len(serializedSpake2pVerifier) != crypto.KSpake2pVerifierSerializedLength {
 			log.Error("PASE verifier size invalid: %d", len(serializedSpake2pVerifier))
-			return internal.ChipErrorInvalidArgument
+			return pkg.ChipErrorInvalidArgument
 		}
 		err := spake2pVerifier.Deserialize(serializedSpake2pVerifier)
 		if err != nil {
@@ -122,13 +122,13 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	havePaseSalt := spake2pSalt != nil && len(spake2pSalt) > 0
 	if havePaseVerifier && !havePaseSalt {
 		log.Infof("CommissionableDataProvider didn't get a PASE salt, but got a verifier: ambiguous data")
-		return internal.ChipErrorInvalidArgument
+		return pkg.ChipErrorInvalidArgument
 	}
 
 	spake2pSaltLength := len(spake2pSalt)
 	if havePaseSalt && ((spake2pSaltLength < crypto.KSpake2pMinPbkdfSaltLength) || (spake2pSaltLength > crypto.KSpake2pMaxPbkdfSaltLength)) {
 		log.Infof("PASE salt length invalid: %d", spake2pSaltLength)
-		return internal.ChipErrorInvalidArgument
+		return pkg.ChipErrorInvalidArgument
 	}
 
 	if !havePaseSalt {
@@ -190,51 +190,51 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 
 func (c *CommissionableDataImpl) GetSetupDiscriminator() (uint16, error) {
 	if !c.mIsInitialized {
-		return 0, internal.ChipErrorIncorrectState
+		return 0, pkg.ChipErrorIncorrectState
 	}
 	return c.mDiscriminator, nil
 }
 
 func (c *CommissionableDataImpl) SetSetupDiscriminator(uint16) error {
-	return internal.ChipErrorNotImplemented
+	return pkg.ChipErrorNotImplemented
 }
 
 func (c *CommissionableDataImpl) GetSpake2pIterationCount() (uint32, error) {
 	if !c.mIsInitialized {
-		return 0, internal.ChipErrorIncorrectState
+		return 0, pkg.ChipErrorIncorrectState
 	}
 	return c.mPaseIterationCount, nil
 }
 
 func (c *CommissionableDataImpl) GetSpake2pSalt() (bytes []byte, err error) {
 	if !c.mIsInitialized {
-		return nil, internal.ChipErrorIncorrectState
+		return nil, pkg.ChipErrorIncorrectState
 	}
 	return c.mPaseSalt, nil
 }
 
 func (c *CommissionableDataImpl) GetSpake2pVerifier() ([]byte, error) {
 	if !c.mIsInitialized {
-		return nil, internal.ChipErrorIncorrectState
+		return nil, pkg.ChipErrorIncorrectState
 	}
 	if len(c.mSerializedPaseVerifier) != crypto.KSpake2pVerifierSerializedLength {
-		return nil, internal.ChipErrorInternal
+		return nil, pkg.ChipErrorInternal
 	}
 	return c.mSerializedPaseVerifier, nil
 }
 
 func (c CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
 	if !c.mIsInitialized {
-		return 0, internal.ChipErrorIncorrectState
+		return 0, pkg.ChipErrorIncorrectState
 	}
 	if c.mSetupPasscode == 0 {
-		return 0, internal.ChipErrorNotImplemented
+		return 0, pkg.ChipErrorNotImplemented
 	}
 	return c.mSetupPasscode, nil
 }
 
 func (c CommissionableDataImpl) SetSetupPasscode(uint322 uint32) error {
-	return internal.ChipErrorNotImplemented
+	return pkg.ChipErrorNotImplemented
 }
 
 func GeneratePaseSalt() ([]byte, error) {

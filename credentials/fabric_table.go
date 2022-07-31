@@ -3,6 +3,7 @@ package credentials
 import (
 	"github.com/galenliu/chip/crypto"
 	storage2 "github.com/galenliu/chip/crypto/persistent_storage"
+	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/storage"
 	"time"
 )
@@ -14,31 +15,35 @@ type FabricTableInitParams struct {
 }
 
 type FabricTableDelegate interface {
+	FabricWillBeRemoved(table FabricTable, index lib.FabricIndex)
+	OnFabricRemoved(table FabricTable, index lib.FabricIndex)
+	OnFabricCommitted(table FabricTable, index lib.FabricIndex)
+	OnFabricUpdated(table FabricTable, index lib.FabricIndex)
 }
 
-type FabricTableProvider interface {
+type FabricTableContainer interface {
 	Init(FabricTableInitParams) error
-	Delete(index FabricIndex)
+	Delete(index lib.FabricIndex)
 	DeleteAllFabrics() error
-	GetDeletedFabricFromCommitMarker() FabricIndex
+	GetDeletedFabricFromCommitMarker() lib.FabricIndex
 	ClearCommitMarker()
-	Forget(index FabricIndex)
+	Forget(index lib.FabricIndex)
 	AddFabricDelegate(delegate FabricTableDelegate) error
 	RemoveFabricDelegate(delegate FabricTableDelegate)
-	SetFabricLabel(index FabricIndex, label string) error
-	GetFabricLabel(index FabricIndex) (string, error)
+	SetFabricLabel(index lib.FabricIndex, label string) error
+	GetFabricLabel(index lib.FabricIndex) (string, error)
 	GetLastKnownGoodChipEpochTime() (time.Time, error)
 	SetLastKnownGoodChipEpochTime(time.Time) error
 	FabricCount() uint8
 
-	FetchRootCert(FabricIndex) ([]byte, error)
+	FetchRootCert(lib.FabricIndex) ([]byte, error)
 	FetchPendingNonFabricAssociatedRootCert() ([]byte, error)
-	FetchICACert(index FabricIndex) ([]byte, error)
-	FetchNOCCert(index FabricIndex) ([]byte, error)
-	FetchRootPubkey(index FabricIndex) ([]byte, error)
-	FetchCATs(index FabricIndex) ([]byte, error)
+	FetchICACert(index lib.FabricIndex) ([]byte, error)
+	FetchNOCCert(index lib.FabricIndex) ([]byte, error)
+	FetchRootPubkey(index lib.FabricIndex) ([]byte, error)
+	FetchCATs(index lib.FabricIndex) ([]byte, error)
 
-	SignWithOpKeypair(FabricIndex) crypto.P256ECDSASignature
+	SignWithOpKeypair(lib.FabricIndex) crypto.P256ECDSASignature
 }
 
 type FabricTable struct {

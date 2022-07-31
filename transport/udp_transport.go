@@ -17,6 +17,19 @@ type UdpTransport interface {
 	OnUdpError(endPoint netip.AddrPort)
 }
 
+type UdpListenParameters struct {
+	mAddress netip.AddrPort
+}
+
+func (l *UdpListenParameters) SetAddress(address netip.AddrPort) *UdpListenParameters {
+	l.mAddress = address
+	return l
+}
+
+func (l *UdpListenParameters) GetAddress() netip.AddrPort {
+	return l.mAddress
+}
+
 type UdpTransportImpl struct {
 }
 
@@ -24,16 +37,16 @@ func NewUdbTransportImpl() *UdpTransportImpl {
 	return &UdpTransportImpl{}
 }
 
-func (p *UdpTransportImpl) Init(addr netip.AddrPort) error {
+func (p *UdpTransportImpl) Init(parameters *UdpListenParameters) error {
 	network := "udp6"
-	if addr.Addr().Is4() {
+	if parameters.GetAddress().Addr().Is4() {
 		network = "udp4"
 	}
 	go func() {
 		for {
 			udpConn, err := net.ListenUDP(network, &net.UDPAddr{
-				IP:   addr.Addr().AsSlice(),
-				Port: int(addr.Port()),
+				IP:   parameters.GetAddress().Addr().AsSlice(),
+				Port: int(parameters.GetAddress().Port()),
 			})
 			if err != nil {
 				log.Error("UdpTransport err : %s", err.Error())

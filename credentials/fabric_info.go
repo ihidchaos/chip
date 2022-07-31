@@ -6,8 +6,6 @@ import (
 	"github.com/galenliu/chip/lib"
 )
 
-type FabricIndex uint8
-
 type FabricInfoProvider interface {
 	GetFabricLabel() string
 	SetFabricLabel(label string)
@@ -19,7 +17,7 @@ type FabricInfoProvider interface {
 	GetPeerIdForNode(id lib.NodeId) device.PeerId
 
 	GetFabricId() lib.FabricId
-	GetFabricIndex() FabricIndex
+	GetFabricIndex() lib.FabricIndex
 
 	GetCompressedFabricId() lib.CompressedFabricId
 
@@ -34,7 +32,7 @@ type FabricInfo struct {
 	mRootPublicKey       crypto.P256PublicKey
 	mNodeId              lib.NodeId
 	mFabricId            lib.FabricId
-	mFabricIndex         FabricIndex
+	mFabricIndex         lib.FabricIndex
 	mCompressedFabriceId lib.CompressedFabricId
 	mVendorId            lib.VendorId
 }
@@ -67,7 +65,7 @@ func (info *FabricInfo) GetFabricId() lib.FabricId {
 	return info.mFabricId
 }
 
-func (info *FabricInfo) GetFabricIndex() FabricIndex {
+func (info *FabricInfo) GetFabricIndex() lib.FabricIndex {
 	return info.mFabricIndex
 }
 
@@ -96,7 +94,7 @@ func (info *FabricInfo) GetPeerId() device.PeerId {
 type FabricInfoInitParams struct {
 	NodeId                    lib.NodeId
 	FabriceId                 lib.FabricId
-	FabricIndex               FabricIndex
+	FabricIndex               lib.FabricIndex
 	CompressedFabricId        lib.CompressedFabricId
 	RootPublicKey             crypto.P256PublicKey
 	VendorId                  uint16
