@@ -1,5 +1,9 @@
 package lib
 
+const (
+	kUndefinedFabricIndex FabricIndex = 0
+)
+
 //0xFFF1 Test Vendor #1
 //0xFFF2 Test Vendor #2
 //0xFFF3 Test Vendor #3
@@ -7,6 +11,7 @@ package lib
 
 type CompressedFabricId uint64
 type FabricId uint64
+type FabricIndex uint8
 
 type VendorId uint16
 

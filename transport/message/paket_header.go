@@ -33,8 +33,8 @@ type PacketHeader interface {
 	GetSessionId() uint16
 
 	GetSessionType() uint8
-	GetMessageFlags()
-	GetSecurityFlags()
+	GetMessageFlags() uint8
+	GetSecurityFlags() uint8
 	HasPrivacyFlag() bool
 
 	IsGroupSession() bool
@@ -104,16 +104,15 @@ func (h Header) GetSessionId() uint16 {
 }
 
 func (h Header) GetSessionType() uint8 {
-	//TODO implement me
-	panic("implement me")
+	return h.mSessionType
 }
 
-func (h Header) GetMessageFlags() {
-	//TODO implement me
-	panic("implement me")
+func (h Header) GetMessageFlags() uint8 {
+	return h.mMessageFlags
 }
 
-func (h Header) GetSecurityFlags() {
+func (h Header) GetSecurityFlags() uint8 {
+	return h.mSessionFlags
 	//TODO implement me
 	panic("implement me")
 }
