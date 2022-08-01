@@ -46,7 +46,7 @@ type Server struct {
 	mFabricDelegate           credentials.ServerFabricDelegate
 	mCASEClientPool           CASEClientPool
 	mCASEServer               *secure_channel.CASEServer
-	mSessionResumptionStorage any
+	mSessionResumptionStorage lib.SessionResumptionStorage
 	mMessageCounterManager    *secure_channel.MessageCounterManager
 	mUnsolicitedStatusHandler *secure_channel.UnsolicitedStatusHandler
 

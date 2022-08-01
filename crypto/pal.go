@@ -31,3 +31,6 @@ type P256ECDSASignature struct {
 func SignP256ECDSASignature(plainTex, privateKeyFile []byte) (P256ECDSASignature, error) {
 	return P256ECDSASignature{}, nil
 }
+
+type P256ECDHDerivedSecret struct {
+}
