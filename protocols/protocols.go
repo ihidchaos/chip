@@ -7,9 +7,7 @@ type Id struct {
 	mProtocolId uint16
 }
 
-func NotSpecifiedId() Id {
-	return Id{
-		lib.VendorIdNotSpecified,
-		0xFFFF,
-	}
+var NotSpecifiedId = Id{
+	mVendorId:   lib.VendorIdNotSpecified,
+	mProtocolId: 0xFFFF,
 }

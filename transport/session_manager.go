@@ -22,8 +22,8 @@ const (
 type SessionManager interface {
 	OnMessageReceived(srcAddr netip.AddrPort, data []byte)
 	Init(transports Transport, storage storage.StorageDelegate, table *credentials.FabricTable) error
-	SecureGroupMessageDispatch(header *message.Header, addr netip.AddrPort, data []byte)
-	SecureUnicastMessageDispatch(header *message.Header, addr netip.AddrPort, data []byte)
+	SecureGroupMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte)
+	SecureUnicastMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte)
 	SetMessageDelegate(message.SessionMessageDelegate)
 }
 
@@ -65,24 +65,24 @@ func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, data []by
 
 }
 
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *message.Header, addr netip.AddrPort, data []byte) {
+func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte) {
 
 }
 
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *message.Header, addr netip.AddrPort, data []byte) {
+func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte) {
 
 }
 
-func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message.Header, addr netip.AddrPort, data []byte) {
+func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte) {
 	source := header.GetSourceNodeId()
 	destination := header.GetDestinationNodeId()
-	if (source == lib.KUndefinedNodeId && destination == lib.KUndefinedNodeId) || (source != lib.KUndefinedNodeId && destination != lib.KUndefinedNodeId) {
+	if (source == lib.UndefinedNodeId && destination == lib.UndefinedNodeId) || (source != lib.UndefinedNodeId && destination != lib.UndefinedNodeId) {
 		log.Infof("received malformed unsecure packet with source %d destination %d", source, destination)
 		return // ephemeral node id is only assigned to the initiator, there sho
 	}
 
 	var optionalSession SessionHandle
-	if source != lib.KUndefinedNodeId {
+	if source != lib.UndefinedNodeId {
 		optionalSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, messageing.GetLocalMRPConfig())
 		if optionalSession == nil {
 			log.Infof("UnauthenticatedSession exhausted")

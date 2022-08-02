@@ -36,3 +36,7 @@ type CASESession struct {
 func (s *CASESession) SetGroupDataProvider(provider credentials.GroupDataProvider) {
 	s.mGroupDataProvider = provider
 }
+
+func (s *CASESession) Clear() {
+
+}

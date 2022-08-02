@@ -7,6 +7,7 @@ type SessionHandle interface {
 	DispatchSessionEvent(delegate SessionDelegate)
 
 	AsUnauthenticatedSession() *UnauthenticatedSession
+	ClearValue()
 }
 
 type SessionHandleImpl struct {
@@ -16,6 +17,11 @@ type SessionHandleImpl struct {
 }
 
 func (s SessionHandleImpl) SessionReleased() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s SessionHandleImpl) ClearValue() {
 	//TODO implement me
 	panic("implement me")
 }

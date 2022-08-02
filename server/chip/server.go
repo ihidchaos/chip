@@ -168,7 +168,6 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	}
 
 	s.mFabrics.AddFabricDelegate(s.mFabricDelegate)
-
 	s.mExchangeMgr = messageing.NewExchangeManagerImpl()
 	err = s.mExchangeMgr.Init(s.mSessions)
 	if err != nil {

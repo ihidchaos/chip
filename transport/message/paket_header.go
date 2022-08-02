@@ -24,7 +24,12 @@ const (
 	kMsgExtensionFlag = 0b00100000
 )
 
-type PacketHeader interface {
+const (
+	KSessiontypeUnicast = 0
+	KSessiontypeGroup   = 1
+)
+
+type PacketHeaderHandler interface {
 	GetMessageCounter() uint32
 	GetSourceNodeId() lib.NodeId
 	GetDestinationNodeId() lib.NodeId
@@ -56,170 +61,12 @@ type PacketHeader interface {
 	SetSessionId(uint162 uint16)
 	SetMessageCounter(uint32)
 	SetUnsecured()
-	EncodeSizeBytes()
-	Decode(data []byte) []byte
-}
-
-type Header struct {
-	mMessageFlags uint8
-	mSecFlags     uint8
-
-	mSourceNodeId       lib.NodeId
-	mDestinationNodeId  lib.NodeId
-	mDestinationGroupId lib.GroupId
-
-	mSecFlagMask uint8
-
-	mMessageCounter uint32
-	mSessionType    uint8
-	mSessionFlags   uint8
-
-	mSessionId uint16
-	mLength    uint8
-}
-
-func (h Header) GetMessageCounter() uint32 {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) GetSourceNodeId() lib.NodeId {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) GetDestinationNodeId() lib.NodeId {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) GetDestinationGroupId() lib.GroupId {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) GetSessionId() uint16 {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) GetSessionType() uint8 {
-	return h.mSessionType
-}
-
-func (h Header) GetMessageFlags() uint8 {
-	return h.mMessageFlags
-}
-
-func (h Header) GetSecurityFlags() uint8 {
-	return h.mSessionFlags
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) HasPrivacyFlag() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) IsGroupSession() bool {
-	return h.mSessionType == SessionTypeGroup
-}
-
-func (h Header) IsUnicastSession() bool {
-	return h.mSessionType == SessionTypeUnicast
-}
-
-func (h Header) IsSessionTypeValid() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) IsValidGroupMsg() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) IsValidMCSPMsg() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) IsEncrypted() bool {
-	return !(h.mSessionId == kMsgUnicastSessionIdUnsecured && h.IsUnicastSession())
-}
-
-func (h Header) MICTagLength() uint16 {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) IsSecureSessionControlMsg() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) SetSecureSessionControlMsg(value bool) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) SetSourceNodeId(id lib.NodeId) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) ClearSourceNodeId() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) SetDestinationNodeId(id lib.NodeId) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) ClearDestinationGroupId() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) SetSessionType(uint82 uint8) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) SetSessionId(uint162 uint16) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) SetMessageCounter(u uint32) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) SetUnsecured() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) EncodeSizeBytes() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) Decode(data []byte) []byte {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h Header) Len() uint8 {
-	return h.mLength
+	EncodeSizeBytes() uint8
+	DecodeAndConsume([]byte) error
 }
 
 /**********************************************
- * Header format (little endian):
+ * PacketHeader format (little endian):
  *
  * -------- Unencrypted header -----------------------------------------------------
  *[0:1]   8 bit:  | Message Flags: VERSION: 4 bit | S: 1 bit | RESERVED: 1 bit | DSIZ: 2 bit |
@@ -234,7 +81,7 @@ func (h Header) Len() uint8 {
  * 16 bit:  | Exchange ID                                                          |
  * 16 bit:  | Protocol ID                                                          |
  * 16 bit:  | Optional Vendor ID                                                   |
- * 32 bit:  | Acknowledged Message Counter (if A flag in the Header is set)        |
+ * 32 bit:  | Acknowledged Message Counter (if A flag in the PacketHeader is set)        |
  * -------- Encrypted Application Data Start ---------------------------------------
  *  <var>:  | Encrypted Data                                                       |
  * -------- Encrypted Application Data End -----------------------------------------
@@ -242,31 +89,180 @@ func (h Header) Len() uint8 {
  *
  **********************************************/
 
-func DecodeHeader(data []byte) (*Header, error) {
+type PacketHeader struct {
+	mMessageFlags uint8
+	mSecFlags     uint8
+
+	mSourceNodeId       lib.NodeId
+	mDestinationNodeId  lib.NodeId
+	mDestinationGroupId lib.GroupId
+
+	mSecFlagMask uint8
+
+	mMessageCounter uint32
+	mSessionType    uint8
+	mSessionFlags   uint8
+
+	mSessionId uint16
+	mSize      uint8
+}
+
+func NewPacketHeader() *PacketHeader {
+	return &PacketHeader{}
+}
+
+func (h *PacketHeader) GetMessageCounter() uint32 {
+	return h.mMessageCounter
+}
+
+func (h *PacketHeader) GetSourceNodeId() lib.NodeId {
+	return h.mSourceNodeId
+}
+
+func (h *PacketHeader) GetDestinationNodeId() lib.NodeId {
+	return h.mDestinationNodeId
+}
+
+func (h *PacketHeader) GetDestinationGroupId() lib.GroupId {
+	return h.mDestinationGroupId
+}
+
+func (h *PacketHeader) GetSessionId() uint16 {
+	return h.mSessionId
+}
+
+func (h *PacketHeader) GetSessionType() uint8 {
+	return h.mSessionType
+}
+
+func (h *PacketHeader) GetMessageFlags() uint8 {
+	return h.mMessageFlags
+}
+
+func (h *PacketHeader) GetSecurityFlags() uint8 {
+	return h.mSessionFlags
+}
+
+func (h *PacketHeader) HasPrivacyFlag() bool {
+	return (h.mSecFlags & kPrivacyFlag) != 0
+}
+
+func (h *PacketHeader) IsGroupSession() bool {
+	return h.mSessionType == SessionTypeGroup
+}
+
+func (h *PacketHeader) IsUnicastSession() bool {
+	return h.mSessionType == SessionTypeUnicast
+}
+
+func (h *PacketHeader) IsSessionTypeValid() bool {
+	switch h.mSessionId {
+	case KSessiontypeUnicast:
+		return true
+	case KSessiontypeGroup:
+		return true
+	default:
+		return false
+	}
+}
+
+func (h *PacketHeader) IsValidGroupMsg() bool {
+	return h.IsGroupSession() && h.GetSourceNodeId() != 0 && h.GetDestinationGroupId() != 0 &&
+		!h.IsSecureSessionControlMsg() && h.HasPrivacyFlag()
+}
+
+func (h *PacketHeader) IsValidMCSPMsg() bool {
+	return h.IsGroupSession() && h.GetSourceNodeId() != 0 && h.GetDestinationNodeId() != 0 &&
+		h.IsSecureSessionControlMsg() && h.HasPrivacyFlag()
+}
+
+func (h *PacketHeader) IsEncrypted() bool {
+	return !(h.mSessionId == kMsgUnicastSessionIdUnsecured && h.IsUnicastSession())
+}
+
+func (h *PacketHeader) MICTagLength() uint16 {
+	if h.IsEncrypted() {
+		return 16
+	}
+	return 0
+}
+
+func (h *PacketHeader) IsSecureSessionControlMsg() bool {
+	return (h.mSecFlags & kControlMsgFlag) != 0
+}
+
+func (h *PacketHeader) SetSecureSessionControlMsg(value bool) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *PacketHeader) SetSourceNodeId(id lib.NodeId) {
+	h.mSourceNodeId = id
+}
+
+func (h *PacketHeader) ClearSourceNodeId() {
+	h.mSourceNodeId = 0
+}
+
+func (h *PacketHeader) SetDestinationNodeId(id lib.NodeId) {
+	h.mDestinationNodeId = id
+}
+
+func (h *PacketHeader) ClearDestinationGroupId() {
+	h.mDestinationNodeId = 0
+}
+
+func (h *PacketHeader) SetSessionType(t uint8) {
+	h.mSessionType = t
+}
+
+func (h *PacketHeader) SetSessionId(id uint16) {
+	h.mSessionId = id
+}
+
+func (h *PacketHeader) SetMessageCounter(u uint32) {
+	h.mMessageCounter = u
+}
+
+func (h *PacketHeader) SetUnsecured() {
+	h.mSessionId = kMsgUnicastSessionIdUnsecured
+	h.mSessionType = KSessiontypeUnicast
+}
+
+func (h *PacketHeader) EncodeSizeBytes() uint8 {
+	return h.mSize
+}
+
+func (h *PacketHeader) DecodeAndConsume(data []byte) error {
 
 	if len(data) < 36 {
-		return nil, pkg.ChipErrorInvalidArgument
+		return pkg.ChipErrorInvalidArgument
 	}
-	header := &Header{}
-	header.mLength = 0
-	header.mMessageFlags = data[0]
-	header.mLength = header.mLength + 1
+	h.mSize = 0
 
-	header.mSessionFlags = data[1]
-	header.mLength = header.mLength + 1
+	h.mMessageFlags = data[0]
+	h.mSize = h.mSize + 1
 
-	header.mSessionId = binary.LittleEndian.Uint16(data[2:4])
-	header.mLength = header.mLength + 2
+	h.mSecFlags = data[1]
+	h.mSessionType = h.mSecFlags & 0x0003
+	h.mSize = h.mSize + 1
 
-	header.mMessageCounter = binary.LittleEndian.Uint32(data[4:8])
-	header.mLength = header.mLength + 4
-	if header.mMessageFlags&kSourceNodeIdPresent != 0 {
-		header.mSourceNodeId = lib.NodeId(binary.LittleEndian.Uint64(data[8:16]))
-		header.mLength = header.mLength + 8
+	h.mSessionFlags = data[1]
+	h.mSize = h.mSize + 1
+
+	h.mSessionId = binary.LittleEndian.Uint16(data[2:4])
+	h.mSize = h.mSize + 2
+
+	h.mMessageCounter = binary.LittleEndian.Uint32(data[4:8])
+	h.mSize = h.mSize + 4
+	if h.mMessageFlags&kSourceNodeIdPresent != 0 {
+		h.mSourceNodeId = lib.NodeId(binary.LittleEndian.Uint64(data[8:16]))
+		h.mSize = h.mSize + 8
 	}
-	if header.mMessageFlags&kDestinationNodeIdPresent != 0 {
-		header.mDestinationNodeId = lib.NodeId(binary.LittleEndian.Uint64(data[8:16]))
-		header.mLength = header.mLength + 8
+	if h.mMessageFlags&kDestinationNodeIdPresent != 0 {
+		h.mDestinationNodeId = lib.NodeId(binary.LittleEndian.Uint64(data[8:16]))
+		h.mDestinationGroupId = lib.GroupIdFromNodeId(h.mDestinationNodeId)
+		h.mSize = h.mSize + 8
 	}
-	return header, nil
+	return nil
 }

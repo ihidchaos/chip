@@ -45,15 +45,23 @@ func (s *CASEServer) ListenForSessionEstablishment(mgr messageing.ExchangeManage
 	s.mFabrics = fabrics
 	s.mExchangeManager = mgr
 	s.mGroupDataProvider = provider
-
 	s.GetSession().SetGroupDataProvider(s.mGroupDataProvider)
-
+	s.PrepareForSessionEstablishment()
 	return nil
 }
 
 func (s *CASEServer) PrepareForSessionEstablishment() {
 	log.Printf("CASE Server enabling CASE session setups")
-	s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(CaseSigma1, s)
+	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(CaseSigma1, s)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+	s.GetSession().Clear()
+	s.mPinnedSecureSession.ClearValue()
+
+	//s.GetSession().PrepareForSessionEstablishment()
+
+	//s.mPinnedSecureSession = s.GetSession().CopySecureSession()
 }
 
 func (s *CASEServer) GetSession() *CASESession {
