@@ -18,6 +18,11 @@ type UnauthenticatedSession struct {
 	mPeerMessageCounter   PeerMessageCounter
 }
 
+func (s UnauthenticatedSession) ClearValue() {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (s UnauthenticatedSession) SetPeerAddress(addr netip.AddrPort) {
 	//TODO implement me
 	panic("implement me")

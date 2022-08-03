@@ -6,17 +6,6 @@ import (
 	"net/netip"
 )
 
-type UdpTransport interface {
-	GetBoundPort() uint16
-	Close()
-	SendMessage(port netip.AddrPort, msg []byte) error
-	MulticastGroupJoinLeave(port netip.AddrPort, joined bool) error
-	CanListenMulticast() bool
-	CanSendToPeer(port netip.AddrPort) bool
-	OnUdpReceive(port netip.AddrPort)
-	OnUdpError(endPoint netip.AddrPort)
-}
-
 type UdpListenParameters struct {
 	mAddress netip.AddrPort
 }
@@ -31,6 +20,26 @@ func (l *UdpListenParameters) GetAddress() netip.AddrPort {
 }
 
 type UdpTransportImpl struct {
+}
+
+func (p *UdpTransportImpl) Disconnect(addr netip.Addr) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *UdpTransportImpl) SendMessage(port netip.AddrPort, msg []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *UdpTransportImpl) HandleMessageReceived(peerAddress netip.AddrPort, msg []byte) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *UdpTransportImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewUdbTransportImpl() *UdpTransportImpl {

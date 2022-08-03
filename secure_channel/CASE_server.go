@@ -46,11 +46,11 @@ func (s *CASEServer) ListenForSessionEstablishment(mgr messageing.ExchangeManage
 	s.mExchangeManager = mgr
 	s.mGroupDataProvider = provider
 	s.GetSession().SetGroupDataProvider(s.mGroupDataProvider)
-	s.PrepareForSessionEstablishment()
+	s.PrepareForSessionEstablishment(lib.UndefinedScopedNodeId)
 	return nil
 }
 
-func (s *CASEServer) PrepareForSessionEstablishment() {
+func (s *CASEServer) PrepareForSessionEstablishment(nodeId lib.ScopedNodeId) {
 	log.Printf("CASE Server enabling CASE session setups")
 	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(CaseSigma1, s)
 	if err != nil {
@@ -59,8 +59,10 @@ func (s *CASEServer) PrepareForSessionEstablishment() {
 	s.GetSession().Clear()
 	s.mPinnedSecureSession.ClearValue()
 
-	//s.GetSession().PrepareForSessionEstablishment()
-
+	err = s.GetSession().PrepareForSessionEstablishment(s.mSessionManger, s.mFabrics, s.mSessionResumptionStorage, s.mCertificateValidityPolicy, s, nodeId, messageing.GetLocalMRPConfig())
+	if err != nil {
+		log.Panic(err.Error())
+	}
 	//s.mPinnedSecureSession = s.GetSession().CopySecureSession()
 }
 

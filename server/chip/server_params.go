@@ -71,11 +71,11 @@ func NewServerInitParams() *InitParams {
 	return &InitParams{}
 }
 
-func (this *InitParams) Init(options *config.DeviceOptions) (*InitParams, error) {
-	this.OperationalServicePort = options.SecuredDevicePort
-	this.UserDirectedCommissioningPort = options.UnsecuredCommissionerPort
-	this.InterfaceId = options.InterfaceId
-	return this, nil
+func (params *InitParams) Init(options *config.DeviceOptions) (*InitParams, error) {
+	params.OperationalServicePort = options.SecuredDevicePort
+	params.UserDirectedCommissioningPort = options.UnsecuredCommissionerPort
+	params.InterfaceId = options.InterfaceId
+	return params, nil
 }
 
 func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
@@ -90,7 +90,7 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 	return c
 }
 
-func (this *InitParams) InitializeStaticResourcesBeforeServerInit() error {
+func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 	var sKvsPersistentStorageDelegate storage.PersistentStorageDelegate
 	var sPersistentStorageOperationalKeystore = storage2.NewPersistentStorageOperationalKeystoreImpl()
@@ -100,49 +100,49 @@ func (this *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 	var sSessionResumptionStorage = lib.NewSimpleSessionResumptionStorage()
 
-	if this.PersistentStorageDelegate == nil {
+	if params.PersistentStorageDelegate == nil {
 		sKvsPersistentStorageDelegate = storage.KeyValueStoreMgr()
-		this.PersistentStorageDelegate = sKvsPersistentStorageDelegate
+		params.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 
-	if this.OperationalKeystore == nil {
-		sPersistentStorageOperationalKeystore.Init(this.PersistentStorageDelegate)
-		this.OperationalKeystore = sPersistentStorageOperationalKeystore
+	if params.OperationalKeystore == nil {
+		sPersistentStorageOperationalKeystore.Init(params.PersistentStorageDelegate)
+		params.OperationalKeystore = sPersistentStorageOperationalKeystore
 	}
 
-	if this.OpCertStore == nil {
-		sPersistentStorageOpCertStore.Init(this.PersistentStorageDelegate)
-		this.OpCertStore = sPersistentStorageOpCertStore
+	if params.OpCertStore == nil {
+		sPersistentStorageOpCertStore.Init(params.PersistentStorageDelegate)
+		params.OpCertStore = sPersistentStorageOpCertStore
 	}
 
-	sGroupDataProvider.SetStorageDelegate(this.PersistentStorageDelegate)
+	sGroupDataProvider.SetStorageDelegate(params.PersistentStorageDelegate)
 	err := sGroupDataProvider.Init()
 	if err != nil {
 		return err
 	}
-	this.GroupDataProvider = sGroupDataProvider
+	params.GroupDataProvider = sGroupDataProvider
 
 	{
 		if config.ChipConfigEnableSessionResumption {
-			err := sSessionResumptionStorage.Init(this.PersistentStorageDelegate)
+			err := sSessionResumptionStorage.Init(params.PersistentStorageDelegate)
 			if err != nil {
 				return err
 			}
-			this.SessionResumptionStorage = sSessionResumptionStorage
+			params.SessionResumptionStorage = sSessionResumptionStorage
 		} else {
-			this.SessionResumptionStorage = nil
+			params.SessionResumptionStorage = nil
 		}
 
 	}
 
-	this.AccessDelegate = access.GetAccessControlDelegate()
+	params.AccessDelegate = access.GetAccessControlDelegate()
 
 	{
 		//TODO 未实现
-		this.AclStorage = server.NewAclStorageImpl()
+		params.AclStorage = server.NewAclStorageImpl()
 	}
 
-	this.CertificateValidityPolicy = sDefaultCertValidityPolicy
+	params.CertificateValidityPolicy = sDefaultCertValidityPolicy
 
 	return nil
 }

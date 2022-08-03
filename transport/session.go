@@ -33,6 +33,9 @@ type Session interface {
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
 	AddHolder(handle SessionHandle)
 	RemoveHolder(handle SessionHandle)
+	SessionReleased()
+	AsUnauthenticatedSession() *UnauthenticatedSession
+	ClearValue()
 
 	//	virtual void Retain()  = 0;
 	//virtual void Release() = 0;

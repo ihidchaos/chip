@@ -1,16 +1,10 @@
 package credentials
 
-type GroupDataProviderListener interface {
-	Init(s ServerDelegate) error
-}
+import (
+	"github.com/galenliu/chip/lib"
+)
 
-type GroupDataProviderListenerImpl struct {
-}
-
-func (g GroupDataProviderListenerImpl) Init(s ServerDelegate) error {
-	return nil
-}
-
-func NewGroupDataProviderListenerImpl() *GroupDataProviderListenerImpl {
-	return &GroupDataProviderListenerImpl{}
+type GroupListener interface {
+	OnGroupAdded(fabricIndex lib.FabricIndex, newGroup *GroupInfo)
+	OnGroupRemoved(fabricIndex lib.FabricIndex, newGroup *GroupInfo)
 }

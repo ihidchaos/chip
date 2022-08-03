@@ -20,13 +20,44 @@ func (receiver UnsolicitedMessageHandlerSlot) Matches(aProtocolId protocols.Id, 
 }
 
 type ExchangeManager interface {
-	Init(sessions transport.SessionManager) error
+	message.SessionMessageDelegate
 	RegisterUnsolicitedMessageHandlerForType(sigma1 uint8, s *secure_channel.CASEServer, id ...protocols.Id) error
 }
 
+// ExchangeManagerImpl ExchangeManager and
 type ExchangeManagerImpl struct {
 	UMHandlerPool []*UnsolicitedMessageHandlerSlot
 	mContextPool  []ExchangeContext
+}
+
+func (e *ExchangeManagerImpl) OnMessageReceived(packetHeader *message.PacketHeader, payloadHeader *message.PayloadHeader, session transport.Session, isDuplicate uint8, data []byte) {
+	//var matchingUMH *UnsolicitedMessageHandlerSlot = nil
+
+	log.Infof("Received message of type %d with protocolId %d"+
+		"and MessageCounter: %d",
+		payloadHeader.GetMessageType(), payloadHeader.GetProtocolID(),
+		packetHeader.GetMessageCounter())
+	var msgFlags uint32 = 0
+	if isDuplicate == transport.DuplicateMessageYes {
+		msgFlags = msgFlags | pkg.KDuplicateMessage
+	}
+
+	found := false
+	if !packetHeader.IsGroupSession() {
+
+		for _, ec := range e.mContextPool {
+			if ec.MatchExchange(session, packetHeader, payloadHeader) {
+				ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlags, data)
+				found = true
+				return
+			}
+			continue
+		}
+	} else {
+		if found {
+			return
+		}
+	}
 }
 
 func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(msgType uint8, handler *secure_channel.CASEServer, id ...protocols.Id) error {
@@ -75,38 +106,12 @@ func (e *ExchangeManagerImpl) UnregisterUMH(id protocols.Id, msgType uint8) erro
 	return pkg.ChipErrorNoUnsolicitedMessageHandler
 }
 
-func (e *ExchangeManagerImpl) OnMessageReceived(
-	packetHeader message.PacketHeader,
-	payloadHeader message.PayloadHeader,
-	session transport.SessionHandle,
-	isDuplicate uint8,
-	data []byte,
-) {
-	//var matchingUMH *UnsolicitedMessageHandlerSlot = nil
-
-	log.Infof("Received message of type %d with protocolId %d"+
-		"and MessageCounter: %d",
-		payloadHeader.GetMessageType(), payloadHeader.GetProtocolID(),
-		packetHeader.GetMessageCounter())
-	var msgFlags uint32 = 0
-	if isDuplicate == transport.DuplicateMessageYes {
-		msgFlags = msgFlags | pkg.KDuplicateMessage
-	}
-
-	found := false
-	if !packetHeader.IsGroupSession() {
-
-		for _, ec := range e.mContextPool {
-			if ec.MatchExchange(session, packetHeader, payloadHeader) {
-				ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlags, data)
-				found = true
-				return
-			}
-			continue
-		}
-	} else {
-		if found {
-			return
-		}
-	}
-}
+//func (e *ExchangeManagerImpl) OnMessageReceived(
+//	packetHeader message.PacketHeader,
+//	payloadHeader message.PayloadHeader,
+//	session transport.SessionHandle,
+//	isDuplicate uint8,
+//	data []byte,
+//) error{
+//
+//}

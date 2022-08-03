@@ -21,6 +21,10 @@ import (
 
 var sDeviceTypeResolver = access.DeviceTypeResolver{}
 
+type ServerTransportMgr interface {
+	transport.TransportMgrBase
+}
+
 type AppDelegate interface {
 	OnCommissioningSessionStarted()
 	OnCommissioningSessionStopped()
@@ -43,7 +47,7 @@ type Server struct {
 
 	mGroupsProvider           credentials.GroupDataProvider
 	mTestEventTriggerDelegate server.TestEventTriggerDelegate
-	mFabricDelegate           credentials.ServerFabricDelegate
+	mFabricDelegate           credentials.FabricTableDelegate
 	mCASEClientPool           CASEClientPool
 	mCASEServer               *secure_channel.CASEServer
 	mSessionResumptionStorage lib.SessionResumptionStorage
@@ -54,10 +58,10 @@ type Server struct {
 	mCASESessionManager *CASESessionManager
 	mDevicePool         OperationalDeviceProxyPool
 	mAclStorage         server.AclStorage
-	mTransports         transport.Transport
+	mTransports         ServerTransportMgr
 	mExchangeMgr        messageing.ExchangeManager
 	mSessions           transport.SessionManager
-	mListener           credentials.GroupDataProviderListener
+	mListener           GroupDataProviderListener
 	mInitialized        bool
 }
 
@@ -121,21 +125,27 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		}
 	}
 
-	s.mAccessControl = access.NewAccessControl()
-	err = s.mAccessControl.Init(initParams.AccessDelegate, sDeviceTypeResolver)
-	if err != nil {
-		return nil, err
+	{
+		accessControl := access.NewAccessControl()
+		err = accessControl.Init(initParams.AccessDelegate, sDeviceTypeResolver)
+		if err != nil {
+			return nil, err
+		}
+		access.SetAccessControl(s.mAccessControl)
+		s.mAccessControl = accessControl
 	}
-	access.SetAccessControl(s.mAccessControl)
 
-	s.mAclStorage = initParams.AclStorage
-	err = s.mAclStorage.Init(s.mDeviceStorage, s.mFabrics)
-	if err != nil {
-		return nil, err
+	{
+		aclStorage := initParams.AclStorage
+		err = aclStorage.Init(s.mDeviceStorage, s.mFabrics)
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		s.mAclStorage = aclStorage
 	}
 
 	s.mGroupsProvider = initParams.GroupDataProvider
-	SetGroupDataProvider(s.mGroupsProvider)
+	credentials.SetGroupDataProvider(s.mGroupsProvider)
 
 	s.mTestEventTriggerDelegate = initParams.TestEventTriggerDelegate
 
@@ -144,16 +154,24 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		deviceInfoProvider.SetStorageDelegate(s.mDeviceStorage)
 	}
 
-	var udpParams transport.UdpListenParameters
-	s.mTransports = transport.NewUdbTransportImpl()
-	err = s.mTransports.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), s.mOperationalServicePort)))
-
-	s.mListener = credentials.NewGroupDataProviderListenerImpl()
-	err = s.mListener.Init(s) // TODO
-	if err != nil {
-		return nil, err
+	{
+		udpParams := transport.UdpListenParameters{}
+		udp := transport.NewUdbTransportImpl()
+		err = udp.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), s.mOperationalServicePort)))
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		s.mTransports = udp
 	}
-	s.mGroupsProvider.SetListener(s.mListener)
+
+	{
+		s.mListener = &GroupDataProviderListenerImpl{s}
+		err = s.mListener.Init(s) // TODO
+		if err != nil {
+			return nil, err
+		}
+		s.mGroupsProvider.SetListener(s.mListener)
+	}
 
 	s.mSessions = transport.NewSessionManagerImpl()
 	err = s.mSessions.Init(s.mTransports, s.mDeviceStorage, s.GetFabricTable())
@@ -161,23 +179,32 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		return nil, err
 	}
 
-	s.mFabricDelegate = credentials.NewServerFabricDelegateImpl()
-	err = s.mFabricDelegate.Init(s)
-	if err != nil {
-		return nil, err
+	{
+		fabricDelegate := NewServerFabricDelegateImpl()
+		_ = fabricDelegate.Init(s)
+		s.mFabricDelegate = fabricDelegate
+		err := s.mFabrics.AddFabricDelegate(s.mFabricDelegate)
+		if err != nil {
+			log.Panic(err.Error())
+		}
 	}
 
-	s.mFabrics.AddFabricDelegate(s.mFabricDelegate)
-	s.mExchangeMgr = messageing.NewExchangeManagerImpl()
-	err = s.mExchangeMgr.Init(s.mSessions)
-	if err != nil {
-		return nil, err
+	{
+		exchangeMgr := messageing.NewExchangeManagerImpl()
+		err = exchangeMgr.Init(s.mSessions)
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		s.mExchangeMgr = exchangeMgr
 	}
 
-	s.mMessageCounterManager = secure_channel.NewMessageCounterManager()
-	err = s.mMessageCounterManager.Init(s.mExchangeMgr)
-	if err != nil {
-		return s, err
+	{
+		messageCounterManager := secure_channel.NewMessageCounterManager()
+		err = messageCounterManager.Init(s.mExchangeMgr)
+		if err != nil {
+			return s, err
+		}
+		s.mMessageCounterManager = messageCounterManager
 	}
 
 	s.mUnsolicitedStatusHandler = secure_channel.NewUnsolicitedStatusHandler()
@@ -196,6 +223,13 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	discoveryService := dnssd.NewDnssdServer()
 	discoveryService.SetFabricTable(s.mFabrics)
 	discoveryService.SetCommissioningModeProvider(s.mCommissioningWindowManager)
+
+	if config.ChipDeviceConfigEnablePairingAutostart {
+		err := s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
+		if err != nil {
+			log.Panic(err.Error())
+		}
+	}
 
 	//err = chip::app::InteractionModelEngine::GetInstance()->initCommissionableData(&mExchangeMgr, &GetFabricTable());
 	//SuccessOrExit(err);
@@ -297,6 +331,6 @@ func (s *Server) StartServer() error {
 	return nil
 }
 
-func SetGroupDataProvider(provider credentials.GroupDataProvider) {
-
+func (s *Server) GetTransportManager() transport.TransportMgrBase {
+	return s.mTransports
 }

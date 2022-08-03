@@ -21,7 +21,7 @@ const (
 
 type SessionManager interface {
 	OnMessageReceived(srcAddr netip.AddrPort, data []byte)
-	Init(transports Transport, storage storage.StorageDelegate, table *credentials.FabricTable) error
+	Init(transports TransportMgrBase, storage storage.StorageDelegate, table *credentials.FabricTable) error
 	SecureGroupMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte)
 	SecureUnicastMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte)
 	SetMessageDelegate(message.SessionMessageDelegate)
@@ -39,7 +39,7 @@ func (s *SessionManagerImpl) SetMessageDelegate(delegate message.SessionMessageD
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transports Transport, storage storage.StorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManagerImpl) Init(transports TransportMgrBase, storage storage.StorageDelegate, table *credentials.FabricTable) error {
 	return nil
 }
 
@@ -48,7 +48,8 @@ func NewSessionManagerImpl() *SessionManagerImpl {
 }
 
 func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, data []byte) {
-	packetHeader, err := message.DecodeHeader(data)
+	packetHeader := message.NewPacketHeader()
+	err := packetHeader.DecodeAndConsume(data)
 	if err != nil {
 		log.Printf("failed to decode packet header: %s", err.Error())
 		return
@@ -101,9 +102,13 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message.Pack
 
 	isDuplicate := DuplicateMessageNo
 	unsecuredSession.MarkActiveRx()
-	var payloadHeader message.PayloadHeader
-	payloadHeader.DecodeAndConsume(data)
-	err := unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
+	var payloadHeader = message.NewPayloadHeader()
+	err := payloadHeader.DecodeAndConsume(data)
+	if err != nil {
+		log.Infof(err.Error())
+		return
+	}
+	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
 	if err == pkg.ChipErrorDuplicateMessageReceived {
 		log.Infof("Received a duplicate message with MessageCounter: %d", header.GetMessageCounter())
 		isDuplicate = DuplicateMessageYes

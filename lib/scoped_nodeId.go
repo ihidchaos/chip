@@ -1,5 +1,10 @@
 package lib
 
+var UndefinedScopedNodeId = ScopedNodeId{
+	NodeId:      UndefinedNodeId,
+	FabricIndex: UndefinedFabricIndex,
+}
+
 type ScopedNodeId struct {
 	NodeId      NodeId
 	FabricIndex FabricIndex
