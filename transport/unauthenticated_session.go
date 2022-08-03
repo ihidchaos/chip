@@ -17,7 +17,7 @@ type UnauthenticatedSession struct {
 	mPeerMessageCounter       PeerMessageCounter
 }
 
-func NewUnauthenticatedSession(roleResponder uint8, id lib.NodeId, config *ReliableMessageProtocolConfig) SessionHandle {
+func NewUnauthenticatedSession(roleResponder uint8, id lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSession {
 	return &UnauthenticatedSession{
 		SessionBaseImpl:           NewSessionBaseImpl(),
 		mSessionRole:              roleResponder,

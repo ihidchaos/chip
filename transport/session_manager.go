@@ -3,6 +3,7 @@ package transport
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/pkg"
 	"github.com/galenliu/chip/pkg/storage"
 	"github.com/galenliu/chip/transport/message"
 	log "github.com/sirupsen/logrus"
@@ -91,6 +92,7 @@ func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *message.Packet
 }
 
 func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte) {
+
 	source := header.GetSourceNodeId()
 	destination := header.GetDestinationNodeId()
 	if (source == lib.UndefinedNodeId && destination == lib.UndefinedNodeId) || (source != lib.UndefinedNodeId && destination != lib.UndefinedNodeId) {
@@ -98,41 +100,41 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message.Pack
 		return // ephemeral node id is only assigned to the initiator, there sho
 	}
 
-	var optionalSession SessionHandle
+	var unsecuredSession *UnauthenticatedSession
 	if source != lib.UndefinedNodeId {
-		optionalSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, GetLocalMRPConfig())
-		if optionalSession == nil {
+		unsecuredSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, GetLocalMRPConfig())
+		if unsecuredSession == nil {
 			log.Infof("UnauthenticatedSession exhausted")
 			return
 		}
 	} else {
-		optionalSession = s.mUnauthenticatedSessions.FindInitiator(destination)
-		if optionalSession == nil {
+		unsecuredSession = s.mUnauthenticatedSessions.FindInitiator(destination)
+		if unsecuredSession == nil {
 			log.Infof("Received unknown unsecure packet for initiator %d", destination)
 			return
 		}
 	}
+	unsecuredSession.SetPeerAddress(addr)
+	isDuplicate := DuplicateMessageNo
 
-	//unsecuredSession := optionalSession.AsUnauthenticatedSession()
-	//unsecuredSession.SetPeerAddress(addr)
-	//
-	//isDuplicate := DuplicateMessageNo
-	//unsecuredSession.MarkActiveRx()
-	//var payloadHeader = message.NewPayloadHeader()
-	//err := payloadHeader.DecodeAndConsume(data)
-	//if err != nil {
-	//	log.Infof(err.Error())
-	//	return
-	//}
-	//err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
-	//if err == pkg.ChipErrorDuplicateMessageReceived {
-	//	log.Infof("Received a duplicate message with MessageCounter: %d", header.GetMessageCounter())
-	//	isDuplicate = DuplicateMessageYes
-	//	return
-	//} else {
-	//	unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.GetMessageCounter())
-	//}
-	//if s.mCB != nil {
-	//	s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, data)
-	//}
+	unsecuredSession.MarkActiveRx()
+
+	var payloadHeader = message.NewPayloadHeader()
+	err := payloadHeader.DecodeAndConsume(data[header.EncodeSizeBytes():])
+	if err != nil {
+		return
+	}
+
+	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
+	if err == pkg.ChipErrorDuplicateMessageReceived {
+		isDuplicate = DuplicateMessageNo
+		log.Infof(
+			"Received a duplicate message with MessageCounter: %v on exchange %v",
+			header.GetMessageCounter(), payloadHeader)
+	} else {
+		unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.GetMessageCounter())
+	}
+	if s.mCB != nil {
+		s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, data)
+	}
 }
