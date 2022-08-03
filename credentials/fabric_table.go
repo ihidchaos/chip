@@ -4,7 +4,7 @@ import (
 	"github.com/galenliu/chip/crypto"
 	storage2 "github.com/galenliu/chip/crypto/persistent_storage"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/storage"
+	"github.com/galenliu/chip/pkg/storage"
 	"time"
 )
 

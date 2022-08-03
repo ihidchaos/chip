@@ -1,7 +1,7 @@
 package device
 
 import (
-	"github.com/galenliu/chip/storage"
+	"github.com/galenliu/chip/pkg/storage"
 	"sync"
 )
 

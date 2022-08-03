@@ -3,28 +3,23 @@ package transport
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/pkg"
-	"github.com/galenliu/chip/storage"
+	"github.com/galenliu/chip/pkg/storage"
 	"github.com/galenliu/chip/transport/message"
 	log "github.com/sirupsen/logrus"
 	"net/netip"
 )
 
 const (
-	NotReady = iota
-	Initialized
-
 	DuplicateMessageYes uint8 = 0
 	DuplicateMessageNo  uint8 = 1
 )
 
 type SessionManager interface {
+	credentials.FabricTableDelegate
 	OnMessageReceived(srcAddr netip.AddrPort, data []byte)
-	Init(transports TransportMgrBase, storage storage.StorageDelegate, table *credentials.FabricTable) error
 	SecureGroupMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte)
 	SecureUnicastMessageDispatch(header *message.PacketHeader, addr netip.AddrPort, data []byte)
-	SetMessageDelegate(message.SessionMessageDelegate)
+	SetMessageDelegate(SessionMessageDelegate)
 }
 
 type SessionManagerImpl struct {
@@ -32,14 +27,35 @@ type SessionManagerImpl struct {
 	mSecureSessions          SecureSessionTable
 	mFabricTable             *credentials.FabricTableContainer
 	mState                   int
-	mCB                      message.SessionMessageDelegate
+	mCB                      SessionMessageDelegate
 }
 
-func (s *SessionManagerImpl) SetMessageDelegate(delegate message.SessionMessageDelegate) {
+func (s *SessionManagerImpl) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) OnFabricRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) OnFabricCommitted(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate) {
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transports TransportMgrBase, storage storage.StorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManagerImpl) Init(transports TransportManager, storage storage.StorageDelegate, table *credentials.FabricTable) error {
+	transports.SetSessionManager(s)
 	return nil
 }
 
@@ -84,7 +100,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message.Pack
 
 	var optionalSession SessionHandle
 	if source != lib.UndefinedNodeId {
-		optionalSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, messageing.GetLocalMRPConfig())
+		optionalSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, GetLocalMRPConfig())
 		if optionalSession == nil {
 			log.Infof("UnauthenticatedSession exhausted")
 			return
@@ -97,26 +113,26 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message.Pack
 		}
 	}
 
-	unsecuredSession := optionalSession.AsUnauthenticatedSession()
-	unsecuredSession.SetPeerAddress(addr)
-
-	isDuplicate := DuplicateMessageNo
-	unsecuredSession.MarkActiveRx()
-	var payloadHeader = message.NewPayloadHeader()
-	err := payloadHeader.DecodeAndConsume(data)
-	if err != nil {
-		log.Infof(err.Error())
-		return
-	}
-	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
-	if err == pkg.ChipErrorDuplicateMessageReceived {
-		log.Infof("Received a duplicate message with MessageCounter: %d", header.GetMessageCounter())
-		isDuplicate = DuplicateMessageYes
-		return
-	} else {
-		unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.GetMessageCounter())
-	}
-	if s.mCB != nil {
-		s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, data)
-	}
+	//unsecuredSession := optionalSession.AsUnauthenticatedSession()
+	//unsecuredSession.SetPeerAddress(addr)
+	//
+	//isDuplicate := DuplicateMessageNo
+	//unsecuredSession.MarkActiveRx()
+	//var payloadHeader = message.NewPayloadHeader()
+	//err := payloadHeader.DecodeAndConsume(data)
+	//if err != nil {
+	//	log.Infof(err.Error())
+	//	return
+	//}
+	//err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
+	//if err == pkg.ChipErrorDuplicateMessageReceived {
+	//	log.Infof("Received a duplicate message with MessageCounter: %d", header.GetMessageCounter())
+	//	isDuplicate = DuplicateMessageYes
+	//	return
+	//} else {
+	//	unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.GetMessageCounter())
+	//}
+	//if s.mCB != nil {
+	//	s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, data)
+	//}
 }

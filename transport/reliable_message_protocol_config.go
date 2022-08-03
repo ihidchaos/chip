@@ -1,4 +1,4 @@
-package messageing
+package transport
 
 import (
 	"sync"

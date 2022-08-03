@@ -1,7 +1,7 @@
 package dnssd
 
 import (
-	"github.com/galenliu/chip/server/dnssd/responder"
+	"github.com/galenliu/chip/pkg/dnssd/responder"
 	"time"
 )
 

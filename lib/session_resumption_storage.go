@@ -1,6 +1,8 @@
 package lib
 
-import "github.com/galenliu/chip/storage"
+import (
+	"github.com/galenliu/chip/pkg/storage"
+)
 
 type SessionResumptionStorage interface {
 	Init(delegate storage.PersistentStorageDelegate) error

@@ -1,4 +1,4 @@
-package chip
+package core
 
 import (
 	"github.com/galenliu/chip/credentials"
@@ -16,5 +16,5 @@ type DeviceProxyInitParams struct {
 	ClientPool                CASEClientPoolDelegate
 	GroupDataProvider         credentials.GroupDataProvider
 
-	MrpLocalConfig *messageing.ReliableMessageProtocolConfig
+	MrpLocalConfig *transport.ReliableMessageProtocolConfig
 }

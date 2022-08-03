@@ -7,6 +7,12 @@ import (
 	"github.com/galenliu/chip/transport"
 	"github.com/galenliu/chip/transport/message"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
+)
+
+const (
+	kStateNotInitialized = 0
+	kStateInitialized    = 1
 )
 
 type UnsolicitedMessageHandlerSlot struct {
@@ -19,15 +25,48 @@ func (receiver UnsolicitedMessageHandlerSlot) Matches(aProtocolId protocols.Id, 
 	return aProtocolId == receiver.ProtocolId && aMessageType == receiver.MessageType
 }
 
+func (receiver UnsolicitedMessageHandlerSlot) Reset() {
+	receiver.Handler = nil
+}
+
 type ExchangeManager interface {
-	message.SessionMessageDelegate
+	transport.SessionMessageDelegate
 	RegisterUnsolicitedMessageHandlerForType(sigma1 uint8, s *secure_channel.CASEServer, id ...protocols.Id) error
 }
 
 // ExchangeManagerImpl ExchangeManager and
 type ExchangeManagerImpl struct {
-	UMHandlerPool []*UnsolicitedMessageHandlerSlot
-	mContextPool  []ExchangeContext
+	UMHandlerPool       []*UnsolicitedMessageHandlerSlot
+	mContextPool        []*ExchangeContext
+	mSessionManager     transport.SessionManager
+	mNextExchangeId     uint16
+	mNextKeyId          uint16
+	mReliableMessageMgr any //TODO
+	mInitialized        bool
+}
+
+func NewExchangeManagerImpl() *ExchangeManagerImpl {
+	impl := &ExchangeManagerImpl{}
+	impl.UMHandlerPool = make([]*UnsolicitedMessageHandlerSlot, 0)
+	impl.mContextPool = make([]*ExchangeContext, 0)
+	return impl
+}
+
+func (e *ExchangeManagerImpl) Init(sessionManager transport.SessionManager) error {
+	if e.mInitialized {
+		return pkg.ChipErrorIncorrectState
+	}
+	e.mSessionManager = sessionManager
+	e.mNextExchangeId = uint16(rand.Uint32())
+	e.mNextKeyId = 0
+
+	for _, handler := range e.UMHandlerPool {
+		handler.Reset()
+	}
+	sessionManager.SetMessageDelegate(e)
+	//e.mReliableMessageMgr.Init(sessionManager.SystemLayer())
+	e.mInitialized = true
+	return nil
 }
 
 func (e *ExchangeManagerImpl) OnMessageReceived(packetHeader *message.PacketHeader, payloadHeader *message.PayloadHeader, session transport.Session, isDuplicate uint8, data []byte) {
@@ -69,14 +108,6 @@ func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(msgType u
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func NewExchangeManagerImpl() *ExchangeManagerImpl {
-	return &ExchangeManagerImpl{}
-}
-
-func (e *ExchangeManagerImpl) Init(sessions transport.SessionManager) error {
 	return nil
 }
 

@@ -1,8 +1,8 @@
 package params
 
 import (
-	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/pkg"
+	"github.com/galenliu/chip/transport"
 	"net"
 )
 
@@ -11,9 +11,9 @@ type BaseAdvertisingParams struct {
 	mMac            string
 	mEnableIPv4     bool
 	mInterfaceId    net.Interface
-	mMRPConfig      messageing.ReliableMessageProtocolConfig
+	mMRPConfig      transport.ReliableMessageProtocolConfig
 	mTcpSupported   *bool
-	mLocalMRPConfig messageing.ReliableMessageProtocolConfig
+	mLocalMRPConfig transport.ReliableMessageProtocolConfig
 }
 
 func NewBaseAdvertisingParams() BaseAdvertisingParams {
@@ -21,15 +21,15 @@ func NewBaseAdvertisingParams() BaseAdvertisingParams {
 }
 
 func (b BaseAdvertisingParams) Init() BaseAdvertisingParams {
-	b.mMRPConfig = messageing.ReliableMessageProtocolConfig{}
+	b.mMRPConfig = transport.ReliableMessageProtocolConfig{}
 	return b
 }
 
-func (b *BaseAdvertisingParams) GetLocalMRPConfig() *messageing.ReliableMessageProtocolConfig {
+func (b *BaseAdvertisingParams) GetLocalMRPConfig() *transport.ReliableMessageProtocolConfig {
 	return &b.mLocalMRPConfig
 }
 
-func (b *BaseAdvertisingParams) SetLocalMRPConfig(config *messageing.ReliableMessageProtocolConfig) {
+func (b *BaseAdvertisingParams) SetLocalMRPConfig(config *transport.ReliableMessageProtocolConfig) {
 	b.mLocalMRPConfig = *config
 }
 

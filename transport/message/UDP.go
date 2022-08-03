@@ -1,25 +1,28 @@
-package transport
+package message
 
 import (
+	"github.com/galenliu/chip/transport"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"net"
 	"net/netip"
 )
 
-type UdpListenParameters struct {
-	mAddress netip.AddrPort
-}
-
-func (l *UdpListenParameters) SetAddress(address netip.AddrPort) *UdpListenParameters {
-	l.mAddress = address
-	return l
-}
-
-func (l *UdpListenParameters) GetAddress() netip.AddrPort {
-	return l.mAddress
+type UdpTransport interface {
+	TransportBase
+	Init(parameters *UdpListenParameters) error
 }
 
 type UdpTransportImpl struct {
+	*BaseImpl
+	mState uint8
+}
+
+func NewUdpTransportImpl() *UdpTransportImpl {
+	return &UdpTransportImpl{
+		BaseImpl: NewBaseImpl(),
+		mState:   0,
+	}
 }
 
 func (p *UdpTransportImpl) Disconnect(addr netip.Addr) {
@@ -42,11 +45,11 @@ func (p *UdpTransportImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) e
 	panic("implement me")
 }
 
-func NewUdbTransportImpl() *UdpTransportImpl {
-	return &UdpTransportImpl{}
-}
-
 func (p *UdpTransportImpl) Init(parameters *UdpListenParameters) error {
+
+	if p.mState != transport.NotReady {
+		p.Close()
+	}
 	network := "udp6"
 	if parameters.GetAddress().Addr().Is4() {
 		network = "udp4"
@@ -62,14 +65,26 @@ func (p *UdpTransportImpl) Init(parameters *UdpListenParameters) error {
 				p.Close()
 				return
 			}
-			go p.ReadConnection(udpConn)
+			go p.readAll(udpConn, parameters.mAddress.Port())
 		}
 	}()
 	return nil
 }
 
-func (p *UdpTransportImpl) ReadConnection(conn *net.UDPConn) {
+func (p *UdpTransportImpl) readAll(conn *net.UDPConn, port uint16) {
+	var data []byte
+	_, err := io.ReadFull(conn, data)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
+	srcAddrPort := netip.AddrPortFrom(srcAddr, port)
+	p.OnUdpReceive(srcAddrPort, data)
+}
 
+func (p *UdpTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data []byte) {
+	p.HandleMessageReceived(srcAddr, data)
 }
 
 func (p *UdpTransportImpl) Close() {

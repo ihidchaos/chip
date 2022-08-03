@@ -59,7 +59,7 @@ func (s *CASEServer) PrepareForSessionEstablishment(nodeId lib.ScopedNodeId) {
 	s.GetSession().Clear()
 	s.mPinnedSecureSession.ClearValue()
 
-	err = s.GetSession().PrepareForSessionEstablishment(s.mSessionManger, s.mFabrics, s.mSessionResumptionStorage, s.mCertificateValidityPolicy, s, nodeId, messageing.GetLocalMRPConfig())
+	err = s.GetSession().PrepareForSessionEstablishment(s.mSessionManger, s.mFabrics, s.mSessionResumptionStorage, s.mCertificateValidityPolicy, s, nodeId, transport.GetLocalMRPConfig())
 	if err != nil {
 		log.Panic(err.Error())
 	}

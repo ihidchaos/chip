@@ -3,7 +3,7 @@ package persistent_storage
 import (
 	"crypto"
 	"github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/storage"
+	"github.com/galenliu/chip/pkg/storage"
 )
 
 type PersistentStorageOperationalKeystore interface {

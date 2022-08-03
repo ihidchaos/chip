@@ -3,7 +3,7 @@ package params
 import (
 	"fmt"
 	"github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/transport"
 )
 
 type Mac struct {
@@ -88,7 +88,7 @@ func (c *CommissionAdvertisingParameters) SetPairingInstruction(ist string) {
 	c.mPairingInstr = ist
 }
 
-func (c *CommissionAdvertisingParameters) SetMRPConfig(config *messageing.ReliableMessageProtocolConfig) {
+func (c *CommissionAdvertisingParameters) SetMRPConfig(config *transport.ReliableMessageProtocolConfig) {
 	c.mMRPConfig = *config
 }
 
@@ -149,7 +149,7 @@ func (c *CommissionAdvertisingParameters) SetShortDiscriminator(discriminator ui
 	return c
 }
 
-func (c *CommissionAdvertisingParameters) SetLocalMRPConfig(config *messageing.ReliableMessageProtocolConfig) *CommissionAdvertisingParameters {
+func (c *CommissionAdvertisingParameters) SetLocalMRPConfig(config *transport.ReliableMessageProtocolConfig) *CommissionAdvertisingParameters {
 	c.mLocalMRPConfig = *config
 	return c
 }

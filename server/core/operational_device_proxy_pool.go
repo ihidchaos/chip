@@ -1,4 +1,4 @@
-package chip
+package core
 
 type OperationalDeviceProxyPoolDelegate interface {
 }

@@ -5,9 +5,9 @@ import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials/dac"
 	"github.com/galenliu/chip/device"
+	"github.com/galenliu/chip/pkg/storage"
 	"github.com/galenliu/chip/server"
-	"github.com/galenliu/chip/server/chip"
-	"github.com/galenliu/chip/storage"
+	"github.com/galenliu/chip/server/core"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -82,7 +82,7 @@ func Init(options *config.DeviceOptions) error {
 
 func MainLoop(options *config.DeviceOptions) error {
 
-	serverInitParams := chip.NewServerInitParams()
+	serverInitParams := core.NewServerInitParams()
 	_, err := serverInitParams.Init(options)
 	if err != nil {
 		log.Infof(err.Error())
@@ -94,7 +94,7 @@ func MainLoop(options *config.DeviceOptions) error {
 		log.Infof(err.Error())
 		return err
 	}
-	chipServer := chip.NewCHIPServer()
+	chipServer := core.NewCHIPServer()
 	chipServer, err = chipServer.Init(serverInitParams)
 	if err != nil {
 		return err

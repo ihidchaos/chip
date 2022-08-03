@@ -1,4 +1,4 @@
-package chip
+package core
 
 import (
 	"github.com/galenliu/chip/access"
@@ -6,8 +6,8 @@ import (
 	"github.com/galenliu/chip/credentials"
 	storage2 "github.com/galenliu/chip/crypto/persistent_storage"
 	"github.com/galenliu/chip/lib"
+	storage3 "github.com/galenliu/chip/pkg/storage"
 	"github.com/galenliu/chip/server"
-	"github.com/galenliu/chip/storage"
 	"net"
 )
 
@@ -31,7 +31,7 @@ type InitParams struct {
 
 	// Persistent storage delegate: MUST be injected. Used to maintain storage by much common code.
 	// Must be initialized before being provided.
-	PersistentStorageDelegate storage.PersistentStorageDelegate
+	PersistentStorageDelegate storage3.PersistentStorageDelegate
 	// Session resumption storage: Optional. Support session resumption when provided.
 	// Must be initialized before being provided.
 	SessionResumptionStorage lib.SessionResumptionStorage
@@ -92,7 +92,7 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 
 func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
-	var sKvsPersistentStorageDelegate storage.PersistentStorageDelegate
+	var sKvsPersistentStorageDelegate storage3.PersistentStorageDelegate
 	var sPersistentStorageOperationalKeystore = storage2.NewPersistentStorageOperationalKeystoreImpl()
 	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
 	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
@@ -101,7 +101,7 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 	var sSessionResumptionStorage = lib.NewSimpleSessionResumptionStorage()
 
 	if params.PersistentStorageDelegate == nil {
-		sKvsPersistentStorageDelegate = storage.KeyValueStoreMgr()
+		sKvsPersistentStorageDelegate = storage3.KeyValueStoreMgr()
 		params.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 
@@ -149,14 +149,14 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 func (p *CommonCaseDeviceServerInitParams) InitializeStaticResourcesBeforeServerInit() error {
 
-	var sKvsPersistentStorageDelegate storage.PersistentStorageDelegate
+	var sKvsPersistentStorageDelegate storage3.PersistentStorageDelegate
 	var sPersistentStorageOperationalKeystore storage2.PersistentStorageOperationalKeystore
 	var sPersistentStorageOpCertStore credentials.PersistentStorageOpCertStore
 	var sGroupDataProvider credentials.GroupDataProvider
 	var sDefaultCertValidityPolicy = NewIgnoreCertificateValidityPolicy()
 
 	if p.PersistentStorageDelegate == nil {
-		sKvsPersistentStorageDelegate = storage.KeyValueStoreMgr()
+		sKvsPersistentStorageDelegate = storage3.KeyValueStoreMgr()
 		p.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 	if p.OperationalKeystore == nil {

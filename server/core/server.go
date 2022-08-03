@@ -1,4 +1,4 @@
-package chip
+package core
 
 import (
 	"github.com/galenliu/chip/access"
@@ -8,11 +8,12 @@ import (
 	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
+	dnssd2 "github.com/galenliu/chip/pkg/dnssd"
+	"github.com/galenliu/chip/pkg/storage"
 	"github.com/galenliu/chip/secure_channel"
 	"github.com/galenliu/chip/server"
-	"github.com/galenliu/chip/server/dnssd"
-	"github.com/galenliu/chip/storage"
 	"github.com/galenliu/chip/transport"
+	"github.com/galenliu/chip/transport/message"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"net/netip"
@@ -21,8 +22,8 @@ import (
 
 var sDeviceTypeResolver = access.DeviceTypeResolver{}
 
-type ServerTransportMgr interface {
-	transport.TransportMgrBase
+type ServerTransportManager interface {
+	transport.TransportManager
 }
 
 type AppDelegate interface {
@@ -36,9 +37,9 @@ type Server struct {
 	mOperationalServicePort        uint16
 	mUserDirectedCommissioningPort uint16
 	mInterfaceId                   net.Interface
-	mDnssd                         dnssd.DnssdServer
+	mDnssd                         dnssd2.DnssdServer
 	mFabrics                       *credentials.FabricTable
-	mCommissioningWindowManager    dnssd.CommissioningWindowManager
+	mCommissioningWindowManager    dnssd2.CommissioningWindowManager
 	mDeviceStorage                 storage.StorageDelegate //unknown
 	mAccessControl                 access.AccessControler
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
@@ -58,7 +59,7 @@ type Server struct {
 	mCASESessionManager *CASESessionManager
 	mDevicePool         OperationalDeviceProxyPool
 	mAclStorage         server.AclStorage
-	mTransports         ServerTransportMgr
+	mTransports         ServerTransportManager
 	mExchangeMgr        messageing.ExchangeManager
 	mSessions           transport.SessionManager
 	mListener           GroupDataProviderListener
@@ -155,13 +156,13 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	}
 
 	{
-		udpParams := transport.UdpListenParameters{}
-		udp := transport.NewUdbTransportImpl()
+		udpParams := message.UdpListenParameters{}
+		udp := message.NewUdpTransportImpl()
 		err = udp.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), s.mOperationalServicePort)))
 		if err != nil {
 			log.Panic(err.Error())
 		}
-		s.mTransports = udp
+		s.mTransports = transport.NewTransportManagerImpl(udp)
 	}
 
 	{
@@ -173,10 +174,13 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		s.mGroupsProvider.SetListener(s.mListener)
 	}
 
-	s.mSessions = transport.NewSessionManagerImpl()
-	err = s.mSessions.Init(s.mTransports, s.mDeviceStorage, s.GetFabricTable())
-	if err != nil {
-		return nil, err
+	{
+		session := transport.NewSessionManagerImpl()
+		err = session.Init(s.mTransports, s.mDeviceStorage, s.GetFabricTable())
+		if err != nil {
+			return nil, err
+		}
+		s.mSessions = session
 	}
 
 	{
@@ -213,14 +217,14 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		return s, err
 	}
 
-	s.mCommissioningWindowManager = dnssd.NewCommissioningWindowManagerImpl()
+	s.mCommissioningWindowManager = dnssd2.NewCommissioningWindowManagerImpl()
 	err = s.mCommissioningWindowManager.Init(s)
 	if err != nil {
 		return nil, err
 	}
 	s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
-	discoveryService := dnssd.NewDnssdServer()
+	discoveryService := dnssd2.NewDnssdServer()
 	discoveryService.SetFabricTable(s.mFabrics)
 	discoveryService.SetCommissioningModeProvider(s.mCommissioningWindowManager)
 
@@ -288,7 +292,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 			FabricTable:               s.mFabrics,
 			ClientPool:                s.mCASEClientPool,
 			GroupDataProvider:         s.mGroupsProvider,
-			MrpLocalConfig:            messageing.GetLocalMRPConfig(),
+			MrpLocalConfig:            transport.GetLocalMRPConfig(),
 		},
 		DevicePool: s.mDevicePool,
 	}
@@ -331,6 +335,6 @@ func (s *Server) StartServer() error {
 	return nil
 }
 
-func (s *Server) GetTransportManager() transport.TransportMgrBase {
+func (s *Server) GetTransportManager() transport.TransportManager {
 	return s.mTransports
 }

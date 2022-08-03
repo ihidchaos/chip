@@ -5,9 +5,9 @@ import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
 	DeviceLayer "github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/pkg"
-	"github.com/galenliu/chip/server/dnssd/params"
+	params2 "github.com/galenliu/chip/pkg/dnssd/params"
+	"github.com/galenliu/chip/transport"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
@@ -104,12 +104,12 @@ func (d *DnssdServerImpl) AdvertiseOperational() error {
 		if mac == "" || err != nil {
 			mac = fmt.Sprintf("%016X", rand.Uint64())
 		}
-		advertiseParameters := params.NewOperationalAdvertisingParameters()
+		advertiseParameters := params2.NewOperationalAdvertisingParameters()
 		advertiseParameters.SetPeerId(fabricInfo.GetPeerId())
 		advertiseParameters.SetMaC(mac)
 		advertiseParameters.SetPort(d.GetSecuredPort())
 		advertiseParameters.SetInterfaceId(d.GetInterfaceId())
-		advertiseParameters.SetLocalMRPConfig(messageing.GetLocalMRPConfig())
+		advertiseParameters.SetLocalMRPConfig(transport.GetLocalMRPConfig())
 		advertiseParameters.SetTcpSupported(config.InetConfigEnableTcpEndpoint)
 		advertiseParameters.EnableIpV4(true)
 		if d.mdnsAdvertiser == nil {
@@ -220,7 +220,7 @@ func (d *DnssdServerImpl) AdvertiseCommissionableNode(mode int) error {
 
 func (d *DnssdServerImpl) Advertise(commissionAbleNode bool, mode int) error {
 
-	advertiseParameters := params.NewCommissionAdvertisingParameters()
+	advertiseParameters := params2.NewCommissionAdvertisingParameters()
 	if commissionAbleNode {
 		advertiseParameters.SetPort(d.mSecuredPort)
 		advertiseParameters.SetCommissionAdvertiseMode(AdvertiseMode_CommissionableNode)
@@ -287,7 +287,7 @@ func (d *DnssdServerImpl) Advertise(commissionAbleNode bool, mode int) error {
 		}
 	}
 
-	advertiseParameters.SetLocalMRPConfig(messageing.GetLocalMRPConfig()).SetTcpSupported(config.InetConfigEnableTcpEndpoint)
+	advertiseParameters.SetLocalMRPConfig(transport.GetLocalMRPConfig()).SetTcpSupported(config.InetConfigEnableTcpEndpoint)
 
 	if !d.haveOperationalCredentials() {
 		value, err := config.ConfigurationMgr().GetInitialPairingHint()

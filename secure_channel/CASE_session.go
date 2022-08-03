@@ -4,7 +4,6 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/transport"
 	"github.com/galenliu/gateway/pkg/log"
 )
@@ -87,7 +86,7 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	policy credentials.CertificateValidityPolicy,
 	delegate *CASEServer,
 	previouslyEstablishedPeer lib.ScopedNodeId,
-	config *messageing.ReliableMessageProtocolConfig,
+	config *transport.ReliableMessageProtocolConfig,
 ) error {
 	err := s.Init(sessionManger, policy, delegate, previouslyEstablishedPeer)
 	if err != nil {

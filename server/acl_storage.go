@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/storage"
+	"github.com/galenliu/chip/pkg/storage"
 )
 
 type AclStorage interface {

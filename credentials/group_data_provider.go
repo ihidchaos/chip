@@ -2,7 +2,7 @@ package credentials
 
 import (
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/storage"
+	"github.com/galenliu/chip/pkg/storage"
 )
 
 type GroupInfo struct {

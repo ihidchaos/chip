@@ -1,4 +1,4 @@
-package chip
+package core
 
 import (
 	"github.com/galenliu/chip/credentials"

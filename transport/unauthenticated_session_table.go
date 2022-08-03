@@ -2,91 +2,13 @@ package transport
 
 import (
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/messageing"
-	"net/netip"
 	"time"
 )
 
-type UnauthenticatedSession struct {
-	mSessionRole              uint8
-	mEphemeralInitiatorNodeId lib.NodeId
-
-	mPeerAddress          netip.AddrPort
-	mLastActivityTime     time.Time
-	mLastPeerActivityTime time.Time
-	mRemoteMRPConfig      *messageing.ReliableMessageProtocolConfig
-	mPeerMessageCounter   PeerMessageCounter
-}
-
-func (s UnauthenticatedSession) ClearValue() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) SetPeerAddress(addr netip.AddrPort) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) AsUnauthenticatedSession() *UnauthenticatedSession {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) NotifySessionReleased() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) GetFabricIndex() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) SetFabricIndex(index lib.FabricIndex) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) Retain() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) IsGroupSession() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) IsSecureSession() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) ComputeRoundTripTimeout(duration time.Duration) time.Duration {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) AddHolder(handle SessionHandle) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s UnauthenticatedSession) RemoveHolder(handle SessionHandle) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func NewUnauthenticatedSession(roleResponder uint8, id lib.NodeId, config *messageing.ReliableMessageProtocolConfig) SessionHandle {
-	return &UnauthenticatedSession{
-		mSessionRole:              roleResponder,
-		mEphemeralInitiatorNodeId: id,
-		mPeerAddress:              netip.AddrPort{},
-		mRemoteMRPConfig:          config,
-		mPeerMessageCounter:       PeerMessageCounter{},
-	}
-}
+const (
+	kSessionRoleInitiator uint8 = iota
+	kSessionRoleResponder
+)
 
 type UnauthenticatedSessionTable struct {
 	mEntries []*UnauthenticatedSession
@@ -123,12 +45,7 @@ func (s UnauthenticatedSession) GetPeerMessageCounter() PeerMessageCounter {
 	return s.mPeerMessageCounter
 }
 
-const (
-	kSessionRoleInitiator uint8 = iota
-	kSessionRoleResponder
-)
-
-func (t UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeID lib.NodeId, config *messageing.ReliableMessageProtocolConfig) SessionHandle {
+func (t UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) SessionHandle {
 	result := t.FindEntry(kSessionRoleResponder, ephemeralInitiatorNodeID)
 	if result != nil {
 		return result
