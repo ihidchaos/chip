@@ -5,47 +5,24 @@ import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
 	DeviceLayer "github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/pkg"
-	params2 "github.com/galenliu/chip/pkg/dnssd/params"
-	"github.com/galenliu/chip/transport"
-	"github.com/miekg/dns"
+	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing/transport"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net"
-	"net/netip"
 	"sync"
 )
 
-const MdnsPort uint16 = 5353
-const MaxCommissionRecords = 20 // 11
-
-var IPv4LinkLocalMulticast = netip.AddrFrom4([4]byte{224, 0, 0, 251})
-var IPv6LinkLocalMulticast = netip.AddrFrom16([16]byte{0xFF, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFB})
-
 type DnssdServer interface {
-	SetSecuredPort(port uint16)
-	GetSecuredPort() uint16
-	SetUnsecuredPort(port uint16)
-	GetUnsecuredPort() uint16
-
-	SetInterfaceId(id net.Interface)
-	GetInterfaceId() net.Interface
-
 	SetFabricTable(fabrics *credentials.FabricTable)
-	SetCommissioningModeProvider(manager CommissioningModeProvider)
-
-	AdvertiseOperational() error
+	SetCommissioningModeProvider(provider CommissioningModeProvider)
+	SetSecuredPort(port uint16)
+	SetUnsecuredPort(port uint16)
+	SetInterfaceId(net.Interface)
 	StartServer()
-
-	GetCommissionableInstanceName() string
-	SetEphemeralDiscriminator(discriminator uint16) error
-
-	Advertise(commissionableNode bool, commissionMode int) error
-	AdvertiseCommissioner() error
-	AdvertiseCommissionableNode(commissionMode int) error
 }
 
-type DnssdServerImpl struct {
+type Dnssd struct {
 	mSecuredPort                 uint16
 	mUnsecuredPort               uint16
 	mInterfaceId                 net.Interface
@@ -57,13 +34,13 @@ type DnssdServerImpl struct {
 	mdnsAdvertiser               Advertiser
 }
 
-var _serviceAdvertiserInstance *DnssdServerImpl
-var _serviceAdvertiserInstanceOnce sync.Once
+var _DnssdInstance *Dnssd
+var _DnssdInstanceOnce sync.Once
 
-func GetInstance() *DnssdServerImpl {
-	_serviceAdvertiserInstanceOnce.Do(func() {
-		if _serviceAdvertiserInstance == nil {
-			_serviceAdvertiserInstance = &DnssdServerImpl{
+func GetInstance() *Dnssd {
+	_DnssdInstanceOnce.Do(func() {
+		if _DnssdInstance == nil {
+			_DnssdInstance = &Dnssd{
 				mSecuredPort:                 0,
 				mUnsecuredPort:               0,
 				mInterfaceId:                 net.Interface{},
@@ -72,99 +49,38 @@ func GetInstance() *DnssdServerImpl {
 				mCurrentCommissioningMode:    0,
 				mExtendedDiscoveryExpiration: nil,
 				mEphemeralDiscriminator:      nil,
-				mdnsAdvertiser:               NewAdvertise(),
+				mdnsAdvertiser:               nil,
 			}
 		}
 	})
-	return _serviceAdvertiserInstance
+	return _DnssdInstance
 }
 
-func NewDnssdServer() *DnssdServerImpl {
+func NewDnssdInstance() *Dnssd {
 	return GetInstance()
 }
 
-func (d *DnssdServerImpl) GetSecuredPort() uint16 {
-	return d.mSecuredPort
-}
-
-func (d *DnssdServerImpl) GetUnsecuredPort() uint16 {
-	return d.mUnsecuredPort
-}
-
-func (d *DnssdServerImpl) GetInterfaceId() net.Interface {
-	return d.mInterfaceId
-}
-
-func (d *DnssdServerImpl) AdvertiseOperational() error {
-	if d.mFabricTable == nil {
-		return pkg.ChipErrorIncorrectState
-	}
-	for _, fabricInfo := range d.mFabricTable.GetFabricInfos() {
-		mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()
-		if mac == "" || err != nil {
-			mac = fmt.Sprintf("%016X", rand.Uint64())
-		}
-		advertiseParameters := params2.NewOperationalAdvertisingParameters()
-		advertiseParameters.SetPeerId(fabricInfo.GetPeerId())
-		advertiseParameters.SetMaC(mac)
-		advertiseParameters.SetPort(d.GetSecuredPort())
-		advertiseParameters.SetInterfaceId(d.GetInterfaceId())
-		advertiseParameters.SetLocalMRPConfig(transport.GetLocalMRPConfig())
-		advertiseParameters.SetTcpSupported(config.InetConfigEnableTcpEndpoint)
-		advertiseParameters.EnableIpV4(true)
-		if d.mdnsAdvertiser == nil {
-			d.mdnsAdvertiser = NewAdvertise()
-		}
-		err = d.mdnsAdvertiser.advertiseOperational(advertiseParameters)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (d *DnssdServerImpl) GetCommissionableInstanceName() string {
-	name, _ := d.mdnsAdvertiser.GetCommissionableInstanceName()
-	return name
-}
-
-func (d *DnssdServerImpl) SetEphemeralDiscriminator(discriminator uint16) error {
-	if discriminator >= DeviceLayer.KMaxDiscriminatorValue {
-		return pkg.ChipErrorInvalidArgument
-	}
-	d.mEphemeralDiscriminator = &discriminator
-	return nil
-}
-
-func (d *DnssdServerImpl) AdvertiseCommissioner() error {
-	return d.Advertise(false, CommissioningMode_Disabled)
-}
-
-func (d *DnssdServerImpl) haveOperationalCredentials() bool {
-	return d.mFabricTable.FabricCount() != 0
-}
-
-func (d *DnssdServerImpl) SetFabricTable(fabrics *credentials.FabricTable) {
+func (d Dnssd) SetFabricTable(fabrics *credentials.FabricTable) {
 	d.mFabricTable = fabrics
 }
 
-func (d *DnssdServerImpl) SetCommissioningModeProvider(manager CommissioningModeProvider) {
-	d.mCommissioningModeProvider = manager
+func (d Dnssd) SetCommissioningModeProvider(provider CommissioningModeProvider) {
+	d.mCommissioningModeProvider = provider
 }
 
-func (d *DnssdServerImpl) SetSecuredPort(port uint16) {
+func (d Dnssd) SetSecuredPort(port uint16) {
 	d.mSecuredPort = port
 }
 
-func (d *DnssdServerImpl) SetUnsecuredPort(port uint16) {
+func (d Dnssd) SetUnsecuredPort(port uint16) {
 	d.mUnsecuredPort = port
 }
 
-func (d *DnssdServerImpl) SetInterfaceId(id net.Interface) {
-	d.mInterfaceId = id
+func (d Dnssd) SetInterfaceId(n net.Interface) {
+	d.mInterfaceId = n
 }
 
-func (d *DnssdServerImpl) StartServer() {
+func (d *Dnssd) StartServer() {
 	mode := CommissioningMode_Disabled
 	if d.mCommissioningModeProvider != nil {
 		mode = d.mCommissioningModeProvider.GetCommissioningMode()
@@ -172,55 +88,41 @@ func (d *DnssdServerImpl) StartServer() {
 	d.startServer(mode)
 }
 
-func (d *DnssdServerImpl) startServer(mode int) {
-
-	log.Printf("Updating services using commissioning mode %d", mode)
-	err := d.mdnsAdvertiser.Init()
-	if err != nil {
-		log.Error("failed to initialize advertiser: %s", err.Error())
+func (d *Dnssd) AdvertiseOperational() error {
+	if d.mFabricTable == nil {
+		return lib.ChipErrorIncorrectState
 	}
-	err = d.mdnsAdvertiser.RemoveServices()
-	if err != nil {
-		log.Error("failed to remove advertised services: %s", err.Error())
-	}
-	err = d.AdvertiseOperational()
-	if err != nil {
-		log.Errorf("failed to advertise operational node: %s", err.Error())
-	}
-
-	if mode == CommissioningMode_Disabled {
-		err := d.AdvertiseCommissionableNode(mode)
+	for _, info := range d.mFabricTable.GetFabrics() {
+		mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()
+		if mac == "" || err != nil {
+			mac = fmt.Sprintf("%016X", rand.Uint64())
+		}
+		advertiseParameters := NewOperationalAdvertisingParameters()
+		advertiseParameters.SetPeerId(PeerId{info.GetNodeId(), info.GetCompressedFabricId()})
+		advertiseParameters.SetMaC(mac)
+		advertiseParameters.SetPort(d.mSecuredPort)
+		advertiseParameters.SetInterfaceId(d.mInterfaceId)
+		advertiseParameters.SetLocalMRPConfig(transport.GetLocalMRPConfig())
+		advertiseParameters.SetTcpSupported(config.InetConfigEnableTcpEndpoint)
+		advertiseParameters.EnableIpV4(true)
+		if d.mdnsAdvertiser == nil {
+			d.mdnsAdvertiser = NewAdvertise()
+		}
+		err = d.mdnsAdvertiser.AdvertiseOperational(advertiseParameters)
 		if err != nil {
-			log.Error("failed to advertise commissionable node: %s", err.Error())
-			log.Infof(err.Error())
+			return err
 		}
 	}
-
-	if config.ChipDeviceConfigEnableCommissionerDiscovery != 0 {
-		err := d.AdvertiseCommissioner()
-		if err != nil {
-			log.Errorf("failed to advertise commissioner: %s", err.Error())
-		}
-	}
-	err = d.mdnsAdvertiser.FinalizeServiceUpdate()
-	if err != nil {
-		log.Errorf("Failed to finalize service update: %s", err.Error())
-	}
+	return nil
 }
 
-func (d *DnssdServerImpl) AdvertiseCommissionableNode(mode int) error {
-	if config.ChipDeviceConfigEnableExtendedDiscovery {
-		d.mCurrentCommissioningMode = mode
-	}
-	if mode != CommissioningMode_Disabled {
-		d.mExtendedDiscoveryExpiration = nil
-	}
-	return d.Advertise(true, mode)
+func (d *Dnssd) AdvertiseCommissioner() error {
+	return d.Advertise(false, CommissioningMode_Disabled)
 }
 
-func (d *DnssdServerImpl) Advertise(commissionAbleNode bool, mode int) error {
+func (d *Dnssd) Advertise(commissionAbleNode bool, mode int) error {
 
-	advertiseParameters := params2.NewCommissionAdvertisingParameters()
+	advertiseParameters := NewCommissionAdvertisingParameters()
 	if commissionAbleNode {
 		advertiseParameters.SetPort(d.mSecuredPort)
 		advertiseParameters.SetCommissionAdvertiseMode(AdvertiseMode_CommissionableNode)
@@ -317,45 +219,55 @@ func (d *DnssdServerImpl) Advertise(commissionAbleNode bool, mode int) error {
 			advertiseParameters.SetPairingInstruction(str)
 		}
 	}
-	return d.mdnsAdvertiser.advertiseCommission(advertiseParameters)
+	return d.mdnsAdvertiser.AdvertiseCommission(advertiseParameters)
 }
 
-type MdnsHandler interface {
-	ServeMdns(ResponseWriter, *QueryData) error
-}
+func (d *Dnssd) startServer(mode int) {
 
-type ResponseWriter interface {
-	WriteMsg(*dns.Msg) error
-}
+	log.Printf("Updating services using commissioning mode %d", mode)
+	err := d.mdnsAdvertiser.Init()
+	if err != nil {
+		log.Error("failed to initialize advertiser: %s", err.Error())
+	}
+	err = d.mdnsAdvertiser.RemoveServices()
+	if err != nil {
+		log.Error("failed to remove advertised services: %s", err.Error())
+	}
+	err = d.AdvertiseOperational()
+	if err != nil {
+		log.Errorf("failed to advertise operational node: %s", err.Error())
+	}
 
-type DnsResponseWriter struct {
-	destAddr string
-	clint    *dns.Client
-}
+	if mode == CommissioningMode_Disabled {
+		err := d.AdvertiseCommissionableNode(mode)
+		if err != nil {
+			log.Error("failed to advertise commissionable node: %s", err.Error())
+			log.Infof(err.Error())
+		}
+	}
 
-func (d *DnsResponseWriter) NewDnsResponseWriter(addr, net string) *DnsResponseWriter {
-	return &DnsResponseWriter{
-		destAddr: addr,
-		clint: &dns.Client{
-			Net: net,
-		},
+	if config.ChipDeviceConfigEnableCommissionerDiscovery != 0 {
+		err := d.AdvertiseCommissioner()
+		if err != nil {
+			log.Errorf("failed to advertise commissioner: %s", err.Error())
+		}
+	}
+	err = d.mdnsAdvertiser.FinalizeServiceUpdate()
+	if err != nil {
+		log.Errorf("Failed to finalize service update: %s", err.Error())
 	}
 }
 
-func (d *DnsResponseWriter) WriterMsg(msg *dns.Msg) error {
-	clint := &dns.Client{
-		Net:            "",
-		UDPSize:        0,
-		TLSConfig:      nil,
-		Dialer:         nil,
-		Timeout:        0,
-		DialTimeout:    0,
-		ReadTimeout:    0,
-		WriteTimeout:   0,
-		TsigSecret:     nil,
-		TsigProvider:   nil,
-		SingleInflight: false,
+func (d *Dnssd) AdvertiseCommissionableNode(mode int) error {
+	if config.ChipDeviceConfigEnableExtendedDiscovery {
+		d.mCurrentCommissioningMode = mode
 	}
-	_, _, err := clint.Exchange(msg, d.destAddr)
-	return err
+	if mode != CommissioningMode_Disabled {
+		d.mExtendedDiscoveryExpiration = nil
+	}
+	return d.Advertise(true, mode)
+}
+
+func (d *Dnssd) haveOperationalCredentials() bool {
+	return d.mFabricTable.FabricCount() != 0
 }

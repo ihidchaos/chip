@@ -3,7 +3,7 @@ package device
 import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/pkg"
+	"github.com/galenliu/chip/lib"
 	log "github.com/sirupsen/logrus"
 	"sync"
 )
@@ -93,15 +93,15 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	discriminator uint16) error {
 
 	if c.mIsInitialized {
-		return pkg.ChipErrorIncorrectState
+		return lib.ChipErrorIncorrectState
 	}
 	if discriminator > KMaxDiscriminatorValue {
 		log.Infof("Discriminator value invalid: %d", discriminator)
-		return pkg.ChipErrorInvalidArgument
+		return lib.ChipErrorInvalidArgument
 	}
 	if spake2pIterationCount < KSpake2pMinPbkdfIterations || spake2pIterationCount > crypto.KSpake2pMaxPbkdfIterations {
 		log.Printf("PASE Iteration count invalid: %d", spake2pIterationCount)
-		return pkg.ChipErrorInvalidArgument
+		return lib.ChipErrorInvalidArgument
 	}
 
 	spake2pVerifier := crypto.Spake2pVerifier{}
@@ -110,7 +110,7 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	if havePaseVerifier {
 		if len(serializedSpake2pVerifier) != crypto.KSpake2pVerifierSerializedLength {
 			log.Error("PASE verifier size invalid: %d", len(serializedSpake2pVerifier))
-			return pkg.ChipErrorInvalidArgument
+			return lib.ChipErrorInvalidArgument
 		}
 		err := spake2pVerifier.Deserialize(serializedSpake2pVerifier)
 		if err != nil {
@@ -122,13 +122,13 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	havePaseSalt := spake2pSalt != nil && len(spake2pSalt) > 0
 	if havePaseVerifier && !havePaseSalt {
 		log.Infof("CommissionableDataProvider didn't get a PASE salt, but got a verifier: ambiguous data")
-		return pkg.ChipErrorInvalidArgument
+		return lib.ChipErrorInvalidArgument
 	}
 
 	spake2pSaltLength := len(spake2pSalt)
 	if havePaseSalt && ((spake2pSaltLength < crypto.KSpake2pMinPbkdfSaltLength) || (spake2pSaltLength > crypto.KSpake2pMaxPbkdfSaltLength)) {
 		log.Infof("PASE salt length invalid: %d", spake2pSaltLength)
-		return pkg.ChipErrorInvalidArgument
+		return lib.ChipErrorInvalidArgument
 	}
 
 	if !havePaseSalt {
@@ -190,51 +190,51 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 
 func (c *CommissionableDataImpl) GetSetupDiscriminator() (uint16, error) {
 	if !c.mIsInitialized {
-		return 0, pkg.ChipErrorIncorrectState
+		return 0, lib.ChipErrorIncorrectState
 	}
 	return c.mDiscriminator, nil
 }
 
 func (c *CommissionableDataImpl) SetSetupDiscriminator(uint16) error {
-	return pkg.ChipErrorNotImplemented
+	return lib.ChipErrorNotImplemented
 }
 
 func (c *CommissionableDataImpl) GetSpake2pIterationCount() (uint32, error) {
 	if !c.mIsInitialized {
-		return 0, pkg.ChipErrorIncorrectState
+		return 0, lib.ChipErrorIncorrectState
 	}
 	return c.mPaseIterationCount, nil
 }
 
 func (c *CommissionableDataImpl) GetSpake2pSalt() (bytes []byte, err error) {
 	if !c.mIsInitialized {
-		return nil, pkg.ChipErrorIncorrectState
+		return nil, lib.ChipErrorIncorrectState
 	}
 	return c.mPaseSalt, nil
 }
 
 func (c *CommissionableDataImpl) GetSpake2pVerifier() ([]byte, error) {
 	if !c.mIsInitialized {
-		return nil, pkg.ChipErrorIncorrectState
+		return nil, lib.ChipErrorIncorrectState
 	}
 	if len(c.mSerializedPaseVerifier) != crypto.KSpake2pVerifierSerializedLength {
-		return nil, pkg.ChipErrorInternal
+		return nil, lib.ChipErrorInternal
 	}
 	return c.mSerializedPaseVerifier, nil
 }
 
 func (c CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
 	if !c.mIsInitialized {
-		return 0, pkg.ChipErrorIncorrectState
+		return 0, lib.ChipErrorIncorrectState
 	}
 	if c.mSetupPasscode == 0 {
-		return 0, pkg.ChipErrorNotImplemented
+		return 0, lib.ChipErrorNotImplemented
 	}
 	return c.mSetupPasscode, nil
 }
 
 func (c CommissionableDataImpl) SetSetupPasscode(uint322 uint32) error {
-	return pkg.ChipErrorNotImplemented
+	return lib.ChipErrorNotImplemented
 }
 
 func GeneratePaseSalt() ([]byte, error) {

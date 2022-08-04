@@ -1,5 +1,5 @@
 package lib
 
-type PasscodeId = uint16
+type PasscodeId uint16
 
-const kDefaultCommissioningPasscodeId PasscodeId = 0
+const KDefaultCommissioningPasscodeId PasscodeId = 0

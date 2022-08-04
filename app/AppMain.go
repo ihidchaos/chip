@@ -5,9 +5,8 @@ import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials/dac"
 	"github.com/galenliu/chip/device"
+	core2 "github.com/galenliu/chip/pkg/core"
 	"github.com/galenliu/chip/pkg/storage"
-	"github.com/galenliu/chip/server"
-	"github.com/galenliu/chip/server/core"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -57,14 +56,14 @@ func Init(options *config.DeviceOptions) error {
 	if options.Payload.RendezvousInformation != 0 {
 		rendezvousFlags = options.Payload.RendezvousInformation
 	}
-	err = server.GetPayloadContents(&options.Payload, rendezvousFlags)
+	err = core2.GetPayloadContents(&options.Payload, rendezvousFlags)
 	if err != nil {
 		return err
 	}
 
 	{
 		options.Payload.CommissioningFlow = config.CommissioningFlowCustom
-		server.PrintOnboardingCodes(options.Payload)
+		core2.PrintOnboardingCodes(options.Payload)
 
 	}
 
@@ -82,7 +81,7 @@ func Init(options *config.DeviceOptions) error {
 
 func MainLoop(options *config.DeviceOptions) error {
 
-	serverInitParams := core.NewServerInitParams()
+	serverInitParams := core2.NewServerInitParams()
 	_, err := serverInitParams.Init(options)
 	if err != nil {
 		log.Infof(err.Error())
@@ -94,7 +93,7 @@ func MainLoop(options *config.DeviceOptions) error {
 		log.Infof(err.Error())
 		return err
 	}
-	chipServer := core.NewCHIPServer()
+	chipServer := core2.NewCHIPServer()
 	chipServer, err = chipServer.Init(serverInitParams)
 	if err != nil {
 		return err

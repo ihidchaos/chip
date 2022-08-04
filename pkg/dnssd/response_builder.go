@@ -19,7 +19,7 @@ package dnssd
 //	return &ResponseBuilder{}
 //}
 //
-//func (b *ResponseBuilder) AddQuery(query *DnssdServer.QueryData) *ResponseBuilder {
+//func (b *ResponseBuilder) AddQuery(query *Dnssd.QueryData) *ResponseBuilder {
 //	if !b.mBuildOk {
 //		return b
 //	}

@@ -3,7 +3,6 @@ package dnssd
 import (
 	"fmt"
 	"github.com/galenliu/chip/credentials"
-	params2 "github.com/galenliu/chip/pkg/dnssd/params"
 	responder2 "github.com/galenliu/chip/pkg/dnssd/responder"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
@@ -18,8 +17,8 @@ type Advertiser interface {
 	RemoveServices() error
 	GetCommissionableInstanceName() (string, error)
 	UpdateCommissionableInstanceName() error
-	advertiseOperational(params *params2.OperationalAdvertisingParameters) error
-	advertiseCommission(params *params2.CommissionAdvertisingParameters) error
+	AdvertiseOperational(params *OperationalAdvertisingParameters) error
+	AdvertiseCommission(params *CommissionAdvertisingParameters) error
 	FinalizeServiceUpdate() error
 }
 
@@ -41,6 +40,16 @@ type AdvertiseImpl struct {
 	mExtendedDiscoveryExpiration any
 	mEphemeralDiscriminator      *uint16
 	mMdnsServer                  MdnsServer
+}
+
+func (d *AdvertiseImpl) AdvertiseOperational(params *OperationalAdvertisingParameters) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (d *AdvertiseImpl) AdvertiseCommission(params *CommissionAdvertisingParameters) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewAdvertise() *AdvertiseImpl {
@@ -79,7 +88,7 @@ func (d *AdvertiseImpl) UpdateCommissionableInstanceName() error {
 	return nil
 }
 
-func (a *AdvertiseImpl) advertiseCommission(params *params2.CommissionAdvertisingParameters) error {
+func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParameters) error {
 
 	_ = a.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
 	allocator := func() *QueryResponderAllocator {
@@ -204,9 +213,9 @@ func (a *AdvertiseImpl) advertiseCommission(params *params2.CommissionAdvertisin
 	return nil
 }
 
-func (d *AdvertiseImpl) advertiseOperational(params *params2.OperationalAdvertisingParameters) error {
+func (d *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParameters) error {
 
-	var name = params.GetPeerId().String()
+	var name = fmt.Sprintf("%016X-%016X", params.GetPeerId().GetCompressedFabricId(), params.GetPeerId().GetNodeId())
 
 	_ = d.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
 	instanceName := Fqdn(name, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
@@ -277,7 +286,7 @@ func (d *AdvertiseImpl) RemoveServices() error {
 	return nil
 }
 
-func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *params2.CommissionAdvertisingParameters) []string {
+func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *CommissionAdvertisingParameters) []string {
 
 	var txtFields []string
 
@@ -325,7 +334,7 @@ func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *params2.CommissionAdv
 	return txtFields
 }
 
-func (d *AdvertiseImpl) GetOperationalTxtEntries(params *params2.OperationalAdvertisingParameters) []string {
+func (d *AdvertiseImpl) GetOperationalTxtEntries(params *OperationalAdvertisingParameters) []string {
 	txtFields := d.AddCommonTxtEntries(params.BaseAdvertisingParams)
 	if len(txtFields) == 0 || txtFields == nil {
 		return append(txtFields, d.mEmptyTextEntries)
@@ -333,7 +342,7 @@ func (d *AdvertiseImpl) GetOperationalTxtEntries(params *params2.OperationalAdve
 	return txtFields
 }
 
-func (d *AdvertiseImpl) AddCommonTxtEntries(params params2.BaseAdvertisingParams) []string {
+func (d *AdvertiseImpl) AddCommonTxtEntries(params BaseAdvertisingParams) []string {
 
 	var list []string
 	if mrp := params.GetLocalMRPConfig(); mrp != nil {

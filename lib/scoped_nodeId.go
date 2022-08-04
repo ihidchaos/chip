@@ -1,13 +1,15 @@
 package lib
 
-var UndefinedScopedNodeId = ScopedNodeId{
-	NodeId:      UndefinedNodeId,
-	FabricIndex: UndefinedFabricIndex,
-}
-
 type ScopedNodeId struct {
 	NodeId      NodeId
 	FabricIndex FabricIndex
+}
+
+func NewScopedNodeId() *ScopedNodeId {
+	return &ScopedNodeId{
+		NodeId:      KUndefinedNodeId,
+		FabricIndex: UndefinedFabricIndex,
+	}
 }
 
 func (s ScopedNodeId) GetNodeId() NodeId {
@@ -19,5 +21,5 @@ func (s ScopedNodeId) GetFabricIndex() FabricIndex {
 }
 
 func (s ScopedNodeId) IsOperational() bool {
-	return s.FabricIndex != UndefinedFabricIndex && IsOperationalNodeId(s.NodeId)
+	return s.FabricIndex != UndefinedFabricIndex && s.NodeId.IsOperationalNodeId()
 }

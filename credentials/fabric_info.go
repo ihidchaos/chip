@@ -2,7 +2,6 @@ package credentials
 
 import (
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
 )
 
@@ -10,11 +9,10 @@ type FabricInfoProvider interface {
 	GetFabricLabel() string
 	SetFabricLabel(label string)
 
+	GetNodeId() lib.NodeId
+
 	GetScopedNodeId() lib.ScopedNodeId
 	GetScopedNodeIdForNode(node lib.NodeId) lib.ScopedNodeId
-
-	GetPeerId() device.PeerId
-	GetPeerIdForNode(id lib.NodeId) device.PeerId
 
 	GetFabricId() lib.FabricId
 	GetFabricIndex() lib.FabricIndex
@@ -57,10 +55,6 @@ func (info *FabricInfo) GetScopedNodeIdForNode(node lib.NodeId) lib.ScopedNodeId
 	panic("implement me")
 }
 
-func (info *FabricInfo) GetPeerIdForNode(id lib.NodeId) device.PeerId {
-	return device.NewPeerId(id, info.mCompressedFabriceId)
-}
-
 func (info *FabricInfo) GetFabricId() lib.FabricId {
 	return info.mFabricId
 }
@@ -87,8 +81,8 @@ func (info *FabricInfo) HasOperationalKey() bool {
 	panic("implement me")
 }
 
-func (info *FabricInfo) GetPeerId() device.PeerId {
-	return device.NewPeerId(info.mNodeId, info.mCompressedFabriceId)
+func (info *FabricInfo) GetNodeId() lib.NodeId {
+	return info.mNodeId
 }
 
 type FabricInfoInitParams struct {

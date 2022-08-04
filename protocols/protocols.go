@@ -3,11 +3,11 @@ package protocols
 import "github.com/galenliu/chip/lib"
 
 type Id struct {
-	mVendorId   uint16
+	mVendorId   lib.VendorId
 	mProtocolId uint16
 }
 
-var NotSpecifiedId = Id{
-	mVendorId:   lib.VendorIdNotSpecified,
+var StandardProtocolId = &Id{
+	mVendorId:   lib.UnspecifiedVendorId,
 	mProtocolId: 0xFFFF,
 }

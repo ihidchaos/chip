@@ -2,6 +2,8 @@ package dnssd
 
 import (
 	"fmt"
+	"github.com/miekg/dns"
+	"net/netip"
 	"time"
 )
 
@@ -51,6 +53,52 @@ const (
 	Subtype_Commissioner
 	Subtype_CompressedFabricId
 )
+
+const MdnsPort uint16 = 5353
+const MaxCommissionRecords = 20 // 11
+
+var IPv4LinkLocalMulticast = netip.AddrFrom4([4]byte{224, 0, 0, 251})
+var IPv6LinkLocalMulticast = netip.AddrFrom16([16]byte{0xFF, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFB})
+
+type MdnsHandler interface {
+	ServeMdns(ResponseWriter, *QueryData) error
+}
+
+type ResponseWriter interface {
+	WriteMsg(*dns.Msg) error
+}
+
+type DnsResponseWriter struct {
+	destAddr string
+	clint    *dns.Client
+}
+
+func (d *DnsResponseWriter) NewDnsResponseWriter(addr, net string) *DnsResponseWriter {
+	return &DnsResponseWriter{
+		destAddr: addr,
+		clint: &dns.Client{
+			Net: net,
+		},
+	}
+}
+
+func (d *DnsResponseWriter) WriterMsg(msg *dns.Msg) error {
+	clint := &dns.Client{
+		Net:            "",
+		UDPSize:        0,
+		TLSConfig:      nil,
+		Dialer:         nil,
+		Timeout:        0,
+		DialTimeout:    0,
+		ReadTimeout:    0,
+		WriteTimeout:   0,
+		TsigSecret:     nil,
+		TsigProvider:   nil,
+		SingleInflight: false,
+	}
+	_, _, err := clint.Exchange(msg, d.destAddr)
+	return err
+}
 
 func makeServiceSubtype[T Uint](filter filterType, values ...T) string {
 	var val T = 0

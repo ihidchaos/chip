@@ -4,9 +4,16 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/transport"
+	transport2 "github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/gateway/pkg/log"
 )
+
+// SessionEstablishmentDelegate : CASEServer implementation
+type SessionEstablishmentDelegate interface {
+	OnSessionEstablishmentError()
+	OnSessionEstablishmentStarted()
+	OnSessionEstablished()
+}
 
 type CASESession struct {
 	PairingSession
@@ -22,11 +29,12 @@ type CASESession struct {
 
 	mSessionResumptionStorage SessionResumptionStorage
 
-	mFabricsTable *credentials.FabricTable
-	mFabricIndex  lib.FabricIndex
-	mPeerNodeId   lib.NodeId
-	mLocalNodeId  lib.NodeId
-	mPeerCATs     lib.CATValues
+	mFabricsTable        *credentials.FabricTable
+	mFabricIndex         lib.FabricIndex
+	mPeerNodeId          lib.NodeId
+	mLocalNodeId         lib.NodeId
+	mPeerCATs            lib.CATValues
+	mSecureSessionHolder transport2.SessionHolderWithDelegate
 
 	mInitiatorRandom []byte
 
@@ -57,10 +65,10 @@ func (s *CASESession) OnFabricUpdated(table credentials.FabricTable, index lib.F
 }
 
 func (s *CASESession) Init(
-	manger transport.SessionManager,
+	manger transport2.SessionManager,
 	policy credentials.CertificateValidityPolicy,
 	delegate *CASEServer,
-	previouslyEstablishedPeer lib.ScopedNodeId,
+	previouslyEstablishedPeer *lib.ScopedNodeId,
 ) error {
 	s.Clear()
 
@@ -80,24 +88,29 @@ func (s *CASESession) Clear() {
 }
 
 func (s *CASESession) PrepareForSessionEstablishment(
-	sessionManger transport.SessionManager,
+	sessionManger transport2.SessionManager,
 	fabrics *credentials.FabricTable,
 	storage SessionResumptionStorage,
 	policy credentials.CertificateValidityPolicy,
 	delegate *CASEServer,
-	previouslyEstablishedPeer lib.ScopedNodeId,
-	config *transport.ReliableMessageProtocolConfig,
+	previouslyEstablishedPeer *lib.ScopedNodeId,
+	config *transport2.ReliableMessageProtocolConfig,
 ) error {
 	err := s.Init(sessionManger, policy, delegate, previouslyEstablishedPeer)
 	if err != nil {
 		return err
 	}
 	s.mFabricsTable = fabrics
-	s.mRole = transport.KSessionRoleResponder
+	s.mRole = transport2.KSessionRoleResponder
 	s.mSessionResumptionStorage = storage
 	s.mLocalMRPConfig = config
 
 	log.Info("Allocated SecureSession (%s) - waiting for Sigma1 msg")
+	s.mSecureSessionHolder.Get()
 
+	return nil
+}
+
+func (s *CASESession) CopySecureSession() transport2.SessionHandle {
 	return nil
 }

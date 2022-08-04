@@ -178,6 +178,10 @@ func (f *FabricTable) FindFabricWithIndex(index lib.FabricIndex) *FabricInfo {
 	return nil
 }
 
+func (f *FabricTable) GetFabrics() []*FabricInfo {
+	return f.mStates
+}
+
 func NewFabricTableInitParams() *FabricTableInitParams {
 	return &FabricTableInitParams{}
 }

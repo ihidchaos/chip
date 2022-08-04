@@ -1,6 +1,8 @@
 package dnssd
 
-import "github.com/galenliu/chip/config"
+import (
+	"github.com/galenliu/chip/config"
+)
 
 type AppDelegate interface {
 	OnCommissioningSessionStarted()
