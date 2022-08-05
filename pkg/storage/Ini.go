@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type storage interface {
+type Storage interface {
 	Init() error
 	AddConfig(configFile string) error
 	CommitConfig(configFile string) error
@@ -32,11 +32,11 @@ func NewIniStorage() *iniStorageImpl {
 	return s
 }
 
-func (i iniStorageImpl) Init() error {
+func (i *iniStorageImpl) Init() error {
 	return i.RemoveAll()
 }
 
-func (i iniStorageImpl) AddEntry(key, value string) error {
+func (i *iniStorageImpl) AddEntry(key, value string) error {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (i iniStorageImpl) AddEntry(key, value string) error {
 	return err
 }
 
-func (i iniStorageImpl) RemoveEntry(key string) error {
+func (i *iniStorageImpl) RemoveEntry(key string) error {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (i iniStorageImpl) RemoveEntry(key string) error {
 	return nil
 }
 
-func (i iniStorageImpl) RemoveAll() error {
+func (i *iniStorageImpl) RemoveAll() error {
 	i.mConfigStore = gini.Empty()
 	return nil
 }
@@ -75,17 +75,17 @@ func (i *iniStorageImpl) AddConfig(configFile string) error {
 	return nil
 }
 
-func (i iniStorageImpl) CommitConfig(configFile string) error {
+func (i *iniStorageImpl) CommitConfig(configFile string) error {
 	err := i.mConfigStore.SaveTo(configFile)
 	return err
 }
 
-func (i iniStorageImpl) GetUInt16Value(key string) (uint16, error) {
+func (i *iniStorageImpl) GetUInt16Value(key string) (uint16, error) {
 	u, err := i.mConfigStore.Section("").Key(key).Uint()
 	return uint16(u), err
 }
 
-func (i iniStorageImpl) GetUIntValue(key string) (uint, error) {
+func (i *iniStorageImpl) GetUIntValue(key string) (uint, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return 0, err
@@ -93,7 +93,7 @@ func (i iniStorageImpl) GetUIntValue(key string) (uint, error) {
 	return section.Key(key).Uint()
 }
 
-func (i iniStorageImpl) GetUInt64Value(key string) (uint64, error) {
+func (i *iniStorageImpl) GetUInt64Value(key string) (uint64, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return 0, err
@@ -101,7 +101,7 @@ func (i iniStorageImpl) GetUInt64Value(key string) (uint64, error) {
 	return section.Key(key).Uint64()
 }
 
-func (i iniStorageImpl) GetStringValue(key string) (string, error) {
+func (i *iniStorageImpl) GetStringValue(key string) (string, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return "", err
@@ -109,7 +109,7 @@ func (i iniStorageImpl) GetStringValue(key string) (string, error) {
 	return section.Key(key).String(), nil
 }
 
-func (i iniStorageImpl) GetBinaryBlobValue(key string) ([]byte, error) {
+func (i *iniStorageImpl) GetBinaryBlobValue(key string) ([]byte, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (i iniStorageImpl) GetBinaryBlobValue(key string) ([]byte, error) {
 	return bts, nil
 }
 
-func (i iniStorageImpl) HasValue(key string) bool {
+func (i *iniStorageImpl) HasValue(key string) bool {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return false
@@ -133,7 +133,7 @@ func (i iniStorageImpl) HasValue(key string) bool {
 	return section.HasValue(key)
 }
 
-func (i iniStorageImpl) getDefaultSection() (*gini.Section, error) {
+func (i *iniStorageImpl) getDefaultSection() (*gini.Section, error) {
 	var section *gini.Section
 	var err error
 	if section = i.mConfigStore.Section("DEFAULT"); section != nil {

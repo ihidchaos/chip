@@ -50,9 +50,9 @@ func GetConfigProviderInstance() *ConfigProviderImpl {
 }
 
 type ConfigProviderImpl struct {
-	mChipFactoryStorage  storage.StorageDelegate
-	mChipConfigStorage   storage.StorageDelegate
-	mChipCountersStorage storage.StorageDelegate
+	mChipFactoryStorage  storage.PersistentStorage
+	mChipConfigStorage   storage.PersistentStorage
+	mChipCountersStorage storage.PersistentStorage
 }
 
 func NewConfigProviderImpl() *ConfigProviderImpl {
@@ -200,7 +200,7 @@ type Key struct {
 	Name      string
 }
 
-func (conf *ConfigProviderImpl) GetStorageForNamespace(k Key) storage.StorageDelegate {
+func (conf *ConfigProviderImpl) GetStorageForNamespace(k Key) storage.PersistentStorage {
 	if k.Namespace == KConfigNamespaceChipFactory {
 		if conf.mChipFactoryStorage == nil {
 			conf.mChipFactoryStorage = storage.NewPersistentStorageImpl()

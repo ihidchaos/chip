@@ -9,6 +9,7 @@ var (
 	ChipErrorInternal                 = fmt.Errorf("CHIP_ERROR_INTERNAL")
 	ChipDeviceErrorConfigNotFound     = fmt.Errorf("CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND")
 	ChipErrorDuplicateMessageReceived = fmt.Errorf("CHIP_ERROR_DUPLICATE_MESSAGE_RECEIVED")
+	ChipErrorInvalidFabricIndex       = fmt.Errorf("CHIP_ERROR_INVALID_FABRIC_INDEX")
 
 	ChipErrorNoUnsolicitedMessageHandler = fmt.Errorf("CHIP_ERROR_NO_UNSOLICITED_MESSAGE_HANDLER")
 )

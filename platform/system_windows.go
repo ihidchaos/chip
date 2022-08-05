@@ -33,6 +33,7 @@ func GetConfigsKvsPath() string {
 }
 
 var (
+	ConfigKvsPath      = filepath.Join(os.TempDir(), "chip.ini")
 	DefaultFactoryPath = filepath.Join(os.TempDir(), "chip_factory.ini")
 	DefaultConfigPath  = filepath.Join(os.TempDir(), "chip_config.ini")
 	DefaultDataPath    = filepath.Join(os.TempDir(), "chip_counters.ini")

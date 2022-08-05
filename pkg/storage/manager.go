@@ -3,7 +3,7 @@ package storage
 import "sync"
 
 type KeyValueStoreManager struct {
-	*KvsPersistentStorageImpl
+	*KeyValuePersistentStorageImpl
 }
 
 var _instance *KeyValueStoreManager
@@ -12,7 +12,7 @@ var once sync.Once
 func KeyValueStoreMgr() *KeyValueStoreManager {
 	once.Do(func() {
 		_instance = &KeyValueStoreManager{
-			KvsPersistentStorageImpl: NewKvsPersistentStorage(),
+			KeyValuePersistentStorageImpl: NewKeyValuePersistentStorage(),
 		}
 	})
 	return _instance

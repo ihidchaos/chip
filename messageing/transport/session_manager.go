@@ -55,7 +55,7 @@ func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate)
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transports ManagerBase, storage storage.StorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManagerImpl) Init(transports ManagerBase, storage storage.PersistentStorage, table *credentials.FabricTable) error {
 	transports.SetSessionManager(s)
 	return nil
 }

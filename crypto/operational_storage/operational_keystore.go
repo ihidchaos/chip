@@ -17,11 +17,11 @@ type OperationalKeystore interface {
 	SignWithOpKeypair(fabricIndex device.FabricIndex, message []byte) ([]byte, error)
 	AllocateEphemeralKeypairForCASE() crypto.PrivateKey
 	ReleaseEphemeralKeypair(key crypto.PrivateKey)
-	Init(delegate storage.StorageDelegate)
+	Init(delegate storage.PersistentStorage)
 }
 
 type PersistentStorageOperationalKeystoreImpl struct {
-	mPersistentStorage storage.StorageDelegate
+	mPersistentStorage storage.PersistentStorage
 }
 
 func NewPersistentStorageOperationalKeystoreImpl() *PersistentStorageOperationalKeystoreImpl {
@@ -78,6 +78,6 @@ func (p PersistentStorageOperationalKeystoreImpl) ReleaseEphemeralKeypair(key cr
 	panic("implement me")
 }
 
-func (p PersistentStorageOperationalKeystoreImpl) Init(delegate storage.StorageDelegate) {
+func (p PersistentStorageOperationalKeystoreImpl) Init(delegate storage.PersistentStorage) {
 	p.mPersistentStorage = delegate
 }

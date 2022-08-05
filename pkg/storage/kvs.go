@@ -2,30 +2,30 @@ package storage
 
 import "github.com/spf13/cast"
 
-type PersistentStorageDelegate interface {
+type KeyValuePersistentStorage interface {
 	SyncGetKeyValue(key string) (any, error)
 	SyncSetKeyValue(key string, value any) error
 	SyncDeleteKeyValue(key string) error
 	SyncDoesKeyExist(key string) bool
-	StorageDelegate
+	PersistentStorage
 }
 
-type KvsPersistentStorageImpl struct {
+type KeyValuePersistentStorageImpl struct {
 	*PersistentStorageImpl
 }
 
-func NewKvsPersistentStorage() *KvsPersistentStorageImpl {
-	impl := &KvsPersistentStorageImpl{
+func NewKeyValuePersistentStorage() *KeyValuePersistentStorageImpl {
+	impl := &KeyValuePersistentStorageImpl{
 		PersistentStorageImpl: NewPersistentStorageImpl(),
 	}
 	return impl
 }
 
-func (k KvsPersistentStorageImpl) SyncGetKeyValue(key string) (any, error) {
+func (k KeyValuePersistentStorageImpl) SyncGetKeyValue(key string) (any, error) {
 	return k.PersistentStorageImpl.ReadValueStr(key)
 }
 
-func (k KvsPersistentStorageImpl) SyncSetKeyValue(key string, value any) error {
+func (k KeyValuePersistentStorageImpl) SyncSetKeyValue(key string, value any) error {
 	switch value.(type) {
 	case string:
 		return k.PersistentStorageImpl.WriteValueStr(key, cast.ToString(value))
@@ -38,10 +38,10 @@ func (k KvsPersistentStorageImpl) SyncSetKeyValue(key string, value any) error {
 	}
 }
 
-func (k KvsPersistentStorageImpl) SyncDeleteKeyValue(key string) error {
+func (k KeyValuePersistentStorageImpl) SyncDeleteKeyValue(key string) error {
 	return k.PersistentStorageImpl.ClearValue(key)
 }
 
-func (k KvsPersistentStorageImpl) SyncDoesKeyExist(key string) bool {
+func (k KeyValuePersistentStorageImpl) SyncDoesKeyExist(key string) bool {
 	return k.PersistentStorageImpl.HasValue(key)
 }

@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/frankban/quicktest v1.14.3
-	github.com/galenliu/gateway v0.0.0-20220718062227-af8166010981
 	github.com/miekg/dns v1.1.50
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cast v1.5.0

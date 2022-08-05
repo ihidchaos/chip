@@ -21,3 +21,7 @@ const KUndefinedFabricIndex FabricIndex = 0
 const KMinValidFabricIndex FabricIndex = 1
 
 const KMaxValidFabricIndex FabricIndex = 0xfe
+
+func (index FabricIndex) IsValidFabricIndex() bool {
+	return index >= KMinValidFabricIndex && index <= KMaxValidFabricIndex
+}

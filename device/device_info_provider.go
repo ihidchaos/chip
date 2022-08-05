@@ -9,10 +9,10 @@ type DeviceInfoProvider interface {
 }
 
 type DeviceInfoProviderImpl struct {
-	storage storage.StorageDelegate
+	storage storage.PersistentStorage
 }
 
-func (i *DeviceInfoProviderImpl) SetStorageDelegate(storage storage.StorageDelegate) {
+func (i *DeviceInfoProviderImpl) SetStorageDelegate(storage storage.PersistentStorage) {
 	i.storage = storage
 }
 

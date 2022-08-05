@@ -30,7 +30,7 @@ type InitParams struct {
 
 	// Persistent storage delegate: MUST be injected. Used to maintain storage by much common code.
 	// Must be initialized before being provided.
-	PersistentStorageDelegate storage3.PersistentStorageDelegate
+	PersistentStorageDelegate storage3.KeyValuePersistentStorage
 	// Session resumption storage: Optional. Support session resumption when provided.
 	// Must be initialized before being provided.
 	SessionResumptionStorage lib.SessionResumptionStorage
@@ -91,7 +91,7 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 
 func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
-	var sKvsPersistentStorageDelegate storage3.PersistentStorageDelegate
+	var sKvsPersistentStorageDelegate storage3.KeyValuePersistentStorage
 	var sPersistentStorageOperationalKeystore = storage2.NewPersistentStorageOperationalKeystoreImpl()
 	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
 	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
@@ -148,7 +148,7 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 func (p *CommonCaseDeviceServerInitParams) InitializeStaticResourcesBeforeServerInit() error {
 
-	var sKvsPersistentStorageDelegate storage3.PersistentStorageDelegate
+	var sKvsPersistentStorageDelegate storage3.KeyValuePersistentStorage
 	var sPersistentStorageOperationalKeystore storage2.OperationalKeystore
 	var sPersistentStorageOpCertStore credentials.PersistentStorageOpCertStore
 	var sGroupDataProvider credentials.GroupDataProvider

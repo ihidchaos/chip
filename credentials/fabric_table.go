@@ -9,7 +9,7 @@ import (
 )
 
 type FabricTableInitParams struct {
-	Storage             storage.PersistentStorageDelegate
+	Storage             storage.KeyValuePersistentStorage
 	OperationalKeystore operational_storage.OperationalKeystore
 	OpCertStore         PersistentStorageOpCertStore
 }
@@ -23,7 +23,7 @@ type FabricTableDelegate interface {
 
 type FabricTableContainer interface {
 	Init(*FabricTableInitParams) error
-	Delete(index lib.FabricIndex)
+	Delete(index lib.FabricIndex) error
 	DeleteAllFabrics()
 	GetDeletedFabricFromCommitMarker() lib.FabricIndex
 	ClearCommitMarker()
@@ -52,16 +52,17 @@ type FabricTable struct {
 	mStates                   []*FabricInfo
 	mPendingFabric            *FabricInfo
 	mFabricLabel              string
-	mStorage                  storage.PersistentStorageDelegate
+	mStorage                  storage.KeyValuePersistentStorage
 	operationalKeystore       operational_storage.OperationalKeystore
 	mOpCertStore              PersistentStorageOpCertStore
 	mFabricCount              uint8
 	mNextAvailableFabricIndex lib.FabricIndex
+	mDelegate                 FabricTableDelegate
 }
 
 func (f *FabricTable) AddFabricDelegate(delegate FabricTableDelegate) error {
-	//TODO implement me
-	panic("implement me")
+	f.mDelegate = delegate
+	return nil
 }
 
 func (f *FabricTable) HasPendingFabricUpdate() bool {
@@ -84,9 +85,11 @@ func (f *FabricTable) Init(params *FabricTableInitParams) error {
 	return nil
 }
 
-func (f *FabricTable) Delete(index lib.FabricIndex) {
-	//TODO implement me
-	panic("implement me")
+func (f *FabricTable) Delete(index lib.FabricIndex) error {
+	if f.mStorage == nil || !index.IsValidFabricIndex() {
+		return lib.ChipErrorInvalidArgument
+	}
+	return nil
 }
 
 func (f *FabricTable) DeleteAllFabrics() {
@@ -105,8 +108,13 @@ func (f *FabricTable) ClearCommitMarker() {
 }
 
 func (f *FabricTable) Forget(index lib.FabricIndex) {
-	//TODO implement me
-	panic("implement me")
+	fabricInfo := f.GetMutableFabricByIndex(index)
+	if fabricInfo == nil {
+		return
+	}
+	f.RevertPendingFabricData()
+	fabricInfo.Reset()
+
 }
 
 func (f *FabricTable) RemoveFabricDelegate(delegate FabricTableDelegate) {
@@ -120,8 +128,11 @@ func (f *FabricTable) SetFabricLabel(label string) error {
 }
 
 func (f *FabricTable) GetFabricLabel(index lib.FabricIndex) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	fabricInfo := f.FindFabricWithIndex(index)
+	if fabricInfo == nil {
+		return "", lib.ChipErrorInvalidFabricIndex
+	}
+	return fabricInfo.GetFabricLabel(), nil
 }
 
 func (f *FabricTable) GetLastKnownGoodChipEpochTime() (time.Time, error) {
@@ -129,14 +140,13 @@ func (f *FabricTable) GetLastKnownGoodChipEpochTime() (time.Time, error) {
 	panic("implement me")
 }
 
-func (f FabricTable) SetLastKnownGoodChipEpochTime(t time.Time) error {
+func (f *FabricTable) SetLastKnownGoodChipEpochTime(t time.Time) error {
 	//TODO implement me
 	panic("implement me")
 }
 
 func (f *FabricTable) FabricCount() uint8 {
-	//TODO implement me
-	panic("implement me")
+	return uint8(len(f.mStates))
 }
 
 func (f *FabricTable) FetchRootCert(index lib.FabricIndex) ([]byte, error) {
@@ -191,6 +201,26 @@ func (f *FabricTable) FindFabricWithIndex(index lib.FabricIndex) *FabricInfo {
 
 func (f *FabricTable) GetFabrics() []*FabricInfo {
 	return f.mStates
+}
+
+func (f *FabricTable) GetMutableFabricByIndex(index lib.FabricIndex) *FabricInfo {
+	if f.HasPendingFabricUpdate() && f.mPendingFabric.GetFabricIndex() == index {
+		return f.mPendingFabric
+	}
+	for _, fabricInfo := range f.mStates {
+		if !fabricInfo.IsInitialized() {
+			continue
+		}
+		if fabricInfo.GetFabricIndex() == index {
+			return fabricInfo
+		}
+	}
+	return nil
+}
+
+func (f *FabricTable) RevertPendingFabricData() {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewFabricTableInitParams() *FabricTableInitParams {

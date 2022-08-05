@@ -1,11 +1,12 @@
 package storage
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 )
 
-type StorageDelegate interface {
+type PersistentStorage interface {
 	Init(file string) error
 	ReadBoolValue(key string) (bool, error)
 	ReadValueUint16(key string) (uint16, error)
@@ -26,8 +27,8 @@ type StorageDelegate interface {
 }
 
 type PersistentStorageImpl struct {
-	storage      storage
-	mConfigPath  string
+	storage      Storage
+	mConfigFile  string
 	mLock        sync.Locker
 	mDirty       bool
 	mInitialized bool
@@ -36,7 +37,7 @@ type PersistentStorageImpl struct {
 func NewPersistentStorageImpl() *PersistentStorageImpl {
 	return &PersistentStorageImpl{
 		storage:      NewIniStorage(),
-		mConfigPath:  "",
+		mConfigFile:  "",
 		mLock:        &sync.Mutex{},
 		mDirty:       false,
 		mInitialized: false,
@@ -44,7 +45,10 @@ func NewPersistentStorageImpl() *PersistentStorageImpl {
 }
 
 func (s *PersistentStorageImpl) Init(mConfigPath string) error {
-	s.mConfigPath = mConfigPath
+	if s.mConfigFile == "" && s.mInitialized {
+		return fmt.Errorf("initialized")
+	}
+	s.mConfigFile = mConfigPath
 	s.storage = NewIniStorage()
 	err := s.storage.AddConfig(mConfigPath)
 	if err != nil {
@@ -135,14 +139,14 @@ func (s *PersistentStorageImpl) WriteValueBin(key string, v []byte) error {
 	return err
 }
 
-func (s PersistentStorageImpl) ClearValue(key string) error {
+func (s *PersistentStorageImpl) ClearValue(key string) error {
 
 	err := s.storage.RemoveEntry(key)
 	s.mDirty = true
 	return err
 }
 
-func (s PersistentStorageImpl) ClearAll() error {
+func (s *PersistentStorageImpl) ClearAll() error {
 
 	err := s.storage.RemoveAll()
 	s.mDirty = true
@@ -150,9 +154,8 @@ func (s PersistentStorageImpl) ClearAll() error {
 }
 
 func (s *PersistentStorageImpl) Commit() error {
-
-	if s.mConfigPath != "" && s.mDirty {
-		return s.storage.CommitConfig(s.mConfigPath)
+	if s.mConfigFile != "" && s.mDirty {
+		return s.storage.CommitConfig(s.mConfigFile)
 	}
 	s.mDirty = false
 	return nil

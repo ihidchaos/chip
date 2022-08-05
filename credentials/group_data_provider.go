@@ -10,13 +10,13 @@ type GroupInfo struct {
 }
 
 type GroupDataProvider interface {
-	SetStorageDelegate(delegate storage.StorageDelegate)
+	SetStorageDelegate(delegate storage.PersistentStorage)
 	Init() error
 	SetListener(listener GroupListener)
 }
 
 type GroupDataProviderImpl struct {
-	mStorage       storage.StorageDelegate
+	mStorage       storage.PersistentStorage
 	mGroupListener GroupListener
 }
 
@@ -28,7 +28,7 @@ func (g *GroupDataProviderImpl) SetListener(listener GroupListener) {
 	g.mGroupListener = listener
 }
 
-func (g *GroupDataProviderImpl) SetStorageDelegate(delegate storage.StorageDelegate) {
+func (g *GroupDataProviderImpl) SetStorageDelegate(delegate storage.PersistentStorage) {
 	g.mStorage = delegate
 }
 

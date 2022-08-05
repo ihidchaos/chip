@@ -40,7 +40,7 @@ type Server struct {
 	mDnssd                         dnssd.DnssdServer
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
-	mDeviceStorage                 storage.PersistentStorageDelegate //unknown
+	mDeviceStorage                 storage.KeyValuePersistentStorage //unknown
 	mAccessControl                 access.AccessControler
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
 	mOperationalKeystore           storage2.OperationalKeystore
@@ -92,7 +92,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	s.mUserDirectedCommissioningPort = initParams.UserDirectedCommissioningPort
 	s.mInterfaceId = initParams.InterfaceId
 
-	//if initParams.StorageDelegate == nil ||
+	//if initParams.PersistentStorage == nil ||
 	//	initParams.AccessDelegate == nil ||
 	//	initParams.GroupDataProvider == nil ||
 	//	initParams.OperationalKeystore == nil ||

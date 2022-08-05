@@ -5,14 +5,14 @@ import (
 )
 
 type SessionResumptionStorage interface {
-	Init(delegate storage.PersistentStorageDelegate) error
+	Init(delegate storage.KeyValuePersistentStorage) error
 }
 
 type SessionResumptionStorageImpl struct {
-	mStorage storage.PersistentStorageDelegate
+	mStorage storage.KeyValuePersistentStorage
 }
 
-func (s *SessionResumptionStorageImpl) Init(delegate storage.PersistentStorageDelegate) error {
+func (s *SessionResumptionStorageImpl) Init(delegate storage.KeyValuePersistentStorage) error {
 	s.mStorage = delegate
 	return nil
 }

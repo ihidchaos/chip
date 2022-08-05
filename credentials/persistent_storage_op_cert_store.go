@@ -6,7 +6,7 @@ import (
 )
 
 type PersistentStorageOpCertStore interface {
-	Init(delegate storage.StorageDelegate)
+	Init(delegate storage.PersistentStorage)
 
 	HasPendingRootCert() bool
 	HasPendingNocChain() bool
@@ -30,7 +30,7 @@ type PersistentStorageOpCertStore interface {
 }
 
 type PersistentStorageOpCertStoreImpl struct {
-	mPersistentStorage storage.StorageDelegate
+	mPersistentStorage storage.PersistentStorage
 }
 
 func NewPersistentStorageOpCertStoreImpl() *PersistentStorageOpCertStoreImpl {
@@ -82,6 +82,6 @@ func (s PersistentStorageOpCertStoreImpl) GetCertificate(fabricIndex device.Fabr
 	return nil
 }
 
-func (s PersistentStorageOpCertStoreImpl) Init(delegate storage.StorageDelegate) {
+func (s PersistentStorageOpCertStoreImpl) Init(delegate storage.PersistentStorage) {
 	s.mPersistentStorage = delegate
 }
