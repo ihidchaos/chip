@@ -27,7 +27,7 @@ const (
  *[16:24] 64 bit: | DEST_NODE_ID (iff destination node flag is set)                      |
  * -------- Encrypted header -------------------------------------------------------
  *  8 bit:  | Exchange Flags: RESERVED: 3 bit | V: 1 bit | SX: 1 bit | R: 1 bit | A: 1 bit | I: 1 bit |
- *  8 bit:  | Protocol Opcode   /Sigma1/Sigma2//Sigma4//Sigma1 Fin                 |
+ *  8 bit:  | Protocol Opcode   /Sigma1/Sigma2//Sigma4/Sigma1 Fin                 |
  * 16 bit:  | Exchange ID                                                          |
  * 16 bit:  | Protocol ID                                                          |
  * 16 bit:  | Optional Vendor ID                                                   |
@@ -96,4 +96,8 @@ func (header *PayloadHeader) GetProtocolID() uint16 {
 
 func (header *PayloadHeader) GetMessageType() uint8 {
 	return header.mMessageType
+}
+
+func (header *PayloadHeader) GetExchangeID() uint16 {
+	return header.mExchangeID
 }

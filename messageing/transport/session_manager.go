@@ -3,7 +3,7 @@ package transport
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
-	message2 "github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/storage"
 	log "github.com/sirupsen/logrus"
 	"net/netip"
@@ -17,8 +17,9 @@ const (
 type SessionManager interface {
 	credentials.FabricTableDelegate
 	OnMessageReceived(srcAddr netip.AddrPort, data []byte)
-	SecureGroupMessageDispatch(header *message2.PacketHeader, addr netip.AddrPort, data []byte)
-	SecureUnicastMessageDispatch(header *message2.PacketHeader, addr netip.AddrPort, data []byte)
+	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
 	SetMessageDelegate(SessionMessageDelegate)
 }
 
@@ -64,7 +65,7 @@ func NewSessionManagerImpl() *SessionManagerImpl {
 }
 
 func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, data []byte) {
-	packetHeader := message2.NewPacketHeader()
+	packetHeader := raw.NewPacketHeader()
 	err := packetHeader.DecodeAndConsume(data)
 	if err != nil {
 		log.Printf("failed to decode packet header: %s", err.Error())
@@ -79,18 +80,10 @@ func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, data []by
 	} else {
 		s.UnauthenticatedMessageDispatch(packetHeader, srcAddr, data)
 	}
-
 }
 
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *message2.PacketHeader, addr netip.AddrPort, data []byte) {
-
-}
-
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *message2.PacketHeader, addr netip.AddrPort, data []byte) {
-
-}
-
-func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message2.PacketHeader, addr netip.AddrPort, data []byte) {
+// UnauthenticatedMessageDispatch 处理没有加密码的消息
+func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte) {
 
 	source := header.GetSourceNodeId()
 	destination := header.GetDestinationNodeId()
@@ -118,7 +111,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message2.Pac
 
 	unsecuredSession.MarkActiveRx()
 
-	var payloadHeader = message2.NewPayloadHeader()
+	var payloadHeader = raw.NewPayloadHeader()
 	err := payloadHeader.DecodeAndConsume(data[header.EncodeSizeBytes():])
 	if err != nil {
 		return
@@ -136,4 +129,14 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *message2.Pac
 	if s.mCB != nil {
 		s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, data)
 	}
+}
+
+// SecureGroupMessageDispatch 处理加密的组播消息
+func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte) {
+
+}
+
+// SecureUnicastMessageDispatch 处理分支，加密的单播消息
+func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte) {
+
 }

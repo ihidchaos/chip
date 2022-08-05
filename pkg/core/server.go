@@ -4,7 +4,7 @@ import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	storage2 "github.com/galenliu/chip/crypto/persistent_storage"
+	storage2 "github.com/galenliu/chip/crypto/operational_storage"
 	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
@@ -40,10 +40,10 @@ type Server struct {
 	mDnssd                         dnssd.DnssdServer
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
-	mDeviceStorage                 storage.StorageDelegate //unknown
+	mDeviceStorage                 storage.PersistentStorageDelegate //unknown
 	mAccessControl                 access.AccessControler
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
-	mOperationalKeystore           storage2.PersistentStorageOperationalKeystore
+	mOperationalKeystore           storage2.OperationalKeystore
 	mCertificateValidityPolicy     credentials.CertificateValidityPolicy
 
 	mGroupsProvider           credentials.GroupDataProvider

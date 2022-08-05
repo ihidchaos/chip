@@ -3,7 +3,7 @@ package dnssd
 import (
 	"fmt"
 	"github.com/galenliu/chip/credentials"
-	responder2 "github.com/galenliu/chip/pkg/dnssd/responder"
+	"github.com/galenliu/chip/pkg/dnssd/responder"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
@@ -57,6 +57,8 @@ func NewAdvertise() *AdvertiseImpl {
 	a.mQueryResponderAllocatorCommissioner = NewQueryResponderAllocator()
 	a.mQueryResponderAllocatorCommissionable = NewQueryResponderAllocator()
 	a.mResponseSender = NewResponseSender()
+	a.mResponseSender.AddQueryResponder(a.mQueryResponderAllocatorCommissioner.GetQueryResponder())
+	a.mResponseSender.AddQueryResponder(a.mQueryResponderAllocatorCommissionable.GetQueryResponder())
 	a.mEmptyTextEntries = "="
 	return a
 }
@@ -73,7 +75,7 @@ func (d *AdvertiseImpl) Init() error {
 	if err != nil {
 		return err
 	}
-	err = d.AdvertiseRecords(BroadcastAdvertiseType_Started)
+	err = d.AdvertiseRecords(AdvertiseTypeStarted)
 	d.mInitialized = true
 	return err
 }
@@ -90,16 +92,16 @@ func (d *AdvertiseImpl) UpdateCommissionableInstanceName() error {
 
 func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParameters) error {
 
-	_ = a.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
+	_ = a.AdvertiseRecords(AdvertiseTypeRemovingAll)
 	allocator := func() *QueryResponderAllocator {
-		if params.GetCommissioningMode() == AdvertiseMode_CommissionableNode {
+		if params.GetCommissioningMode() == AdvertiseModeCommissionableNode {
 			return a.mQueryResponderAllocatorCommissionable
 		}
 		return a.mQueryResponderAllocatorCommissioner
 	}()
 
 	serviceType := func() string {
-		if params.GetCommissioningMode() == AdvertiseMode_CommissionableNode {
+		if params.GetCommissioningMode() == AdvertiseModeCommissionableNode {
 			return KCommissionableServiceName
 		}
 		return KCommissionerServiceName
@@ -118,26 +120,26 @@ func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParamet
 	instanceName := Fqdn(name, serviceType, KCommissionProtocol, KLocalDomain)
 	hostName := Fqdn(mac, KLocalDomain)
 
-	if !allocator.AddResponder(responder2.NewPtrResponder(serviceName, instanceName)).
+	if !allocator.AddResponder(responder.NewPtrResponder(serviceName, instanceName)).
 		SetReportAdditional(instanceName).
 		SetReportInServiceListing(true).
 		IsValid() {
 		return fmt.Errorf("failed to add service PTR record mDNS responder")
 	}
 
-	if !allocator.AddResponder(responder2.NewSrvResponder(instanceName, hostName, params.GetPort())).
+	if !allocator.AddResponder(responder.NewSrvResponder(instanceName, hostName, params.GetPort())).
 		SetReportAdditional(hostName).
 		IsValid() {
 		return fmt.Errorf("failed to add SRV record mDNS responder")
 	}
 
-	if !allocator.AddResponder(responder2.NewIPv6Responder(hostName)).
+	if !allocator.AddResponder(responder.NewIPv6Responder(hostName)).
 		IsValid() {
 		return fmt.Errorf("failed to add IPv6 mDNS responder")
 	}
 
 	if params.IsIPv4Enabled() {
-		if !allocator.AddResponder(responder2.NewIPv4Responder(hostName)).
+		if !allocator.AddResponder(responder.NewIPv4Responder(hostName)).
 			IsValid() {
 			return fmt.Errorf("failed to add IPv4 mDNS responder")
 		}
@@ -146,7 +148,7 @@ func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParamet
 	if vid, err := params.GetVendorId(); err == nil && vid != 0 {
 		name := makeServiceSubtype(Subtype_VendorId, vid)
 		vendorServiceName := Fqdn(name, KSubtypeServiceNamePart, serviceType, KCommissionProtocol, KLocalDomain)
-		if !allocator.AddResponder(responder2.NewPtrResponder(vendorServiceName, instanceName)).
+		if !allocator.AddResponder(responder.NewPtrResponder(vendorServiceName, instanceName)).
 			SetReportAdditional(instanceName).
 			SetReportInServiceListing(true).
 			IsValid() {
@@ -157,7 +159,7 @@ func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParamet
 	if deviceType, err := params.GetDeviceType(); err == nil && deviceType != 0 {
 		name := makeServiceSubtype(Subtype_DeviceType, deviceType)
 		typeServiceName := Fqdn(name, KSubtypeServiceNamePart, serviceType, KCommissionProtocol, KLocalDomain)
-		if !allocator.AddResponder(responder2.NewPtrResponder(typeServiceName, instanceName)).
+		if !allocator.AddResponder(responder.NewPtrResponder(typeServiceName, instanceName)).
 			SetReportAdditional(instanceName).
 			SetReportInServiceListing(true).
 			IsValid() {
@@ -165,10 +167,10 @@ func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParamet
 		}
 	}
 
-	if params.GetCommissionAdvertiseMode() == AdvertiseMode_CommissionableNode {
+	if params.GetCommissionAdvertiseMode() == AdvertiseModeCommissionableNode {
 		if name := makeServiceSubtype(Subtype_ShortDiscriminator, params.GetShortDiscriminator()); name != "" {
 			shortServiceName := Fqdn(name, KSubtypeServiceNamePart, serviceType, KCommissionProtocol, KLocalDomain)
-			if !allocator.AddResponder(responder2.NewPtrResponder(shortServiceName, instanceName)).
+			if !allocator.AddResponder(responder.NewPtrResponder(shortServiceName, instanceName)).
 				SetReportAdditional(instanceName).
 				SetReportInServiceListing(true).
 				IsValid() {
@@ -178,7 +180,7 @@ func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParamet
 
 		if name := makeServiceSubtype(Subtype_LongDiscriminator, params.GetLongDiscriminator()); name != "" {
 			shortServiceName := Fqdn(name, KSubtypeServiceNamePart, serviceType, KCommissionProtocol, KLocalDomain)
-			if !allocator.AddResponder(responder2.NewPtrResponder(shortServiceName, instanceName)).
+			if !allocator.AddResponder(responder.NewPtrResponder(shortServiceName, instanceName)).
 				SetReportAdditional(instanceName).
 				SetReportInServiceListing(true).
 				IsValid() {
@@ -187,28 +189,28 @@ func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParamet
 		}
 	}
 
-	if params.GetCommissioningMode() == CommissioningMode_Disabled {
+	if params.GetCommissioningMode() == CommissioningModeDisabled {
 		if name := makeServiceSubtype[int](Subtype_CommissioningMode); name != "" {
 			commissioningModeServiceName := Fqdn(name, KSubtypeServiceNamePart, serviceType, KCommissionProtocol, KLocalDomain)
-			if !allocator.AddResponder(responder2.NewPtrResponder(commissioningModeServiceName, instanceName)).
+			if !allocator.AddResponder(responder.NewPtrResponder(commissioningModeServiceName, instanceName)).
 				SetReportAdditional(instanceName).SetReportInServiceListing(true).IsValid() {
 				return fmt.Errorf("failed to add commissioning mode PTR record mDNS responder")
 			}
 		}
 	}
 
-	if !allocator.AddResponder(responder2.NewTxtResponder(instanceName, a.GetCommissioningTxtEntries(params))).
+	if !allocator.AddResponder(responder.NewTxtResponder(instanceName, a.GetCommissioningTxtEntries(params))).
 		SetReportAdditional(hostName).
 		IsValid() {
 		return fmt.Errorf("failed to add TXT record mDNS responder")
 	}
 
-	if params.GetCommissionAdvertiseMode() == AdvertiseMode_CommissionableNode {
+	if params.GetCommissionAdvertiseMode() == AdvertiseModeCommissionableNode {
 		log.Infof("CHIP minimal mDNS configured as 'Commissionable node device'.")
 	} else {
 		log.Infof("CHIP minimal mDNS configured as 'Commissioner device'.")
 	}
-	_ = a.AdvertiseRecords(BroadcastAdvertiseType_Started)
+	_ = a.AdvertiseRecords(AdvertiseTypeStarted)
 	log.Infof("mDNS service published: %s", instanceName)
 	return nil
 }
@@ -217,7 +219,7 @@ func (d *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParam
 
 	var name = fmt.Sprintf("%016X-%016X", params.GetPeerId().GetCompressedFabricId(), params.GetPeerId().GetNodeId())
 
-	_ = d.AdvertiseRecords(BroadcastAdvertiseType_RemovingAll)
+	_ = d.AdvertiseRecords(AdvertiseTypeRemovingAll)
 	instanceName := Fqdn(name, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
 
 	operationalAllocator := d.FindOperationalAllocator(instanceName)
@@ -231,32 +233,32 @@ func (d *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParam
 	serviceName := Fqdn(KOperationalServiceName, KOperationalProtocol, KLocalDomain)
 	hostName := Fqdn(name, KLocalDomain)
 
-	if !operationalAllocator.AddResponder(responder2.NewPtrResponder(serviceName, instanceName)).
+	if !operationalAllocator.AddResponder(responder.NewPtrResponder(serviceName, instanceName)).
 		SetReportAdditional(instanceName).
 		SetReportInServiceListing(true).
 		IsValid() {
 		return fmt.Errorf("failed to add service PTR record mDNS responder")
 	}
 
-	if !operationalAllocator.AddResponder(responder2.NewSrvResponder(instanceName, hostName, params.GetPort())).
+	if !operationalAllocator.AddResponder(responder.NewSrvResponder(instanceName, hostName, params.GetPort())).
 		SetReportAdditional(hostName).
 		IsValid() {
 		return fmt.Errorf("failed to add SRV record mDNS responder")
 	}
 
-	if !operationalAllocator.AddResponder(responder2.NewTxtResponder(instanceName, d.GetOperationalTxtEntries(params))).
+	if !operationalAllocator.AddResponder(responder.NewTxtResponder(instanceName, d.GetOperationalTxtEntries(params))).
 		SetReportAdditional(hostName).
 		IsValid() {
 		return fmt.Errorf("failed to add TXT record mDNS responder")
 	}
 
-	if !operationalAllocator.AddResponder(responder2.NewIPv6Responder(hostName)).
+	if !operationalAllocator.AddResponder(responder.NewIPv6Responder(hostName)).
 		IsValid() {
 		return fmt.Errorf("failed to add IPv6 mDNS responder")
 	}
 
 	if params.IsIPv4Enabled() {
-		if !operationalAllocator.AddResponder(responder2.NewIPv4Responder(hostName)).
+		if !operationalAllocator.AddResponder(responder.NewIPv4Responder(hostName)).
 			IsValid() {
 			return fmt.Errorf("failed to add IPv4 mDNS responder")
 
@@ -264,16 +266,16 @@ func (d *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParam
 	}
 
 	id := params.GetPeerId().GetCompressedFabricId()
-	fabricId := makeServiceSubtype(DiscoveryFilterType_kCompressedFabricId, id)
+	fabricId := makeServiceSubtype(Subtype_CompressedFabricId, id)
 	compressedFabricIdSubtype := Fqdn(fabricId, KSubtypeServiceNamePart, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
-	if !operationalAllocator.AddResponder(responder2.NewPtrResponder(compressedFabricIdSubtype, instanceName)).
+	if !operationalAllocator.AddResponder(responder.NewPtrResponder(compressedFabricIdSubtype, instanceName)).
 		SetReportAdditional(instanceName).
 		IsValid() {
 		log.Infof("Failed to add device type PTR record mDNS responder")
 	}
 
 	log.Infof("CHIP minimal mDNS configured as 'Operational device'.")
-	_ = d.AdvertiseRecords(BroadcastAdvertiseType_Started)
+	_ = d.AdvertiseRecords(AdvertiseTypeStarted)
 	log.Infof("mDNS service published: %s", instanceName)
 	return nil
 }
@@ -314,7 +316,7 @@ func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *CommissionAdvertising
 		txtFields = append(txtFields, commonTxt...)
 	}
 
-	if params.GetCommissionAdvertiseMode() == AdvertiseMode_CommissionableNode {
+	if params.GetCommissionAdvertiseMode() == AdvertiseModeCommissionableNode {
 		txtFields = append(txtFields, fmt.Sprintf("D=%d", params.GetLongDiscriminator()))
 		txtFields = append(txtFields, fmt.Sprintf("CM=%d", params.GetCommissioningMode()))
 	}
@@ -384,21 +386,20 @@ func (d *AdvertiseImpl) FindOperationalAllocator(name string) *QueryResponderAll
 
 func (d *AdvertiseImpl) FindEmptyOperationalAllocator() *QueryResponderAllocator {
 	OperationalQueryAllocator := NewQueryResponderAllocator()
-	_ = d.mResponseSender.AddQueryResponder(OperationalQueryAllocator.GetQueryResponder())
+	d.mResponseSender.AddQueryResponder(OperationalQueryAllocator.GetQueryResponder())
 	d.mOperationalResponders = append(d.mOperationalResponders, OperationalQueryAllocator)
 	return OperationalQueryAllocator
 }
 
 func (d *AdvertiseImpl) AdvertiseRecords(typ int) error {
 
-	var responseConfiguration = &responder2.ResponseConfiguration{}
-	if typ == BroadcastAdvertiseType_RemovingAll {
+	var responseConfiguration = &responder.ResponseConfiguration{}
+	if typ == AdvertiseTypeRemovingAll {
 		responseConfiguration.SetTtlSecondsOverride(0)
 	}
 	queryData := NewQueryData(dns.TypePTR, dns.ClassINET, false)
 	queryData.configuration = responseConfiguration
 	queryData.SetIsInternalBroadcast(true)
-
 	interfaceIds, err := net.Interfaces()
 	if err == nil {
 		for _, interfaceId := range interfaceIds {

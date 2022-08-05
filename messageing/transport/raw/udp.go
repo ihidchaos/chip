@@ -1,11 +1,15 @@
 package raw
 
 import (
-	"github.com/galenliu/chip/messageing/transport"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"net/netip"
+)
+
+const (
+	NotReady uint8 = iota
+	Initialized
 )
 
 type UdpTransport interface {
@@ -36,11 +40,6 @@ func (p *UDPTransportImpl) SendMessage(port netip.AddrPort, msg []byte) error {
 	panic("implement me")
 }
 
-func (p *UDPTransportImpl) HandleMessageReceived(peerAddress netip.AddrPort, msg []byte) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (p *UDPTransportImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
 	//TODO implement me
 	panic("implement me")
@@ -48,7 +47,7 @@ func (p *UDPTransportImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) e
 
 func (p *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 
-	if p.mState != transport.NotReady {
+	if p.mState != NotReady {
 		p.Close()
 	}
 	p.mPort = parameters.GetAddress().Port()
@@ -67,7 +66,7 @@ func (p *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 				p.Close()
 				return
 			}
-			go p.readAll(udpConn, parameters.mAddress.Port())
+			go p.handelConnection(udpConn, parameters.mAddress.Port())
 		}
 	}()
 	return nil
@@ -77,7 +76,7 @@ func (p *UDPTransportImpl) GetBoundPort() uint16 {
 	return p.mPort
 }
 
-func (p *UDPTransportImpl) readAll(conn *net.UDPConn, port uint16) {
+func (p *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 	var data []byte
 	_, err := io.ReadFull(conn, data)
 	if err != nil {

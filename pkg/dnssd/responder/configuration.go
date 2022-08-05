@@ -4,7 +4,7 @@ type ResponseConfiguration struct {
 	mTtlSecondsOverride *uint32
 }
 
-func (c ResponseConfiguration) Adjust(r *Record) {
+func (c *ResponseConfiguration) Adjust(r *Record) {
 	if c.mTtlSecondsOverride != nil {
 		r.SetTtl(*c.mTtlSecondsOverride)
 	}

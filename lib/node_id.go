@@ -48,7 +48,7 @@ func (aNodeId NodeId) IsPAKEKeyId() bool {
 	return (aNodeId >= kMinPAKEKeyId) && (aNodeId <= kMaxPAKEKeyId)
 }
 
-func (aNodeId NodeId) ToGroupId() GroupId {
+func (aNodeId NodeId) GetGroupId() GroupId {
 	return GroupId(uint64(aNodeId) & uint64(kMaskGroupId))
 }
 

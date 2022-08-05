@@ -58,7 +58,7 @@ func (m *CommissioningWindowManagerImpl) OpenBasicCommissioningWindow() error {
 }
 
 func (m *CommissioningWindowManagerImpl) GetCommissioningMode() int {
-	return CommissioningMode_Disabled
+	return CommissioningModeDisabled
 }
 
 func (m *CommissioningWindowManagerImpl) OpenCommissioningWindow() error {

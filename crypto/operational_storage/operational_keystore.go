@@ -1,4 +1,4 @@
-package persistent_storage
+package operational_storage
 
 import (
 	"crypto"
@@ -6,7 +6,7 @@ import (
 	"github.com/galenliu/chip/pkg/storage"
 )
 
-type PersistentStorageOperationalKeystore interface {
+type OperationalKeystore interface {
 	HasPendingOpKeypair() bool
 	HasOpKeypairForFabric(fabricIndex device.FabricIndex) bool
 	NewOpKeypairForFabric(fabricIndex device.FabricIndex) ([]byte, error)

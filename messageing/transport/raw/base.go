@@ -2,18 +2,18 @@ package raw
 
 import "net/netip"
 
-type RawTransportDelegate interface {
+type TransportDelegate interface {
 	HandleMessageReceived(addrPort netip.AddrPort, msg []byte)
 }
 
 type TransportBase interface {
 	GetBoundPort() uint16
 	HandleMessageReceived(addrPort netip.AddrPort, msg []byte)
-	SetDelegate(m RawTransportDelegate)
+	SetDelegate(m TransportDelegate)
 }
 
 type BaseImpl struct {
-	mDelegate RawTransportDelegate
+	mDelegate TransportDelegate
 }
 
 func (b *BaseImpl) HandleMessageReceived(addrPort netip.AddrPort, msg []byte) {
@@ -24,6 +24,6 @@ func NewBaseImpl() *BaseImpl {
 	return &BaseImpl{}
 }
 
-func (b *BaseImpl) SetDelegate(m RawTransportDelegate) {
+func (b *BaseImpl) SetDelegate(m TransportDelegate) {
 	b.mDelegate = m
 }

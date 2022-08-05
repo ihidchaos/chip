@@ -7,6 +7,7 @@ type SessionHolder interface {
 	Release()
 	Get() SessionHandle
 	DispatchSessionEvent(delegate SessionDelegate)
+	Contains(session SessionHandle) bool
 }
 
 type SessionHolderWithDelegate interface {

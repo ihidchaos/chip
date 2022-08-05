@@ -85,6 +85,10 @@ func (info *FabricInfo) GetNodeId() lib.NodeId {
 	return info.mNodeId
 }
 
+func (info *FabricInfo) Reset() {
+
+}
+
 type FabricInfoInitParams struct {
 	NodeId                    lib.NodeId
 	FabriceId                 lib.FabricId

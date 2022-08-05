@@ -117,7 +117,6 @@ func (rs *ResponseSender) SetServer(server MdnsServer) {
 	rs.mServer = server
 }
 
-func (rs *ResponseSender) AddQueryResponder(queryResponder *QueryResponder) error {
+func (rs *ResponseSender) AddQueryResponder(queryResponder *QueryResponder) {
 	rs.mResponders = append(rs.mResponders, queryResponder)
-	return nil
 }

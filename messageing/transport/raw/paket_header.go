@@ -260,7 +260,7 @@ func (h *PacketHeader) DecodeAndConsume(data []byte) error {
 	}
 	if h.mMessageFlags&kDestinationNodeIdPresent != 0 {
 		h.mDestinationNodeId = lib.NodeId(binary.LittleEndian.Uint64(data[8:16]))
-		h.mDestinationGroupId = lib.GroupIdFromNodeId(h.mDestinationNodeId)
+		h.mDestinationGroupId = h.mDestinationNodeId.GetGroupId()
 		h.mSize = h.mSize + 8
 	}
 	return nil

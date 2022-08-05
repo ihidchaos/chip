@@ -82,10 +82,8 @@ func (e *ExchangeManagerImpl) OnMessageReceived(packetHeader *raw.PacketHeader, 
 	if isDuplicate == transport.DuplicateMessageYes {
 		msgFlags = msgFlags | pkg.KDuplicateMessage
 	}
-
 	found := false
 	if !packetHeader.IsGroupSession() {
-
 		for _, ec := range e.mContextPool {
 			if ec.MatchExchange(session, packetHeader, payloadHeader) {
 				ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlags, data)

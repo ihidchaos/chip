@@ -6,7 +6,7 @@ import (
 )
 
 type QueryResponder struct {
-	ResponderInfos []*QueryResponderInfo // TODO 数量需要做限定
+	ResponderInfos []*QueryResponderInfo // TODO
 }
 
 func NewQueryResponder() *QueryResponder {

@@ -2,7 +2,6 @@ package dnssd
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/messageing/transport"
 )
 
@@ -20,7 +19,7 @@ type CommissionAdvertisingParameters struct {
 	mDeviceName         string  //设备名称
 	mMode               uint16
 	mCommissioningMode  int
-	mPeerId             *device.PeerId
+	mPeerId             *PeerId
 	mShortDiscriminator uint8
 	mLongDiscriminator  uint16
 	mRotatingId         string

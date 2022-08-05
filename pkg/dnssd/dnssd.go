@@ -81,7 +81,7 @@ func (d Dnssd) SetInterfaceId(n net.Interface) {
 }
 
 func (d *Dnssd) StartServer() {
-	mode := CommissioningMode_Disabled
+	mode := CommissioningModeDisabled
 	if d.mCommissioningModeProvider != nil {
 		mode = d.mCommissioningModeProvider.GetCommissioningMode()
 	}
@@ -117,7 +117,7 @@ func (d *Dnssd) AdvertiseOperational() error {
 }
 
 func (d *Dnssd) AdvertiseCommissioner() error {
-	return d.Advertise(false, CommissioningMode_Disabled)
+	return d.Advertise(false, CommissioningModeDisabled)
 }
 
 func (d *Dnssd) Advertise(commissionAbleNode bool, mode int) error {
@@ -125,10 +125,10 @@ func (d *Dnssd) Advertise(commissionAbleNode bool, mode int) error {
 	advertiseParameters := NewCommissionAdvertisingParameters()
 	if commissionAbleNode {
 		advertiseParameters.SetPort(d.mSecuredPort)
-		advertiseParameters.SetCommissionAdvertiseMode(AdvertiseMode_CommissionableNode)
+		advertiseParameters.SetCommissionAdvertiseMode(AdvertiseModeCommissionableNode)
 	} else {
 		advertiseParameters.SetPort(d.mUnsecuredPort)
-		advertiseParameters.SetCommissionAdvertiseMode(AdvertiseMode_Commissioner)
+		advertiseParameters.SetCommissionAdvertiseMode(AdvertiseModeCommissioner)
 
 	}
 	advertiseParameters.SetInterfaceId(d.mInterfaceId)
@@ -238,7 +238,7 @@ func (d *Dnssd) startServer(mode int) {
 		log.Errorf("failed to advertise operational node: %s", err.Error())
 	}
 
-	if mode == CommissioningMode_Disabled {
+	if mode == CommissioningModeDisabled {
 		err := d.AdvertiseCommissionableNode(mode)
 		if err != nil {
 			log.Error("failed to advertise commissionable node: %s", err.Error())
@@ -262,7 +262,7 @@ func (d *Dnssd) AdvertiseCommissionableNode(mode int) error {
 	if config.ChipDeviceConfigEnableExtendedDiscovery {
 		d.mCurrentCommissioningMode = mode
 	}
-	if mode != CommissioningMode_Disabled {
+	if mode != CommissioningModeDisabled {
 		d.mExtendedDiscoveryExpiration = nil
 	}
 	return d.Advertise(true, mode)

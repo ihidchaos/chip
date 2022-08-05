@@ -1,12 +1,12 @@
 package pkg
 
-import "github.com/galenliu/chip/transport"
+import "github.com/galenliu/chip/messageing/transport/raw"
 
 type GroupDataProviderListener struct {
-	mTransports transport.Transport
+	mTransports raw.TransportBase
 }
 
-func IntGroupDataProviderListener(transport transport.Transport) (*GroupDataProviderListener, error) {
+func IntGroupDataProviderListener(transport raw.TransportBase) (*GroupDataProviderListener, error) {
 	ins := &GroupDataProviderListener{mTransports: transport}
 	return ins, nil
 }

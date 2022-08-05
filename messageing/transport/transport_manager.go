@@ -5,13 +5,8 @@ import (
 	"net/netip"
 )
 
-const (
-	NotReady uint8 = iota
-	Initialized
-)
-
 type ManagerBase interface {
-	raw.RawTransportDelegate
+	raw.TransportDelegate
 	SetSessionManager(sessionManager SessionManager)
 	SendMessage(port netip.AddrPort, msg []byte) error
 	Close()

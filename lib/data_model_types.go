@@ -15,3 +15,9 @@ type OperationalNodeId uint64
 type GroupNodeID uint64
 
 type TemporaryLocalNodeId uint64
+
+const KUndefinedFabricIndex FabricIndex = 0
+
+const KMinValidFabricIndex FabricIndex = 1
+
+const KMaxValidFabricIndex FabricIndex = 0xfe

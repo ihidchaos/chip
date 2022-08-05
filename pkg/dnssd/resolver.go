@@ -1,21 +1,5 @@
 package dnssd
 
-import (
-	"github.com/galenliu/chip/device"
-)
-
-const (
-	DiscoveryFilterType_kNone = iota
-	DiscoveryFilterType_kShortDiscriminator
-	DiscoveryFilterType_kLongDiscriminator
-	DiscoveryFilterType_kVendorId
-	DiscoveryFilterType_kDeviceType
-	DiscoveryFilterType_kCommissioningMode
-	DiscoveryFilterType_kInstanceName
-	DiscoveryFilterType_kCommissioner
-	DiscoveryFilterType_kCompressedFabricId
-)
-
 type CommissioningResolveDelegate interface {
 }
 
@@ -29,7 +13,7 @@ type Resolver interface {
 	Init() error
 	Shutdown()
 
-	ResolveNodeId(peerId device.PeerId, isIpV6 bool)
+	ResolveNodeId(peerId PeerId, isIpV6 bool)
 
 	SetOperationalDelegate(delegate OperationalResolveDelegate)
 	SetCommissioningDelegate(delegate CommissioningResolveDelegate)
@@ -55,7 +39,7 @@ func (m MinMdnsResolver) Shutdown() {
 	panic("implement me")
 }
 
-func (m MinMdnsResolver) ResolveNodeId(peerId device.PeerId, isIpV6 bool) {
+func (m MinMdnsResolver) ResolveNodeId(peerId PeerId, isIpV6 bool) {
 	//TODO implement me
 	panic("implement me")
 }

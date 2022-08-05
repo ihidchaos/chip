@@ -2,15 +2,15 @@ package credentials
 
 import (
 	"github.com/galenliu/chip/crypto"
-	storage2 "github.com/galenliu/chip/crypto/persistent_storage"
+	"github.com/galenliu/chip/crypto/operational_storage"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/pkg/storage"
 	"time"
 )
 
 type FabricTableInitParams struct {
-	Storage             storage.StorageDelegate
-	OperationalKeystore storage2.PersistentStorageOperationalKeystore
+	Storage             storage.PersistentStorageDelegate
+	OperationalKeystore operational_storage.OperationalKeystore
 	OpCertStore         PersistentStorageOpCertStore
 }
 
@@ -49,9 +49,14 @@ type FabricTableContainer interface {
 }
 
 type FabricTable struct {
-	mStates        []*FabricInfo
-	mPendingFabric *FabricInfo
-	mFabricLabel   string
+	mStates                   []*FabricInfo
+	mPendingFabric            *FabricInfo
+	mFabricLabel              string
+	mStorage                  storage.PersistentStorageDelegate
+	operationalKeystore       operational_storage.OperationalKeystore
+	mOpCertStore              PersistentStorageOpCertStore
+	mFabricCount              uint8
+	mNextAvailableFabricIndex lib.FabricIndex
 }
 
 func (f *FabricTable) AddFabricDelegate(delegate FabricTableDelegate) error {
@@ -69,8 +74,14 @@ func NewFabricTable() *FabricTable {
 }
 
 func (f *FabricTable) Init(params *FabricTableInitParams) error {
-	//TODO implement me
-	panic("implement me")
+	f.mStorage = params.Storage
+	f.mOpCertStore = params.OpCertStore
+	f.mFabricCount = 0
+	for _, f := range f.mStates {
+		f.Reset()
+	}
+	f.mNextAvailableFabricIndex = lib.KMinValidFabricIndex
+	return nil
 }
 
 func (f *FabricTable) Delete(index lib.FabricIndex) {
