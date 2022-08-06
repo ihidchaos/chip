@@ -49,7 +49,10 @@ func (s *PersistentStorageImpl) Init(mConfigPath string) error {
 		return fmt.Errorf("initialized")
 	}
 	s.mConfigFile = mConfigPath
-	s.storage = NewIniStorage()
+	if s.storage == nil {
+		s.storage = NewIniStorage()
+	}
+	_ = s.storage.Init()
 	err := s.storage.AddConfig(mConfigPath)
 	if err != nil {
 		return err
@@ -61,9 +64,9 @@ func (s *PersistentStorageImpl) Init(mConfigPath string) error {
 func (s *PersistentStorageImpl) ReadBoolValue(key string) (bool, error) {
 	value, err := s.storage.GetUIntValue(key)
 	if value == 0 {
-		return true, err
+		return false, err
 	}
-	return false, err
+	return true, err
 }
 
 func (s *PersistentStorageImpl) ReadValueUint16(key string) (uint16, error) {
@@ -84,7 +87,6 @@ func (s *PersistentStorageImpl) ReadValueUint64(key string) (uint64, error) {
 }
 
 func (s *PersistentStorageImpl) ReadValueStr(key string) (string, error) {
-
 	return s.storage.GetStringValue(key)
 }
 
@@ -118,7 +120,7 @@ func (s *PersistentStorageImpl) WriteValueUint32(key string, v uint32) error {
 }
 
 func (s *PersistentStorageImpl) WriteValueUint64(key string, v uint64) error {
-	err := s.storage.AddEntry(key, strconv.FormatUint(uint64(v), 10))
+	err := s.storage.AddEntry(key, strconv.FormatUint(v, 10))
 	s.mDirty = true
 	return err
 }
@@ -130,7 +132,6 @@ func (s *PersistentStorageImpl) WriteValueStr(key string, v string) error {
 	}
 	s.mDirty = true
 	return s.Commit()
-
 }
 
 func (s *PersistentStorageImpl) WriteValueBin(key string, v []byte) error {
@@ -140,24 +141,27 @@ func (s *PersistentStorageImpl) WriteValueBin(key string, v []byte) error {
 }
 
 func (s *PersistentStorageImpl) ClearValue(key string) error {
-
 	err := s.storage.RemoveEntry(key)
 	s.mDirty = true
 	return err
 }
 
 func (s *PersistentStorageImpl) ClearAll() error {
-
 	err := s.storage.RemoveAll()
 	s.mDirty = true
 	return err
 }
 
 func (s *PersistentStorageImpl) Commit() error {
-	if s.mConfigFile != "" && s.mDirty {
-		return s.storage.CommitConfig(s.mConfigFile)
+	if s.mConfigFile != "" && s.mDirty && s.mInitialized {
+		err := s.storage.CommitConfig(s.mConfigFile)
+		if err != nil {
+			return err
+		}
+		s.mDirty = false
+	} else {
+		return fmt.Errorf("strore state  error")
 	}
-	s.mDirty = false
 	return nil
 }
 

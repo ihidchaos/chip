@@ -4,9 +4,9 @@ import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	storage2 "github.com/galenliu/chip/crypto/operational_storage"
+	crypto "github.com/galenliu/chip/crypto/operational_storage"
 	"github.com/galenliu/chip/lib"
-	storage3 "github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/storage"
 	"net"
 )
 
@@ -30,7 +30,7 @@ type InitParams struct {
 
 	// Persistent storage delegate: MUST be injected. Used to maintain storage by much common code.
 	// Must be initialized before being provided.
-	PersistentStorageDelegate storage3.KeyValuePersistentStorage
+	PersistentStorageDelegate storage.KeyValuePersistentStorage
 	// Session resumption storage: Optional. Support session resumption when provided.
 	// Must be initialized before being provided.
 	SessionResumptionStorage lib.SessionResumptionStorage
@@ -60,7 +60,7 @@ type InitParams struct {
 	// provided.
 	TestEventTriggerDelegate TestEventTriggerDelegate
 	// Operational keystore with access to the operational keys: MUST be injected.
-	OperationalKeystore storage2.OperationalKeystore
+	OperationalKeystore crypto.OperationalKeystore
 	// Operational certificate store with access to the operational certs in persisted storage:
 	// must not be null at timne of Server::initCommissionableData().
 	OpCertStore credentials.PersistentStorageOpCertStore
@@ -91,8 +91,8 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 
 func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
-	var sKvsPersistentStorageDelegate storage3.KeyValuePersistentStorage
-	var sPersistentStorageOperationalKeystore = storage2.NewPersistentStorageOperationalKeystoreImpl()
+	var sKvsPersistentStorageDelegate storage.KeyValuePersistentStorage
+	var sPersistentStorageOperationalKeystore = crypto.NewPersistentStorageOperationalKeystoreImpl()
 	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
 	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
 	var sDefaultCertValidityPolicy = NewIgnoreCertificateValidityPolicy()
@@ -100,26 +100,29 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 	var sSessionResumptionStorage = lib.NewSimpleSessionResumptionStorage()
 
 	if params.PersistentStorageDelegate == nil {
-		sKvsPersistentStorageDelegate = storage3.KeyValueStoreMgr()
+		sKvsPersistentStorageDelegate = storage.KeyValueStoreMgr()
 		params.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 
 	if params.OperationalKeystore == nil {
-		sPersistentStorageOperationalKeystore.Init(params.PersistentStorageDelegate)
+		_ = sPersistentStorageOperationalKeystore.Init(params.PersistentStorageDelegate)
 		params.OperationalKeystore = sPersistentStorageOperationalKeystore
 	}
 
 	if params.OpCertStore == nil {
-		sPersistentStorageOpCertStore.Init(params.PersistentStorageDelegate)
+		_ = sPersistentStorageOpCertStore.Init(params.PersistentStorageDelegate)
+
 		params.OpCertStore = sPersistentStorageOpCertStore
 	}
 
-	sGroupDataProvider.SetStorageDelegate(params.PersistentStorageDelegate)
-	err := sGroupDataProvider.Init()
-	if err != nil {
-		return err
+	{
+		sGroupDataProvider.SetStorageDelegate(params.PersistentStorageDelegate)
+		err := sGroupDataProvider.Init()
+		if err != nil {
+			return err
+		}
+		params.GroupDataProvider = sGroupDataProvider
 	}
-	params.GroupDataProvider = sGroupDataProvider
 
 	{
 		if config.ChipConfigEnableSessionResumption {
@@ -142,53 +145,6 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 	}
 
 	params.CertificateValidityPolicy = sDefaultCertValidityPolicy
-
-	return nil
-}
-
-func (p *CommonCaseDeviceServerInitParams) InitializeStaticResourcesBeforeServerInit() error {
-
-	var sKvsPersistentStorageDelegate storage3.KeyValuePersistentStorage
-	var sPersistentStorageOperationalKeystore storage2.OperationalKeystore
-	var sPersistentStorageOpCertStore credentials.PersistentStorageOpCertStore
-	var sGroupDataProvider credentials.GroupDataProvider
-	var sDefaultCertValidityPolicy = NewIgnoreCertificateValidityPolicy()
-
-	if p.PersistentStorageDelegate == nil {
-		sKvsPersistentStorageDelegate = storage3.KeyValueStoreMgr()
-		p.PersistentStorageDelegate = sKvsPersistentStorageDelegate
-	}
-	if p.OperationalKeystore == nil {
-		sPersistentStorageOperationalKeystore = storage2.NewPersistentStorageOperationalKeystoreImpl()
-		sPersistentStorageOperationalKeystore.Init(p.PersistentStorageDelegate)
-	}
-	if p.OpCertStore == nil {
-		sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
-		sPersistentStorageOpCertStore.Init(p.PersistentStorageDelegate)
-		p.OpCertStore = sPersistentStorageOpCertStore
-	}
-
-	sGroupDataProvider = credentials.NewGroupDataProviderImpl()
-	sGroupDataProvider.SetStorageDelegate(p.PersistentStorageDelegate)
-	err := sGroupDataProvider.Init()
-	if err != nil {
-		return err
-	}
-	p.GroupDataProvider = sGroupDataProvider
-
-	{
-		//TODO 根据配置 CHIP_CONFIG_ENABLE_SESSION_RESUMPTION 初始化
-		p.SessionResumptionStorage = nil
-	}
-
-	p.AccessDelegate = access.GetAccessControlDelegate()
-
-	{
-		//TODO 未实现
-		p.AclStorage = NewAclStorageImpl()
-	}
-
-	p.CertificateValidityPolicy = sDefaultCertValidityPolicy
 
 	return nil
 }

@@ -13,6 +13,7 @@ type AttributePersistence struct {
 }
 
 func NewAttributePersistence() *AttributePersistence {
+
 	return &AttributePersistence{}
 }
 

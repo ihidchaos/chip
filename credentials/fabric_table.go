@@ -60,6 +60,10 @@ type FabricTable struct {
 	mDelegate                 FabricTableDelegate
 }
 
+func NewFabricTableInitParams() *FabricTableInitParams {
+	return &FabricTableInitParams{}
+}
+
 func (f *FabricTable) AddFabricDelegate(delegate FabricTableDelegate) error {
 	f.mDelegate = delegate
 	return nil
@@ -221,8 +225,4 @@ func (f *FabricTable) GetMutableFabricByIndex(index lib.FabricIndex) *FabricInfo
 func (f *FabricTable) RevertPendingFabricData() {
 	//TODO implement me
 	panic("implement me")
-}
-
-func NewFabricTableInitParams() *FabricTableInitParams {
-	return &FabricTableInitParams{}
 }

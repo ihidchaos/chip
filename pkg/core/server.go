@@ -40,7 +40,7 @@ type Server struct {
 	mDnssd                         dnssd.DnssdServer
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
-	mDeviceStorage                 storage.KeyValuePersistentStorage //unknown
+	mDeviceStorage                 storage.KeyValuePersistentStorage
 	mAccessControl                 access.AccessControler
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
 	mOperationalKeystore           storage2.OperationalKeystore

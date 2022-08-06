@@ -4,6 +4,7 @@ import (
 	"fmt"
 	gini "gopkg.in/ini.v1"
 	"os"
+	"time"
 )
 
 type Storage interface {
@@ -16,7 +17,6 @@ type Storage interface {
 	GetStringValue(key string) (string, error)
 	GetBinaryBlobValue(key string) ([]byte, error)
 	HasValue(key string) bool
-
 	AddEntry(key, value string) error
 	RemoveEntry(key string) error
 	RemoveAll() error
@@ -107,6 +107,14 @@ func (i *iniStorageImpl) GetStringValue(key string) (string, error) {
 		return "", err
 	}
 	return section.Key(key).String(), nil
+}
+
+func (i *iniStorageImpl) GetTimeValue(key string) (time.Time, error) {
+	section, err := i.getDefaultSection()
+	if err != nil {
+		return time.Time{}, err
+	}
+	return section.Key(key).Time()
 }
 
 func (i *iniStorageImpl) GetBinaryBlobValue(key string) ([]byte, error) {

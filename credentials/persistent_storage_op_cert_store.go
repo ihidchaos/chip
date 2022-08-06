@@ -1,36 +1,34 @@
 package credentials
 
 import (
-	"github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/lib"
 )
 
 type PersistentStorageOpCertStore interface {
-	Init(delegate storage.PersistentStorage)
-
+	OperationalCertificateStore
 	HasPendingRootCert() bool
 	HasPendingNocChain() bool
-	HasCertificateForFabric(fabricIndex device.FabricIndex, element uint8) bool
+	HasCertificateForFabric(fabricIndex lib.FabricIndex, element uint8) bool
 
-	AddNewTrustedRootCertForFabric(fabricIndex device.FabricIndex, rcac []byte) error
+	AddNewTrustedRootCertForFabric(fabricIndex lib.FabricIndex, rcac []byte) error
 
-	AddNewOpCertsForFabric(fabricIndex device.FabricIndex, noc []byte, icac []byte) error
+	AddNewOpCertsForFabric(fabricIndex lib.FabricIndex, noc []byte, icac []byte) error
 
-	UpdateOpCertsForFabric(fabricIndex device.FabricIndex, noc []byte, icac []byte) error
+	UpdateOpCertsForFabric(fabricIndex lib.FabricIndex, noc []byte, icac []byte) error
 
-	CommitOpCertsForFabric(fabricIndex device.FabricIndex) error
+	CommitOpCertsForFabric(fabricIndex lib.FabricIndex) error
 
-	RemoveOpCertsForFabric(fabricIndex device.FabricIndex) error
+	RemoveOpCertsForFabric(fabricIndex lib.FabricIndex) error
 
 	RevertPendingOpCerts()
 
 	RevertPendingOpCertsExceptRoot()
 
-	GetCertificate(fabricIndex device.FabricIndex, element uint8) []byte
+	GetCertificate(fabricIndex lib.FabricIndex, element uint8) []byte
 }
 
 type PersistentStorageOpCertStoreImpl struct {
-	mPersistentStorage storage.PersistentStorage
+	*OperationalCertificateStoreImpl
 }
 
 func NewPersistentStorageOpCertStoreImpl() *PersistentStorageOpCertStoreImpl {
@@ -45,28 +43,28 @@ func (s PersistentStorageOpCertStoreImpl) HasPendingNocChain() bool {
 	return true
 }
 
-func (s PersistentStorageOpCertStoreImpl) HasCertificateForFabric(fabricIndex device.FabricIndex, element uint8) bool {
+func (s PersistentStorageOpCertStoreImpl) HasCertificateForFabric(fabricIndex lib.FabricIndex, element uint8) bool {
 	return true
 }
 
-func (s PersistentStorageOpCertStoreImpl) AddNewTrustedRootCertForFabric(fabricIndex device.FabricIndex, rcac []byte) error {
+func (s PersistentStorageOpCertStoreImpl) AddNewTrustedRootCertForFabric(fabricIndex lib.FabricIndex, rcac []byte) error {
 	return nil
 }
 
-func (s PersistentStorageOpCertStoreImpl) AddNewOpCertsForFabric(fabricIndex device.FabricIndex, noc []byte, icac []byte) error {
+func (s PersistentStorageOpCertStoreImpl) AddNewOpCertsForFabric(fabricIndex lib.FabricIndex, noc []byte, icac []byte) error {
 	return nil
 }
 
-func (s PersistentStorageOpCertStoreImpl) UpdateOpCertsForFabric(fabricIndex device.FabricIndex, noc []byte, icac []byte) error {
+func (s PersistentStorageOpCertStoreImpl) UpdateOpCertsForFabric(fabricIndex lib.FabricIndex, noc []byte, icac []byte) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s PersistentStorageOpCertStoreImpl) CommitOpCertsForFabric(fabricIndex device.FabricIndex) error {
+func (s PersistentStorageOpCertStoreImpl) CommitOpCertsForFabric(fabricIndex lib.FabricIndex) error {
 	return nil
 }
 
-func (s PersistentStorageOpCertStoreImpl) RemoveOpCertsForFabric(fabricIndex device.FabricIndex) error {
+func (s PersistentStorageOpCertStoreImpl) RemoveOpCertsForFabric(fabricIndex lib.FabricIndex) error {
 	return nil
 }
 
@@ -78,10 +76,6 @@ func (s PersistentStorageOpCertStoreImpl) RevertPendingOpCertsExceptRoot() {
 
 }
 
-func (s PersistentStorageOpCertStoreImpl) GetCertificate(fabricIndex device.FabricIndex, element uint8) []byte {
+func (s PersistentStorageOpCertStoreImpl) GetCertificate(fabricIndex lib.FabricIndex, element uint8) []byte {
 	return nil
-}
-
-func (s PersistentStorageOpCertStoreImpl) Init(delegate storage.PersistentStorage) {
-	s.mPersistentStorage = delegate
 }

@@ -26,9 +26,7 @@ func (r *QueryResponder) ClearBroadcastThrottle() {
 }
 
 func (r *QueryResponder) AddResponder(res responder.RecordResponder) *QueryResponderSettings {
-	info := &QueryResponderInfo{
-		Responder: res,
-	}
+	info := NewQueryResponderInfo(res)
 	r.ResponderInfos = append(r.ResponderInfos, info)
 	return NewQueryResponderSettings(info)
 }

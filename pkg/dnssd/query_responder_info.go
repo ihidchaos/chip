@@ -14,8 +14,8 @@ type QueryResponderInfo struct {
 	lastMulticastTime         time.Time
 }
 
-func NewQueryResponderInfo(r responder.RecordResponder) QueryResponderInfo {
-	return QueryResponderInfo{
+func NewQueryResponderInfo(r responder.RecordResponder) *QueryResponderInfo {
+	return &QueryResponderInfo{
 		Responder: r,
 	}
 }
