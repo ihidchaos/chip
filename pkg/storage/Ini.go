@@ -7,36 +7,37 @@ import (
 	"time"
 )
 
-type Storage interface {
-	Init() error
-	AddConfig(configFile string) error
-	CommitConfig(configFile string) error
-	GetUInt16Value(key string) (uint16, error)
-	GetUIntValue(key string) (uint, error)
-	GetUInt64Value(key string) (uint64, error)
-	GetStringValue(key string) (string, error)
-	GetBinaryBlobValue(key string) ([]byte, error)
-	HasValue(key string) bool
-	AddEntry(key, value string) error
-	RemoveEntry(key string) error
-	RemoveAll() error
+type ini interface {
+	init() error
+	addConfig(configFile string) error
+	readFloatValue(key string) (float64, error)
+	commitConfig(configFile string) error
+	readUInt16Value(key string) (uint16, error)
+	readUintValue(key string) (uint, error)
+	readUint64Value(key string) (uint64, error)
+	readStringValue(key string) (string, error)
+	readBinaryValue(key string) ([]byte, error)
+	hasValue(key string) bool
+	addEntry(key, value string) error
+	removeEntry(key string) error
+	removeAll() error
 }
 
 type iniStorageImpl struct {
 	mConfigStore *gini.File
 }
 
-func NewIniStorage() *iniStorageImpl {
+func newIniStorage() *iniStorageImpl {
 	s := &iniStorageImpl{}
 	s.mConfigStore = gini.Empty()
 	return s
 }
 
-func (i *iniStorageImpl) Init() error {
-	return i.RemoveAll()
+func (i *iniStorageImpl) init() error {
+	return i.removeAll()
 }
 
-func (i *iniStorageImpl) AddEntry(key, value string) error {
+func (i *iniStorageImpl) addEntry(key, value string) error {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return err
@@ -45,7 +46,7 @@ func (i *iniStorageImpl) AddEntry(key, value string) error {
 	return err
 }
 
-func (i *iniStorageImpl) RemoveEntry(key string) error {
+func (i *iniStorageImpl) removeEntry(key string) error {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return err
@@ -54,12 +55,12 @@ func (i *iniStorageImpl) RemoveEntry(key string) error {
 	return nil
 }
 
-func (i *iniStorageImpl) RemoveAll() error {
+func (i *iniStorageImpl) removeAll() error {
 	i.mConfigStore = gini.Empty()
 	return nil
 }
 
-func (i *iniStorageImpl) AddConfig(configFile string) error {
+func (i *iniStorageImpl) addConfig(configFile string) error {
 	var err error
 	_, err = os.ReadFile(configFile)
 	if err != nil {
@@ -75,17 +76,17 @@ func (i *iniStorageImpl) AddConfig(configFile string) error {
 	return nil
 }
 
-func (i *iniStorageImpl) CommitConfig(configFile string) error {
+func (i *iniStorageImpl) commitConfig(configFile string) error {
 	err := i.mConfigStore.SaveTo(configFile)
 	return err
 }
 
-func (i *iniStorageImpl) GetUInt16Value(key string) (uint16, error) {
+func (i *iniStorageImpl) readUInt16Value(key string) (uint16, error) {
 	u, err := i.mConfigStore.Section("").Key(key).Uint()
 	return uint16(u), err
 }
 
-func (i *iniStorageImpl) GetUIntValue(key string) (uint, error) {
+func (i *iniStorageImpl) readUintValue(key string) (uint, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return 0, err
@@ -93,7 +94,7 @@ func (i *iniStorageImpl) GetUIntValue(key string) (uint, error) {
 	return section.Key(key).Uint()
 }
 
-func (i *iniStorageImpl) GetUInt64Value(key string) (uint64, error) {
+func (i *iniStorageImpl) readUint64Value(key string) (uint64, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return 0, err
@@ -101,7 +102,15 @@ func (i *iniStorageImpl) GetUInt64Value(key string) (uint64, error) {
 	return section.Key(key).Uint64()
 }
 
-func (i *iniStorageImpl) GetStringValue(key string) (string, error) {
+func (i *iniStorageImpl) readFloatValue(key string) (float64, error) {
+	section, err := i.getDefaultSection()
+	if err != nil {
+		return 0, err
+	}
+	return section.Key(key).Float64()
+}
+
+func (i *iniStorageImpl) readStringValue(key string) (string, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return "", err
@@ -109,7 +118,7 @@ func (i *iniStorageImpl) GetStringValue(key string) (string, error) {
 	return section.Key(key).String(), nil
 }
 
-func (i *iniStorageImpl) GetTimeValue(key string) (time.Time, error) {
+func (i *iniStorageImpl) readTimeValue(key string) (time.Time, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return time.Time{}, err
@@ -117,7 +126,7 @@ func (i *iniStorageImpl) GetTimeValue(key string) (time.Time, error) {
 	return section.Key(key).Time()
 }
 
-func (i *iniStorageImpl) GetBinaryBlobValue(key string) ([]byte, error) {
+func (i *iniStorageImpl) readBinaryValue(key string) ([]byte, error) {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return nil, err
@@ -133,7 +142,7 @@ func (i *iniStorageImpl) GetBinaryBlobValue(key string) ([]byte, error) {
 	return bts, nil
 }
 
-func (i *iniStorageImpl) HasValue(key string) bool {
+func (i *iniStorageImpl) hasValue(key string) bool {
 	section, err := i.getDefaultSection()
 	if err != nil {
 		return false

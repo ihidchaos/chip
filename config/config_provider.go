@@ -50,9 +50,9 @@ func GetConfigProviderInstance() *ConfigProviderImpl {
 }
 
 type ConfigProviderImpl struct {
-	mChipFactoryStorage  storage.PersistentStorage
-	mChipConfigStorage   storage.PersistentStorage
-	mChipCountersStorage storage.PersistentStorage
+	mChipFactoryStorage  storage.ChipStorage
+	mChipConfigStorage   storage.ChipStorage
+	mChipCountersStorage storage.ChipStorage
 }
 
 func NewConfigProviderImpl() *ConfigProviderImpl {
@@ -61,17 +61,19 @@ func NewConfigProviderImpl() *ConfigProviderImpl {
 
 func (conf *ConfigProviderImpl) ReadConfigValueBool(k Key) (bool, error) {
 	store := conf.GetStorageForNamespace(k)
-	return store.ReadBoolValue(k.Name)
+	return store.ReadValueBool(k.Name)
 }
 
 func (conf *ConfigProviderImpl) ReadConfigValueUint16(k Key) (uint16, error) {
 	store := conf.GetStorageForNamespace(k)
-	return store.ReadValueUint16(k.Name)
+	v, err := store.ReadValueUint64(k.Name)
+	return uint16(v), err
 }
 
 func (conf *ConfigProviderImpl) ReadConfigValueUint32(k Key) (uint32, error) {
 	store := conf.GetStorageForNamespace(k)
-	return store.ReadValueUint32(k.Name)
+	v, err := store.ReadValueUint64(k.Name)
+	return uint32(v), err
 }
 
 func (conf *ConfigProviderImpl) ReadConfigValueUint64(k Key) (uint64, error) {
@@ -81,72 +83,49 @@ func (conf *ConfigProviderImpl) ReadConfigValueUint64(k Key) (uint64, error) {
 
 func (conf *ConfigProviderImpl) ReadConfigValueStr(k Key) (string, error) {
 	store := conf.GetStorageForNamespace(k)
-	return store.ReadValueStr(k.Name)
+	v, err := store.ReadValueString(k.Name)
+	return v, err
 }
 
 func (conf *ConfigProviderImpl) ReadConfigValueBin(k Key) ([]byte, error) {
 	store := conf.GetStorageForNamespace(k)
-	return store.ReadValueBin(k.Name)
+	v, err := store.ReadValueString(k.Name)
+	return []byte(v), err
 }
 
 func (conf *ConfigProviderImpl) WriteConfigValueBool(k Key, val bool) error {
 	store := conf.GetStorageForNamespace(k)
-	err := store.WriteValueBool(k.Name, val)
-	if err != nil {
-		return err
-	}
-	return store.Commit()
+	return store.WriteValueBool(k.Name, val)
 }
 
 func (conf *ConfigProviderImpl) WriteConfigValueUint16(k Key, val uint16) error {
 	store := conf.GetStorageForNamespace(k)
-	err := store.WriteValueUint16(k.Name, val)
-	if err != nil {
-		return err
-	}
-	return store.Commit()
-
+	return store.WriteValueUint64(k.Name, uint64(val))
 }
 
 func (conf *ConfigProviderImpl) WriteConfigValueUint32(k Key, val uint32) error {
 	store := conf.GetStorageForNamespace(k)
-	err := store.WriteValueUint32(k.Name, val)
-	if err != nil {
-		return err
-	}
-	return store.Commit()
+	return store.WriteValueUint64(k.Name, uint64(val))
 }
 
 func (conf *ConfigProviderImpl) WriteConfigValueUint64(k Key, val uint64) error {
 	store := conf.GetStorageForNamespace(k)
-	err := store.WriteValueUint64(k.Name, val)
-	if err != nil {
-		return err
-	}
-	return store.Commit()
+	return store.WriteValueUint64(k.Name, val)
 }
 
 func (conf *ConfigProviderImpl) WriteConfigValueStr(k Key, val string) error {
 	store := conf.GetStorageForNamespace(k)
-	err := store.WriteValueStr(k.Name, val)
-	if err != nil {
-		return err
-	}
-	return store.Commit()
+	return store.WriteValueString(k.Name, val)
 }
 
 func (conf *ConfigProviderImpl) WriteConfigValueBin(k Key, val []byte) error {
 	store := conf.GetStorageForNamespace(k)
-	err := store.WriteValueBin(k.Name, val)
-	if err != nil {
-		return err
-	}
-	return store.Commit()
+	return store.WriteValueString(k.Name, string(val))
 }
 
 func (conf *ConfigProviderImpl) ClearConfigValue(k Key) error {
 	store := conf.GetStorageForNamespace(k)
-	return store.ClearValue(k.Name)
+	return store.DeleteKeyValue(k.Name)
 }
 
 func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
@@ -156,17 +135,12 @@ func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
 
 func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
-		log.Printf("Storage get failed")
+		log.Printf("storage get failed")
 		return lib.ChipDeviceErrorConfigNotFound
 	}
-	err := conf.mChipFactoryStorage.ClearAll()
+	err := conf.mChipFactoryStorage.DeleteAll()
 	if err != nil {
-		log.Printf("Storage ClearAll failed: %s", err.Error())
-		return err
-	}
-	err = conf.mChipFactoryStorage.Commit()
-	if err != nil {
-		log.Printf("Storage Commit failed: %s", err.Error())
+		log.Printf("storage ClearAll failed: %s", err.Error())
 		return err
 	}
 	return nil
@@ -174,17 +148,12 @@ func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 
 func (conf *ConfigProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
-		log.Printf("Storage get failed")
+		log.Printf("storage get failed")
 		return lib.ChipDeviceErrorConfigNotFound
 	}
-	err := conf.mChipCountersStorage.ClearAll()
+	err := conf.mChipCountersStorage.DeleteAll()
 	if err != nil {
-		log.Printf("Storage ClearAll failed: %s", err.Error())
-		return err
-	}
-	err = conf.mChipCountersStorage.Commit()
-	if err != nil {
-		log.Printf("Storage Commit failed: %s", err.Error())
+		log.Printf("storage ClearAll failed: %s", err.Error())
 		return err
 	}
 	return nil
@@ -200,7 +169,7 @@ type Key struct {
 	Name      string
 }
 
-func (conf *ConfigProviderImpl) GetStorageForNamespace(k Key) storage.PersistentStorage {
+func (conf *ConfigProviderImpl) GetStorageForNamespace(k Key) storage.ChipStorage {
 	if k.Namespace == KConfigNamespaceChipFactory {
 		if conf.mChipFactoryStorage == nil {
 			conf.mChipFactoryStorage = storage.NewPersistentStorageImpl()

@@ -2,18 +2,22 @@ package storage
 
 import "sync"
 
-type KeyValueStoreManager struct {
-	*KeyValuePersistentStorageImpl
+type KeyValueStoreManagerImpl struct {
+	*ChipStorageImpl
 }
 
-var _instance *KeyValueStoreManager
+var _instance *KeyValueStoreManagerImpl
 var once sync.Once
 
-func KeyValueStoreMgr() *KeyValueStoreManager {
+func KeyValueStoreMgr() *KeyValueStoreManagerImpl {
 	once.Do(func() {
-		_instance = &KeyValueStoreManager{
-			KeyValuePersistentStorageImpl: NewKeyValuePersistentStorage(),
+		_instance = &KeyValueStoreManagerImpl{
+			ChipStorageImpl: NewPersistentStorageImpl(),
 		}
 	})
 	return _instance
+}
+
+func (m *KeyValueStoreManagerImpl) Init(file string) error {
+	return m.ChipStorageImpl.Init(file)
 }

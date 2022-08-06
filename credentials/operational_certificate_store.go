@@ -3,14 +3,14 @@ package credentials
 import "github.com/galenliu/chip/pkg/storage"
 
 type OperationalCertificateStore interface {
-	Init(persistentStorage storage.PersistentStorage) error
+	Init(persistentStorage storage.KvsPersistentStorageDelegate) error
 }
 
 type OperationalCertificateStoreImpl struct {
-	mStorage storage.PersistentStorage
+	mStorage storage.KvsPersistentStorageDelegate
 }
 
-func (o OperationalCertificateStoreImpl) Init(persistentStorage storage.PersistentStorage) error {
+func (o OperationalCertificateStoreImpl) Init(persistentStorage storage.KvsPersistentStorageDelegate) error {
 	o.mStorage = persistentStorage
 	return nil
 }

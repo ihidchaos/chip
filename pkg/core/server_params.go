@@ -30,7 +30,7 @@ type InitParams struct {
 
 	// Persistent storage delegate: MUST be injected. Used to maintain storage by much common code.
 	// Must be initialized before being provided.
-	PersistentStorageDelegate storage.KeyValuePersistentStorage
+	PersistentStorageDelegate storage.KvsPersistentStorageDelegate
 	// Session resumption storage: Optional. Support session resumption when provided.
 	// Must be initialized before being provided.
 	SessionResumptionStorage lib.SessionResumptionStorage
@@ -91,7 +91,7 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 
 func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
-	var sKvsPersistentStorageDelegate storage.KeyValuePersistentStorage
+	var sKvsPersistentStorageDelegate storage.KvsPersistentStorageDelegate
 	var sPersistentStorageOperationalKeystore = crypto.NewPersistentStorageOperationalKeystoreImpl()
 	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
 	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
@@ -100,7 +100,8 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 	var sSessionResumptionStorage = lib.NewSimpleSessionResumptionStorage()
 
 	if params.PersistentStorageDelegate == nil {
-		sKvsPersistentStorageDelegate = storage.KeyValueStoreMgr()
+		sKvsPersistentStorageDelegate = storage.NewKvsPersistentStorageDelegateImpl()
+		sKvsPersistentStorageDelegate.Init(storage.KeyValueStoreMgr())
 		params.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 

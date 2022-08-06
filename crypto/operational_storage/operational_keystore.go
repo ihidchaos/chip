@@ -7,7 +7,7 @@ import (
 )
 
 type OperationalKeystore interface {
-	Init(persistentStorage storage.KeyValuePersistentStorage) error
+	Init(persistentStorage storage.KvsPersistentStorageDelegate) error
 	HasPendingOpKeypair() bool
 	HasOpKeypairForFabric(fabricIndex lib.FabricIndex) bool
 	NewOpKeypairForFabric(fabricIndex lib.FabricIndex) ([]byte, error)
@@ -25,10 +25,10 @@ func NewOperationalKeystoreImpl() *OperationalKeystoreImpl {
 }
 
 type OperationalKeystoreImpl struct {
-	mPersistentStorage storage.PersistentStorage
+	mPersistentStorage storage.KvsPersistentStorageDelegate
 }
 
-func (p *OperationalKeystoreImpl) Init(persistentStorage storage.KeyValuePersistentStorage) error {
+func (p *OperationalKeystoreImpl) Init(persistentStorage storage.KvsPersistentStorageDelegate) error {
 	p.mPersistentStorage = persistentStorage
 	return nil
 }

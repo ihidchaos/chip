@@ -66,7 +66,7 @@ func (e *ExchangeManagerImpl) Init(sessionManager transport.SessionManager) erro
 		handler.Reset()
 	}
 	sessionManager.SetMessageDelegate(e)
-	//e.mReliableMessageMgr.Init(sessionManager.SystemLayer())
+	//e.mReliableMessageMgr.init(sessionManager.SystemLayer())
 	e.mInitialized = true
 	return nil
 }

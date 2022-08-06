@@ -33,7 +33,7 @@ func Init(options *config.DeviceOptions) error {
 		log.Panic(err.Error())
 	}
 
-	err = storage.KeyValueStoreMgr().WriteValueStr("Reboot", time.Now().String())
+	err = storage.KeyValueStoreMgr().WriteValueString("Reboot", time.Now().String())
 	if err != nil {
 		log.Infof(err.Error())
 	}

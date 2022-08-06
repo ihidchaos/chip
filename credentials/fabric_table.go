@@ -9,7 +9,7 @@ import (
 )
 
 type FabricTableInitParams struct {
-	Storage             storage.KeyValuePersistentStorage
+	Storage             storage.KvsPersistentStorageDelegate
 	OperationalKeystore operational_storage.OperationalKeystore
 	OpCertStore         PersistentStorageOpCertStore
 }
@@ -52,7 +52,7 @@ type FabricTable struct {
 	mStates                   []*FabricInfo
 	mPendingFabric            *FabricInfo
 	mFabricLabel              string
-	mStorage                  storage.KeyValuePersistentStorage
+	mStorage                  storage.KvsPersistentStorageDelegate
 	operationalKeystore       operational_storage.OperationalKeystore
 	mOpCertStore              PersistentStorageOpCertStore
 	mFabricCount              uint8
