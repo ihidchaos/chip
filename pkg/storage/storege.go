@@ -118,9 +118,7 @@ func (s *ChipStorageImpl) DeleteAll() error {
 }
 
 func (s *ChipStorageImpl) Init(mConfigPath string) error {
-	if s.mConfigFile == "" && s.mInitialized {
-		return fmt.Errorf("initialized")
-	}
+
 	s.mConfigFile = mConfigPath
 	if s.storage == nil {
 		s.storage = newIniStorage()

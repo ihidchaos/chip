@@ -37,16 +37,6 @@ type CASEServer struct {
 	mGroupDataProvider credentials.GroupDataProvider
 }
 
-func (s *CASEServer) OnUnsolicitedMessageReceived(header raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *CASEServer) OnExchangeCreationFailed(delegate messageing.ExchangeDelegate) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func NewCASEServer() *CASEServer {
 	return &CASEServer{}
 }
@@ -92,6 +82,16 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 		log.Panic(err.Error())
 	}
 	s.mPinnedSecureSession = s.GetSession().CopySecureSession()
+}
+
+func (s *CASEServer) OnUnsolicitedMessageReceived(header raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASEServer) OnExchangeCreationFailed(delegate messageing.ExchangeDelegate) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (s *CASEServer) GetSession() *CASESession {

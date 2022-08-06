@@ -40,26 +40,17 @@ func (p *KvsPersistentStorageDelegateImpl) GetBool(key string) (bool, error) {
 
 func (p *KvsPersistentStorageDelegateImpl) GetUint8(key string) (v uint8, e error) {
 	value, e := p.mKvsManager.ReadValueUint64(key)
-	if e != nil {
-		return
-	}
-	return uint8(value), nil
+	return uint8(value), e
 }
 
 func (p *KvsPersistentStorageDelegateImpl) GetUint16(key string) (v uint16, e error) {
 	value, e := p.mKvsManager.ReadValueUint64(key)
-	if e != nil {
-		return
-	}
-	return uint16(value), nil
+	return uint16(value), e
 }
 
 func (p *KvsPersistentStorageDelegateImpl) GetUint32(key string) (v uint32, e error) {
 	value, e := p.mKvsManager.ReadValueUint64(key)
-	if e != nil {
-		return
-	}
-	return uint32(value), nil
+	return uint32(value), e
 }
 
 func (p *KvsPersistentStorageDelegateImpl) GetUint64(key string) (v uint64, e error) {
@@ -72,10 +63,7 @@ func (p *KvsPersistentStorageDelegateImpl) GetString(key string) (v string, e er
 
 func (p *KvsPersistentStorageDelegateImpl) GetBytes(key string) (v []byte, e error) {
 	value, e := p.mKvsManager.ReadValueString(key)
-	if e != nil {
-		return
-	}
-	return []byte(value), nil
+	return []byte(value), e
 }
 
 func (p *KvsPersistentStorageDelegateImpl) SetBool(key string, v bool) error {

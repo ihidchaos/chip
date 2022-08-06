@@ -32,7 +32,9 @@ type PersistentStorageOpCertStoreImpl struct {
 }
 
 func NewPersistentStorageOpCertStoreImpl() *PersistentStorageOpCertStoreImpl {
-	return &PersistentStorageOpCertStoreImpl{}
+	return &PersistentStorageOpCertStoreImpl{
+		NewOperationalCertificateStoreImpl(),
+	}
 }
 
 func (s PersistentStorageOpCertStoreImpl) HasPendingRootCert() bool {
