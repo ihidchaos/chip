@@ -4,7 +4,9 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	transport2 "github.com/galenliu/chip/messageing/transport"
+	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/messageing/transport"
+	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/gateway/pkg/log"
 )
 
@@ -15,6 +17,11 @@ type SessionEstablishmentDelegate interface {
 	OnSessionEstablished()
 }
 
+// CASESession impl
+// UnsolicitedMessageHandler,
+// ExchangeDelegate,
+// FabricTable::Delegate,
+// PairingSession
 type CASESession struct {
 	PairingSession
 	mCommissioningHash crypto.HashSha256Stream
@@ -34,7 +41,7 @@ type CASESession struct {
 	mPeerNodeId          lib.NodeId
 	mLocalNodeId         lib.NodeId
 	mPeerCATs            lib.CATValues
-	mSecureSessionHolder transport2.SessionHolderWithDelegate
+	mSecureSessionHolder transport.SessionHolderWithDelegate
 
 	mInitiatorRandom []byte
 
@@ -42,6 +49,38 @@ type CASESession struct {
 	mNewResumptionId    []byte
 
 	mState uint8
+}
+
+func NewCASESession() *CASESession {
+	return &CASESession{
+		mSecureSessionHolder: transport.NewSessionHolderWithDelegateImpl(),
+	}
+}
+
+func (s *CASESession) Init(
+	manger transport.SessionManager,
+	policy credentials.CertificateValidityPolicy,
+	delegate *CASEServer,
+	previouslyEstablishedPeer *lib.ScopedNodeId,
+) error {
+	s.Clear()
+
+	return nil
+}
+
+func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, header raw.PayloadHeader, data []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) OnResponseTimeout(ec *messageing.ExchangeContext) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) OnExchangeClosing(ec *messageing.ExchangeContext) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (s *CASESession) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
@@ -64,17 +103,6 @@ func (s *CASESession) OnFabricUpdated(table credentials.FabricTable, index lib.F
 	panic("implement me")
 }
 
-func (s *CASESession) Init(
-	manger transport2.SessionManager,
-	policy credentials.CertificateValidityPolicy,
-	delegate *CASEServer,
-	previouslyEstablishedPeer *lib.ScopedNodeId,
-) error {
-	s.Clear()
-
-	return nil
-}
-
 func (s *CASESession) SetGroupDataProvider(provider credentials.GroupDataProvider) {
 	s.mGroupDataProvider = provider
 }
@@ -88,20 +116,20 @@ func (s *CASESession) Clear() {
 }
 
 func (s *CASESession) PrepareForSessionEstablishment(
-	sessionManger transport2.SessionManager,
+	sessionManger transport.SessionManager,
 	fabrics *credentials.FabricTable,
 	storage SessionResumptionStorage,
 	policy credentials.CertificateValidityPolicy,
 	delegate *CASEServer,
 	previouslyEstablishedPeer *lib.ScopedNodeId,
-	config *transport2.ReliableMessageProtocolConfig,
+	config *transport.ReliableMessageProtocolConfig,
 ) error {
 	err := s.Init(sessionManger, policy, delegate, previouslyEstablishedPeer)
 	if err != nil {
 		return err
 	}
 	s.mFabricsTable = fabrics
-	s.mRole = transport2.KSessionRoleResponder
+	s.mRole = transport.KSessionRoleResponder
 	s.mSessionResumptionStorage = storage
 	s.mLocalMRPConfig = config
 
@@ -111,6 +139,6 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	return nil
 }
 
-func (s *CASESession) CopySecureSession() transport2.SessionHandle {
+func (s *CASESession) CopySecureSession() transport.SessionHandle {
 	return nil
 }

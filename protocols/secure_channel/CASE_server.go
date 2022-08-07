@@ -31,14 +31,19 @@ type CASEServer struct {
 
 	mPairingSession *CASESession
 
-	mSessionManger transport2.SessionManager
+	mSessionManager transport2.SessionManager
 
 	mFabrics           *credentials.FabricTable
 	mGroupDataProvider credentials.GroupDataProvider
 }
 
 func NewCASEServer() *CASEServer {
-	return &CASEServer{}
+	return &CASEServer{
+		mPairingSession:    NewCASESession(),
+		mSessionManager:    nil,
+		mFabrics:           nil,
+		mGroupDataProvider: nil,
+	}
 }
 
 func (s *CASEServer) ListenForSessionEstablishment(
@@ -49,7 +54,7 @@ func (s *CASEServer) ListenForSessionEstablishment(
 	policy credentials.CertificateValidityPolicy,
 	responderGroupDataProvider credentials.GroupDataProvider,
 ) error {
-	s.mSessionManger = sessionManager
+	s.mSessionManager = sessionManager
 	s.mSessionResumptionStorage = storage
 	s.mCertificateValidityPolicy = policy
 	s.mFabrics = fabrics
@@ -67,10 +72,11 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 		log.Printf(err.Error())
 	}
 	s.GetSession().Clear()
-	s.mPinnedSecureSession.ClearValue()
-
+	if s.mPinnedSecureSession != nil {
+		s.mPinnedSecureSession.ClearValue()
+	}
 	err = s.GetSession().PrepareForSessionEstablishment(
-		s.mSessionManger,
+		s.mSessionManager,
 		s.mFabrics,
 		s.mSessionResumptionStorage,
 		s.mCertificateValidityPolicy,
@@ -82,6 +88,10 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 		log.Panic(err.Error())
 	}
 	s.mPinnedSecureSession = s.GetSession().CopySecureSession()
+}
+
+func (s *CASEServer) InitCASEHandshake(ec *messageing.ExchangeContext) {
+	ec.SetDelegate(s.GetSession())
 }
 
 func (s *CASEServer) OnUnsolicitedMessageReceived(header raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {

@@ -15,6 +15,7 @@ type ExchangeContext struct {
 	mExchangeId uint16
 	mDispatch   ExchangeMessageDispatch
 	mSession    ExchangeSessionHolder
+	mDelegate   ExchangeDelegate
 }
 
 func (c ExchangeContext) MatchExchange(session transport.SessionHandle, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
@@ -30,6 +31,10 @@ func (c ExchangeContext) HandleMessage(counter uint32, header *raw.PayloadHeader
 
 func (c ExchangeContext) IsEncryptionRequired() bool {
 	return c.mDispatch.IsEncryptionRequired()
+}
+
+func (c *ExchangeContext) SetDelegate(delegate ExchangeDelegate) {
+
 }
 
 func (c ExchangeContext) IsInitiator() bool {

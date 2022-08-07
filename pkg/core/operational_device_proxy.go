@@ -4,7 +4,7 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/messageing"
 	transport2 "github.com/galenliu/chip/messageing/transport"
-	"github.com/galenliu/chip/secure_channel"
+	"github.com/galenliu/chip/protocols/secure_channel"
 )
 
 type DeviceProxyInitParams struct {
