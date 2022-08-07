@@ -7,6 +7,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/protocols"
 	"github.com/galenliu/gateway/pkg/log"
 )
 
@@ -17,13 +18,23 @@ type SessionEstablishmentDelegate interface {
 	OnSessionEstablished()
 }
 
+type CASESessionBase interface {
+	messageing.UnsolicitedMessageHandler
+	messageing.ExchangeDelegate
+	credentials.FabricTableDelegate
+	PairingSession
+	GetPeerSessionId() uint16
+	GetPeer() lib.ScopedNodeId
+	GetLocalScopedNodeId() lib.ScopedNodeId
+}
+
 // CASESession impl
 // UnsolicitedMessageHandler,
 // ExchangeDelegate,
 // FabricTable::Delegate,
 // PairingSession
 type CASESession struct {
-	PairingSession
+	*PairingSessionImpl
 	mCommissioningHash crypto.HashSha256Stream
 	mRemotePubKey      crypto.P256PublicKey
 	mEphemeralKey      crypto.P256Keypair
@@ -53,8 +64,63 @@ type CASESession struct {
 
 func NewCASESession() *CASESession {
 	return &CASESession{
+		PairingSessionImpl:   NewPairingSessionImpl(),
 		mSecureSessionHolder: transport.NewSessionHolderWithDelegateImpl(),
 	}
+}
+
+func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) GetPeer() lib.ScopedNodeId {
+	return lib.ScopedNodeId{
+		NodeId:      s.mPeerNodeId,
+		FabricIndex: s.GetFabricIndex(),
+	}
+}
+
+func (s *CASESession) GetLocalScopedNodeId() lib.ScopedNodeId {
+	return lib.ScopedNodeId{
+		NodeId:      s.mLocalNodeId,
+		FabricIndex: s.GetFabricIndex(),
+	}
+}
+
+func (s *CASESession) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) OnExchangeCreationFailed(delegate messageing.ExchangeDelegate) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) OnSessionEstablishmentError() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) OnSessionEstablishmentStarted() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) OnSessionEstablished() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler messageing.UnsolicitedMessageHandler) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (s *CASESession) Init(
@@ -66,11 +132,6 @@ func (s *CASESession) Init(
 	s.Clear()
 
 	return nil
-}
-
-func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, header raw.PayloadHeader, data []byte) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (s *CASESession) OnResponseTimeout(ec *messageing.ExchangeContext) {

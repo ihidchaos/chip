@@ -5,12 +5,12 @@ import (
 )
 
 type ExchangeDelegate interface {
-	OnMessageReceived(context *ExchangeContext, header raw.PayloadHeader, data []byte) error
+	OnMessageReceived(context *ExchangeContext, header *raw.PayloadHeader, data []byte) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
 }
 
 type UnsolicitedMessageHandler interface {
-	OnUnsolicitedMessageReceived(header raw.PayloadHeader, delegate ExchangeDelegate) error
+	OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate ExchangeDelegate) error
 	OnExchangeCreationFailed(delegate ExchangeDelegate)
 }

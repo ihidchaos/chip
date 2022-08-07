@@ -14,12 +14,22 @@ const (
 	DuplicateMessageNo  uint8 = 1
 )
 
+type SessionMessageDelegate interface {
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session Session, duplicate uint8, data []byte)
+}
+
+// SessionManager The delegate for TransportManager and FabricTable
+// TransportBaseDelegate is the indirect delegate for TransportManager
 type SessionManager interface {
 	credentials.FabricTableDelegate
-	OnMessageReceived(srcAddr netip.AddrPort, data []byte)
+	raw.TransportBaseDelegate
+	// SecureGroupMessageDispatch  handle the Secure Group messages
 	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+	// SecureUnicastMessageDispatch  handle the unsecure messages
 	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+	// UnauthenticatedMessageDispatch handle the unauthenticated(未经认证的) messages
 	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+
 	SetMessageDelegate(SessionMessageDelegate)
 }
 
@@ -29,6 +39,15 @@ type SessionManagerImpl struct {
 	mFabricTable             *credentials.FabricTableContainer
 	mState                   int
 	mCB                      SessionMessageDelegate
+}
+
+func NewSessionManagerImpl() *SessionManagerImpl {
+	return &SessionManagerImpl{}
+}
+
+func (s *SessionManagerImpl) HandleMessageReceived(addrPort netip.AddrPort, msg []byte) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (s *SessionManagerImpl) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
@@ -58,10 +77,6 @@ func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate)
 func (s *SessionManagerImpl) Init(transports ManagerBase, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
 	transports.SetSessionManager(s)
 	return nil
-}
-
-func NewSessionManagerImpl() *SessionManagerImpl {
-	return &SessionManagerImpl{}
 }
 
 func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, data []byte) {

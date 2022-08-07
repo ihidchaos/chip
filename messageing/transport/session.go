@@ -13,6 +13,13 @@ const (
 	kSessionTypeGroupOutgoing   uint8 = 4
 )
 
+type NewSessionHandlingPolicy uint8
+
+const (
+	KShiftToNewSession NewSessionHandlingPolicy = 0
+	KStayAtOldSession  NewSessionHandlingPolicy = 1
+)
+
 type SessionDelegate interface {
 }
 

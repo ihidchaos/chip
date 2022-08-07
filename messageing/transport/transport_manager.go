@@ -5,8 +5,9 @@ import (
 	"net/netip"
 )
 
+// ManagerBase this is the delegate for TransportBase,
 type ManagerBase interface {
-	raw.TransportDelegate
+	raw.TransportBaseDelegate
 	SetSessionManager(sessionManager SessionManager)
 	SendMessage(port netip.AddrPort, msg []byte) error
 	Close()
@@ -14,6 +15,7 @@ type ManagerBase interface {
 	MulticastGroupJoinLeave(addr netip.Addr, join bool) error
 }
 
+// ManagerImpl  impl ManagerBase
 type ManagerImpl struct {
 	mTransports     []raw.TransportBase
 	mSessionManager SessionManager

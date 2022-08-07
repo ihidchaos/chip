@@ -2,6 +2,11 @@ package transport
 
 import "time"
 
+const (
+	KSecureSessionPASE uint8 = 1
+	KSecureSessionCASE uint8 = 2
+)
+
 type SecureSessionImpl struct {
 	*SessionBaseImpl
 	mTable *SecureSessionTable

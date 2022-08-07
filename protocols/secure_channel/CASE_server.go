@@ -21,6 +21,12 @@ const (
 	kFinishedViaResume = 7
 )
 
+type CASEServerBase interface {
+	messageing.UnsolicitedMessageHandler
+	SessionEstablishmentDelegate
+	messageing.ExchangeDelegate
+}
+
 // CASEServer IMPLEMENT(UnsolicitedMessageHandler SessionEstablishmentDelegate ExchangeDelegate)
 type CASEServer struct {
 	mExchangeManager           messageing.ExchangeManager
@@ -94,7 +100,22 @@ func (s *CASEServer) InitCASEHandshake(ec *messageing.ExchangeContext) {
 	ec.SetDelegate(s.GetSession())
 }
 
-func (s *CASEServer) OnUnsolicitedMessageReceived(header raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header raw.PayloadHeader, data []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASEServer) OnResponseTimeout(ec *messageing.ExchangeContext) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *CASEServer) OnExchangeClosing(ec *messageing.ExchangeContext) {
 	//TODO implement me
 	panic("implement me")
 }

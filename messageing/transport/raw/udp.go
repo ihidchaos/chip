@@ -12,21 +12,22 @@ const (
 	Initialized
 )
 
-type UdpTransport interface {
+// UDBTransport Must impl TransportBase
+type UDBTransport interface {
 	TransportBase
 	Init(parameters *UdpListenParameters) error
 }
 
+// UDPTransportImpl impl TransportBase and add  init func
 type UDPTransportImpl struct {
-	*BaseImpl
-	mState uint8
-	mPort  uint16
+	mDelegate TransportBaseDelegate
+	mState    uint8
+	mPort     uint16
 }
 
 func NewUdpTransportImpl() *UDPTransportImpl {
 	return &UDPTransportImpl{
-		BaseImpl: NewBaseImpl(),
-		mState:   0,
+		mState: 0,
 	}
 }
 
@@ -62,7 +63,7 @@ func (p *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 				Port: int(parameters.GetAddress().Port()),
 			})
 			if err != nil {
-				log.Error("UdpTransport err : %s", err.Error())
+				log.Error("UDBTransport err : %s", err.Error())
 				p.Close()
 				return
 			}
@@ -90,6 +91,14 @@ func (p *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 
 func (p *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data []byte) {
 	p.HandleMessageReceived(srcAddr, data)
+}
+
+func (b *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, msg []byte) {
+	b.mDelegate.HandleMessageReceived(addrPort, msg)
+}
+
+func (b *UDPTransportImpl) SetDelegate(m TransportBaseDelegate) {
+	b.mDelegate = m
 }
 
 func (p *UDPTransportImpl) Close() {
