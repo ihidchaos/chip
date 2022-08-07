@@ -3,6 +3,7 @@ package credentials
 import (
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/pkg/storage"
 )
 
 type FabricInfoProvider interface {
@@ -53,6 +54,10 @@ func (info *FabricInfo) GetScopedNodeId() lib.ScopedNodeId {
 func (info *FabricInfo) GetScopedNodeIdForNode(node lib.NodeId) lib.ScopedNodeId {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (info *FabricInfo) CommitToStorage(storage storage.KvsPersistentStorageDelegate) {
+
 }
 
 func (info *FabricInfo) GetFabricId() lib.FabricId {
