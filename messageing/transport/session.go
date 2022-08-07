@@ -40,15 +40,18 @@ type Session interface {
 	//NotifySessionReleased()
 
 	Retain()
+	Release()
+	IsActiveSession() bool
 
 	IsGroupSession() bool
 	IsSecureSession() bool
+	IsEstablishing() bool
 
 	DispatchSessionEvent(delegate SessionDelegate)
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
 
 	SessionReleased()
-	AsUnauthenticatedSession() *UnauthenticatedSession
+	AsUnauthenticatedSession() *UnauthenticatedSessionImpl
 	ClearValue()
 
 	//virtual void Retain()  = 0;
@@ -68,15 +71,15 @@ type SessionBaseImpl struct {
 	mHolders     []SessionHolder
 }
 
-func (s *SessionBaseImpl) GetFabricIndex() lib.FabricIndex {
-	return s.mFabricIndex
-}
-
 func NewSessionBaseImpl() *SessionBaseImpl {
 	return &SessionBaseImpl{
 		mFabricIndex: lib.UndefinedFabricIndex,
 		mHolders:     make([]SessionHolder, 0),
 	}
+}
+
+func (s *SessionBaseImpl) GetFabricIndex() lib.FabricIndex {
+	return s.mFabricIndex
 }
 
 func (s *SessionBaseImpl) NotifySessionReleased() {

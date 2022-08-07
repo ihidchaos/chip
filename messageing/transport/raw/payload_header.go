@@ -1,6 +1,9 @@
 package raw
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"github.com/galenliu/chip/protocols"
+)
 
 const (
 	//ExFlagValues
@@ -42,7 +45,7 @@ const (
 type PayloadHeader struct {
 	mExchangeFlags     uint8
 	mExchangeID        uint16
-	mProtocolID        uint16
+	mProtocolId        protocols.Id
 	mVendorId          uint16
 	mAckMessageCounter uint32
 	mSize              uint8
@@ -77,7 +80,7 @@ func (header *PayloadHeader) DecodeAndConsume(data []byte) error {
 	header.mProtocolOpcode = data[1]
 
 	header.mExchangeID = binary.LittleEndian.Uint16(data[2:4])
-	header.mProtocolID = binary.LittleEndian.Uint16(data[4:6])
+	header.mProtocolId = binary.LittleEndian.Uint16(data[4:6])
 	header.mSize = 6
 	if header.HaveVendorId() {
 		header.mVendorId = binary.LittleEndian.Uint16(data[header.mSize : header.mSize+2])
@@ -91,7 +94,7 @@ func (header *PayloadHeader) DecodeAndConsume(data []byte) error {
 }
 
 func (header *PayloadHeader) GetProtocolID() uint16 {
-	return header.mProtocolID
+	return header.mProtocolId
 }
 
 func (header *PayloadHeader) GetMessageType() uint8 {
@@ -100,4 +103,8 @@ func (header *PayloadHeader) GetMessageType() uint8 {
 
 func (header *PayloadHeader) GetExchangeID() uint16 {
 	return header.mExchangeID
+}
+
+func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
+	return header.mProtocolId.Equal(id)
 }

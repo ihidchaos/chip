@@ -10,18 +10,20 @@ import (
 )
 
 const (
-	DuplicateMessageYes uint8 = 0
-	DuplicateMessageNo  uint8 = 1
+	DuplicateMessageYes uint8  = 0
+	DuplicateMessageNo  uint8  = 1
+	FDuplicateMessage   uint32 = 0x00000001
 )
 
 type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session Session, duplicate uint8, data []byte)
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, data []byte)
 }
 
 // SessionManager The delegate for TransportManager and FabricTable
 // TransportBaseDelegate is the indirect delegate for TransportManager
 type SessionManager interface {
 	credentials.FabricTableDelegate
+	OnMessageReceived(srcAddr netip.AddrPort, data []byte)
 	raw.TransportBaseDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
 	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
@@ -107,11 +109,11 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 		return // ephemeral node id is only assigned to the initiator, there sho
 	}
 
-	var unsecuredSession *UnauthenticatedSession
+	var unsecuredSession *UnauthenticatedSessionImpl
 	if source != lib.KUndefinedNodeId {
 		unsecuredSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, GetLocalMRPConfig())
 		if unsecuredSession == nil {
-			log.Infof("UnauthenticatedSession exhausted")
+			log.Infof("UnauthenticatedSessionImpl exhausted")
 			return
 		}
 	} else {

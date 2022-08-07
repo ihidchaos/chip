@@ -11,51 +11,51 @@ const (
 )
 
 type UnauthenticatedSessionTable struct {
-	mEntries []*UnauthenticatedSession
+	mEntries []*UnauthenticatedSessionImpl
 }
 
-func (s *UnauthenticatedSession) SessionReleased() {
+func (s *UnauthenticatedSessionImpl) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSession) DispatchSessionEvent(delegate SessionDelegate) {
+func (s *UnauthenticatedSessionImpl) DispatchSessionEvent(delegate SessionDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s UnauthenticatedSession) GetSessionRole() uint8 {
+func (s UnauthenticatedSessionImpl) GetSessionRole() uint8 {
 	return s.mSessionRole
 }
 
-func (s *UnauthenticatedSession) GetEphemeralInitiatorNodeID() lib.NodeId {
+func (s *UnauthenticatedSessionImpl) GetEphemeralInitiatorNodeID() lib.NodeId {
 	return s.mEphemeralInitiatorNodeId
 }
 
-func (s *UnauthenticatedSession) MarkActiveRx() {
+func (s *UnauthenticatedSessionImpl) MarkActiveRx() {
 	s.mLastPeerActivityTime = time.Now()
 	s.MarkActive()
 }
 
-func (s UnauthenticatedSession) MarkActive() {
+func (s UnauthenticatedSessionImpl) MarkActive() {
 	s.mLastActivityTime = time.Now()
 }
 
-func (s UnauthenticatedSession) GetPeerMessageCounter() PeerMessageCounter {
+func (s UnauthenticatedSessionImpl) GetPeerMessageCounter() PeerMessageCounter {
 	return s.mPeerMessageCounter
 }
 
-func (t UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSession {
+func (t UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
 	result := t.FindEntry(kSessionRoleResponder, ephemeralInitiatorNodeID)
 	if result != nil {
 		return result
 	}
-	entry := NewUnauthenticatedSession(kSessionRoleResponder, ephemeralInitiatorNodeID, config)
+	entry := NewUnauthenticatedSessionImpl(kSessionRoleResponder, ephemeralInitiatorNodeID, config)
 	t.mEntries = append(t.mEntries, entry)
 	return entry
 }
 
-func (t UnauthenticatedSessionTable) FindEntry(sessionRole uint8, ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSession {
+func (t UnauthenticatedSessionTable) FindEntry(sessionRole uint8, ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
 	for _, entry := range t.mEntries {
 		if entry.GetSessionRole() == sessionRole && entry.GetEphemeralInitiatorNodeID() == ephemeralInitiatorNodeID {
 			return entry
@@ -64,7 +64,7 @@ func (t UnauthenticatedSessionTable) FindEntry(sessionRole uint8, ephemeralIniti
 	return nil
 }
 
-func (t UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSession {
+func (t UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
 	result := t.FindEntry(kSessionRoleInitiator, ephemeralInitiatorNodeID)
 	if result != nil {
 		return result

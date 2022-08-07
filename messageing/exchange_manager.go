@@ -23,21 +23,22 @@ type UnsolicitedMessageHandlerSlot struct {
 	ProtocolId  *protocols.Id
 }
 
-func (receiver UnsolicitedMessageHandlerSlot) Matches(aProtocolId *protocols.Id, aMessageType int16) bool {
+func (receiver *UnsolicitedMessageHandlerSlot) Matches(aProtocolId *protocols.Id, aMessageType int16) bool {
 	return aProtocolId == receiver.ProtocolId && aMessageType == receiver.MessageType
 }
 
-func (receiver UnsolicitedMessageHandlerSlot) Reset() {
+func (receiver *UnsolicitedMessageHandlerSlot) Reset() {
 	receiver.Handler = nil
 }
 
-func (receiver UnsolicitedMessageHandlerSlot) IsInUse() bool {
-	return false
+func (receiver *UnsolicitedMessageHandlerSlot) IsInUse() bool {
+	return receiver.Handler != nil
 }
 
-// ExchangeManager the delegate for transport session manager
+// ExchangeManager
 // impl transport.SessionMessageDelegate
 type ExchangeManager interface {
+	// SessionMessageDelegate the delegate for transport session manager
 	transport.SessionMessageDelegate
 	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler *UnsolicitedMessageHandler) error
 	RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler *UnsolicitedMessageHandler) error
@@ -99,32 +100,51 @@ func (e *ExchangeManagerImpl) GetMessageDispatch() ExchangeMessageDispatch {
 	panic("implement me")
 }
 
-func (e *ExchangeManagerImpl) OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session transport.Session, isDuplicate uint8, data []byte) {
-	//var matchingUMH *UnsolicitedMessageHandlerSlot = nil
+func (e *ExchangeManagerImpl) OnMessageReceived(
+	packetHeader *raw.PacketHeader,
+	payloadHeader *raw.PayloadHeader,
+	session transport.SessionHandle,
+	isDuplicate uint8,
+	data []byte,
+) {
+
+	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 
 	log.Infof("Received message of type %d with protocolId %d"+
 		"and MessageCounter: %d",
 		payloadHeader.GetMessageType(), payloadHeader.GetProtocolID(),
 		packetHeader.GetMessageCounter())
+
 	var msgFlags uint32 = 0
 	if isDuplicate == transport.DuplicateMessageYes {
 		msgFlags = msgFlags | pkg.KDuplicateMessage
 	}
-	found := false
+
 	if !packetHeader.IsGroupSession() {
 		for _, ec := range e.mContextPool {
 			if ec.MatchExchange(session, packetHeader, payloadHeader) {
 				ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlags, data)
-				found = true
 				return
 			}
-			continue
-		}
-	} else {
-		if found {
-			return
 		}
 	}
+	log.Infof("Received Groupcast Message with GroupId of %d",
+		packetHeader.GetDestinationGroupId())
+
+	if !session.IsActiveSession() {
+		log.Infof("Dropping message on inactive session that does not match an existing exchange")
+		return
+	}
+
+	if msgFlags&transport.FDuplicateMessage != 0 && payloadHeader.IsInitiator() {
+		matchingUMH = nil
+		for _, umh := range e.UMHandlerPool {
+			if umh.IsInUse() && payloadHeader.HasProtocol(umh.ProtocolId) {
+
+			}
+		}
+	}
+
 }
 
 func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForProtocol(
@@ -160,8 +180,11 @@ func (e *ExchangeManagerImpl) RegisterUMH(id *protocols.Id, msgType int16, handl
 		}
 	}
 	if selected == nil {
-
+		return lib.ChipErrorTooManyUnsolicitedMessageHandlers
 	}
+	selected.Handler = handle
+	selected.ProtocolId = id
+	selected.MessageType = msgType
 	return nil
 }
 

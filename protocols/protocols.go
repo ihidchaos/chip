@@ -11,3 +11,7 @@ var StandardProtocolId = &Id{
 	mVendorId:   lib.UnspecifiedVendorId,
 	mProtocolId: 0xFFFF,
 }
+
+func (id *Id) Equal(other *Id) bool {
+	return id.mVendorId == other.mVendorId && id.mProtocolId == other.mProtocolId
+}
