@@ -43,13 +43,11 @@ type AdvertiseImpl struct {
 }
 
 func (d *AdvertiseImpl) AdvertiseOperational(params *OperationalAdvertisingParameters) error {
-	//TODO implement me
-	panic("implement me")
+	return d.advertiseOperational(params)
 }
 
 func (d *AdvertiseImpl) AdvertiseCommission(params *CommissionAdvertisingParameters) error {
-	//TODO implement me
-	panic("implement me")
+	return d.advertiseCommission(params)
 }
 
 func NewAdvertise() *AdvertiseImpl {

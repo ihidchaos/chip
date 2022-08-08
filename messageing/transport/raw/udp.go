@@ -63,7 +63,7 @@ func (p *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 				Port: int(parameters.GetAddress().Port()),
 			})
 			if err != nil {
-				log.Error("UDPTransport err : %s", err.Error())
+				log.Infof("UDPTransport listen err : %s", err.Error())
 				p.Close()
 				return
 			}
@@ -82,6 +82,9 @@ func (p *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 	_, err := io.ReadFull(conn, data)
 	if err != nil {
 		log.Error(err.Error())
+		return
+	}
+	if data == nil {
 		return
 	}
 	packetBuffer := NewPacketBuffer(data)

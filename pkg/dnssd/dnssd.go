@@ -49,7 +49,7 @@ func GetInstance() *Dnssd {
 				mCurrentCommissioningMode:    0,
 				mExtendedDiscoveryExpiration: nil,
 				mEphemeralDiscriminator:      nil,
-				mdnsAdvertiser:               nil,
+				mdnsAdvertiser:               NewAdvertise(),
 			}
 		}
 	})
@@ -269,5 +269,5 @@ func (d *Dnssd) AdvertiseCommissionableNode(mode int) error {
 }
 
 func (d *Dnssd) haveOperationalCredentials() bool {
-	return d.mFabricTable.FabricCount() != 0
+	return d.mFabricTable != nil && d.mFabricTable.FabricCount() != 0
 }
