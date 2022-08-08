@@ -1,7 +1,6 @@
 package raw
 
 import (
-	"encoding/binary"
 	"github.com/galenliu/chip/lib"
 )
 
@@ -232,36 +231,24 @@ func (h *PacketHeader) EncodeSizeBytes() uint8 {
 	return h.mSize
 }
 
-func (h *PacketHeader) DecodeAndConsume(data []byte) error {
+func (h *PacketHeader) DecodeAndConsume(buf *PacketBuffer) error {
 
-	if len(data) < 36 {
+	if buf.Len < 36 {
 		return lib.ChipErrorInvalidArgument
 	}
-	h.mSize = 0
-
-	h.mMessageFlags = data[0]
-	h.mSize = h.mSize + 1
-
-	h.mSecFlags = data[1]
+	h.mMessageFlags = buf.Read8()
+	h.mSecFlags = buf.Read8()
 	h.mSessionType = h.mSecFlags & 0x0003
-	h.mSize = h.mSize + 1
+	h.mSessionFlags = buf.Read8()
+	h.mSessionId = buf.Read16()
+	h.mMessageCounter = buf.Read32()
 
-	h.mSessionFlags = data[1]
-	h.mSize = h.mSize + 1
-
-	h.mSessionId = binary.LittleEndian.Uint16(data[2:4])
-	h.mSize = h.mSize + 2
-
-	h.mMessageCounter = binary.LittleEndian.Uint32(data[4:8])
-	h.mSize = h.mSize + 4
 	if h.mMessageFlags&kSourceNodeIdPresent != 0 {
-		h.mSourceNodeId = lib.NodeId(binary.LittleEndian.Uint64(data[8:16]))
-		h.mSize = h.mSize + 8
+		h.mSourceNodeId = lib.NodeId(buf.Read64())
 	}
 	if h.mMessageFlags&kDestinationNodeIdPresent != 0 {
-		h.mDestinationNodeId = lib.NodeId(binary.LittleEndian.Uint64(data[8:16]))
+		h.mDestinationNodeId = lib.NodeId(buf.Read64())
 		h.mDestinationGroupId = h.mDestinationNodeId.GetGroupId()
-		h.mSize = h.mSize + 8
 	}
 	return nil
 }

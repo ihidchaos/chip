@@ -1,7 +1,10 @@
 package raw
 
+type TCPTransport interface {
+	TransportBase
+}
+
 type TCPTransportImpl struct {
-	*BaseImpl
 	mState uint8
 	mPort  uint16
 }

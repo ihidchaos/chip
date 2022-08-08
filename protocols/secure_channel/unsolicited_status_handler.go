@@ -6,18 +6,45 @@ import (
 )
 
 type UnsolicitedStatusHandler interface {
-	OnMessageReceived(ec *messageing.ExchangeContext, header *raw.PayloadHeader, data []byte) error
-	OnResponseTimeout(ec *messageing.ExchangeContext)
-	OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error
-}
-
-type UnsolicitedStatusHandlerImpl struct {
-}
-
-func (h UnsolicitedStatusHandlerImpl) Init(mgr messageing.ExchangeManager) error {
-	return nil
+	messageing.ExchangeDelegate
+	messageing.UnsolicitedMessageHandler
+	Init(mgr messageing.ExchangeManager) error
 }
 
 func NewUnsolicitedStatusHandler() *UnsolicitedStatusHandlerImpl {
 	return &UnsolicitedStatusHandlerImpl{}
+}
+
+type UnsolicitedStatusHandlerImpl struct {
+	mExchangeManager messageing.ExchangeManager
+}
+
+func (h UnsolicitedStatusHandlerImpl) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h UnsolicitedStatusHandlerImpl) OnResponseTimeout(ec *messageing.ExchangeContext) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h UnsolicitedStatusHandlerImpl) OnExchangeClosing(ec *messageing.ExchangeContext) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h UnsolicitedStatusHandlerImpl) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h UnsolicitedStatusHandlerImpl) OnExchangeCreationFailed(delegate messageing.ExchangeDelegate) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h UnsolicitedStatusHandlerImpl) Init(mgr messageing.ExchangeManager) error {
+	h.mExchangeManager = mgr
+	return nil
 }

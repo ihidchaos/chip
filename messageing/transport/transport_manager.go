@@ -5,10 +5,14 @@ import (
 	"net/netip"
 )
 
+type ManagerDelegate interface {
+	OnMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer)
+}
+
 // ManagerBase this is the delegate for TransportBase,
 type ManagerBase interface {
-	raw.TransportBaseDelegate
-	SetSessionManager(sessionManager SessionManager)
+	raw.TransportDelegate
+	SetSessionManager(sessionManager ManagerDelegate)
 	SendMessage(port netip.AddrPort, msg []byte) error
 	Close()
 	Disconnect(addr netip.Addr)
@@ -18,7 +22,7 @@ type ManagerBase interface {
 // ManagerImpl  impl ManagerBase
 type ManagerImpl struct {
 	mTransports     []raw.TransportBase
-	mSessionManager SessionManager
+	mSessionManager ManagerDelegate
 }
 
 func NewTransportManagerImpl(transports ...raw.TransportBase) *ManagerImpl {
@@ -31,9 +35,9 @@ func NewTransportManagerImpl(transports ...raw.TransportBase) *ManagerImpl {
 	return impl
 }
 
-func (t *ManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, msg []byte) {
+func (t *ManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer) {
 	if t.mSessionManager != nil {
-		t.mSessionManager.OnMessageReceived(peerAddress, msg)
+		t.mSessionManager.OnMessageReceived(peerAddress, buf)
 	}
 }
 
@@ -61,6 +65,6 @@ func (t *ManagerImpl) Disconnect(addr netip.Addr) {
 	panic("implement me")
 }
 
-func (t *ManagerImpl) SetSessionManager(sessionManager SessionManager) {
+func (t *ManagerImpl) SetSessionManager(sessionManager ManagerDelegate) {
 	t.mSessionManager = sessionManager
 }

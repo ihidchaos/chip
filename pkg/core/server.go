@@ -12,7 +12,7 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/dnssd"
 	"github.com/galenliu/chip/pkg/storage"
-	secure_channel2 "github.com/galenliu/chip/protocols/secure_channel"
+	sc "github.com/galenliu/chip/protocols/secure_channel"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"net/netip"
@@ -50,10 +50,10 @@ type Server struct {
 	mTestEventTriggerDelegate TestEventTriggerDelegate
 	mFabricDelegate           credentials.FabricTableDelegate
 	mCASEClientPool           CASEClientPool
-	mCASEServer               *secure_channel2.CASEServer
+	mCASEServer               *sc.CASEServer
 	mSessionResumptionStorage lib.SessionResumptionStorage
-	mMessageCounterManager    *secure_channel2.MessageCounterManager
-	mUnsolicitedStatusHandler *secure_channel2.UnsolicitedStatusHandler
+	mMessageCounterManager    *sc.MessageCounterManager
+	mUnsolicitedStatusHandler sc.UnsolicitedStatusHandler
 
 	mAttributePersister lib.AttributePersistenceProvider //unknown
 	mCASESessionManager *CASESessionManager
@@ -203,7 +203,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	}
 
 	{
-		messageCounterManager := secure_channel2.NewMessageCounterManager()
+		messageCounterManager := sc.NewMessageCounterManager()
 		err = messageCounterManager.Init(s.mExchangeMgr)
 		if err != nil {
 			return s, err
@@ -211,7 +211,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		s.mMessageCounterManager = messageCounterManager
 	}
 
-	s.mUnsolicitedStatusHandler = secure_channel2.NewUnsolicitedStatusHandler()
+	s.mUnsolicitedStatusHandler = sc.NewUnsolicitedStatusHandler()
 	err = s.mUnsolicitedStatusHandler.Init(s.mExchangeMgr)
 	if err != nil {
 		return s, err
@@ -303,7 +303,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		log.Panic(err.Error())
 	}
 
-	s.mCASEServer = secure_channel2.NewCASEServer()
+	s.mCASEServer = sc.NewCASEServer()
 	err = s.mCASEServer.ListenForSessionEstablishment(s.mExchangeMgr, s.mSessions, s.mFabrics, s.mSessionResumptionStorage, s.mCertificateValidityPolicy, s.mGroupsProvider)
 	if err != nil {
 		log.Panic(err.Error())

@@ -2,12 +2,12 @@ package raw
 
 import "net/netip"
 
-type TransportBaseDelegate interface {
-	HandleMessageReceived(addrPort netip.AddrPort, msg []byte)
+type TransportDelegate interface {
+	HandleMessageReceived(srcAddr netip.AddrPort, buf *PacketBuffer)
 }
 
 type TransportBase interface {
-	TransportBaseDelegate
+	TransportDelegate
 	GetBoundPort() uint16
-	SetDelegate(m TransportBaseDelegate)
+	SetDelegate(m TransportDelegate)
 }

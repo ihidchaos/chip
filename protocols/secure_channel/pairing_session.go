@@ -26,7 +26,7 @@ type PairingSession interface {
 
 type PairingSessionImpl struct {
 	mRole              uint8
-	mSecureSessionType uint8
+	mSecureSessionType transport.TSecureSession
 
 	SessionManager       transport.SessionManager
 	mExchangeCtxt        messageing.ExchangeContext
@@ -35,7 +35,7 @@ type PairingSessionImpl struct {
 }
 
 func (p PairingSessionImpl) GetSecureSessionType() uint8 {
-	return p.mSecureSessionType
+	return uint8(p.mSecureSessionType)
 }
 
 func (p PairingSessionImpl) GetPeerCATs() lib.CATValues {
@@ -90,7 +90,7 @@ func (p PairingSessionImpl) EncodeMRPParameters(tag lib.Tag, mrpLocalConfig *tra
 func NewPairingSessionImpl() *PairingSessionImpl {
 	return &PairingSessionImpl{
 		mRole:                0,
-		mSecureSessionType:   transport.KSecureSessionCASE,
+		mSecureSessionType:   transport.CASE,
 		SessionManager:       nil,
 		mExchangeCtxt:        messageing.ExchangeContext{},
 		mSecureSessionHolder: nil,

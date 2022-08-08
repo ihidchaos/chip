@@ -1,21 +1,22 @@
 package raw
 
 import (
-	"encoding/binary"
+	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/protocols"
 )
 
+type TExchangeFlag = uint8
+
 const (
-	//ExFlagValues
-	kExchangeFlagInitiator uint8 = 0b1
-	/// Set when current message is an acknowledgment for a previously received message.
-	kExchangeFlagAckMsg uint8 = 0b10
-	/// Set when current message is requesting an acknowledgment from the recipient.
-	kExchangeFlagNeedsAck uint8 = 0b100
-	/// Secured Extension block is present.
-	kExchangeFlagSecuredExtension uint8 = 0b1000
-	/// Set when a vendor id is prepended to the Message Protocol Id field.
-	kExchangeFlagVendorIdPresent uint8 = 0b10000
+	FInitiator TExchangeFlag = 0b1
+	// FAckMsg / Set when current message is an acknowledgment for a previously received message.
+	FAckMsg TExchangeFlag = 0b10
+	// FNeedsAck / Set when current message is requesting an acknowledgment from the recipient.
+	FNeedsAck TExchangeFlag = 0b100
+	// FSecuredExtension / Secured Extension block is present.
+	FSecuredExtension TExchangeFlag = 0b1000
+	// FVendorIdPresent / Set when a vendor id is prepended to the Message Protocol Id field.
+	FVendorIdPresent TExchangeFlag = 0b10000
 )
 
 /**********************************************
@@ -44,7 +45,7 @@ const (
 
 type PayloadHeader struct {
 	mExchangeFlags     uint8
-	mExchangeID        uint16
+	mExchangeId        uint16
 	mProtocolId        protocols.Id
 	mVendorId          uint16
 	mAckMessageCounter uint32
@@ -59,41 +60,49 @@ func NewPayloadHeader() *PayloadHeader {
 }
 
 func (header *PayloadHeader) IsInitiator() bool {
-	return header.mExchangeFlags&kExchangeFlagInitiator != 0
+	return lib.HasFlags(header.mExchangeFlags, FInitiator)
+}
+
+func (header *PayloadHeader) HasMessageType(t uint8) bool {
+	return header.mMessageType == t
 }
 
 func (header *PayloadHeader) IsAckMsg() bool {
-	return header.mExchangeFlags&kExchangeFlagAckMsg != 0
+	return lib.HasFlags(header.mExchangeFlags, FAckMsg)
 }
 
 func (header *PayloadHeader) NeedsAck() bool {
-	return header.mExchangeFlags&kExchangeFlagNeedsAck != 0
+	return lib.HasFlags(header.mExchangeFlags, FNeedsAck)
 }
 
 func (header *PayloadHeader) HaveVendorId() bool {
-	return header.mExchangeFlags&kExchangeFlagVendorIdPresent != 0
+	return lib.HasFlags(header.mExchangeFlags, FVendorIdPresent)
 }
 
-func (header *PayloadHeader) DecodeAndConsume(data []byte) error {
+func (header *PayloadHeader) DecodeAndConsume(data *PacketBuffer) error {
+	return header.Decode(data)
+}
 
-	header.mExchangeFlags = data[0]
-	header.mProtocolOpcode = data[1]
-
-	header.mExchangeID = binary.LittleEndian.Uint16(data[2:4])
-	header.mProtocolId = binary.LittleEndian.Uint16(data[4:6])
-	header.mSize = 6
+func (header *PayloadHeader) Decode(buf *PacketBuffer) error {
+	header.mExchangeFlags = buf.Read8()
+	header.mProtocolOpcode = buf.Read8()
+	header.mExchangeId = buf.Read16()
+	protocolId := buf.Read16()
+	var vendorId = lib.KVidCommon
 	if header.HaveVendorId() {
-		header.mVendorId = binary.LittleEndian.Uint16(data[header.mSize : header.mSize+2])
-		header.mSize = header.mSize + 2
+		vendorId = buf.Read16()
+	}
+	header.mProtocolId = protocols.Id{
+		VendorId:   vendorId,
+		ProtocolId: protocolId,
 	}
 	if header.IsAckMsg() {
-		header.mVendorId = binary.LittleEndian.Uint16(data[header.mSize : header.mSize+2])
-		header.mSize = header.mSize + 2
+		header.mVendorId = buf.Read16()
 	}
 	return nil
 }
 
-func (header *PayloadHeader) GetProtocolID() uint16 {
+func (header *PayloadHeader) GetProtocolID() protocols.Id {
 	return header.mProtocolId
 }
 
@@ -102,7 +111,7 @@ func (header *PayloadHeader) GetMessageType() uint8 {
 }
 
 func (header *PayloadHeader) GetExchangeID() uint16 {
-	return header.mExchangeID
+	return header.mExchangeId
 }
 
 func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {

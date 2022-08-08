@@ -9,28 +9,27 @@ import (
 	"net/netip"
 )
 
+type SessionMessageDelegate interface {
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, buf *raw.PacketBuffer)
+}
+
 const (
 	DuplicateMessageYes uint8  = 0
 	DuplicateMessageNo  uint8  = 1
 	FDuplicateMessage   uint32 = 0x00000001
 )
 
-type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, data []byte)
-}
-
 // SessionManager The delegate for TransportManager and FabricTable
 // TransportBaseDelegate is the indirect delegate for TransportManager
 type SessionManager interface {
 	credentials.FabricTableDelegate
-	OnMessageReceived(srcAddr netip.AddrPort, data []byte)
-	raw.TransportBaseDelegate
+	ManagerDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
-	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 	// SecureUnicastMessageDispatch  handle the unsecure messages
-	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 	// UnauthenticatedMessageDispatch handle the unauthenticated(未经认证的) messages
-	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte)
+	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 
 	SetMessageDelegate(SessionMessageDelegate)
 }
@@ -47,31 +46,6 @@ func NewSessionManagerImpl() *SessionManagerImpl {
 	return &SessionManagerImpl{}
 }
 
-func (s *SessionManagerImpl) HandleMessageReceived(addrPort netip.AddrPort, msg []byte) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *SessionManagerImpl) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *SessionManagerImpl) OnFabricRemoved(table credentials.FabricTable, index lib.FabricIndex) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *SessionManagerImpl) OnFabricCommitted(table credentials.FabricTable, index lib.FabricIndex) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, index lib.FabricIndex) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate) {
 	s.mCB = delegate
 }
@@ -81,26 +55,26 @@ func (s *SessionManagerImpl) Init(transports ManagerBase, storage storage.KvsPer
 	return nil
 }
 
-func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, data []byte) {
+func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *raw.PacketBuffer) {
 	packetHeader := raw.NewPacketHeader()
-	err := packetHeader.DecodeAndConsume(data)
+	err := packetHeader.DecodeAndConsume(buf)
 	if err != nil {
 		log.Printf("failed to decode packet header: %s", err.Error())
 		return
 	}
 	if packetHeader.IsEncrypted() {
 		if packetHeader.IsGroupSession() {
-			s.SecureGroupMessageDispatch(packetHeader, srcAddr, data)
+			s.SecureGroupMessageDispatch(packetHeader, srcAddr, buf)
 		} else {
-			s.SecureUnicastMessageDispatch(packetHeader, srcAddr, data)
+			s.SecureUnicastMessageDispatch(packetHeader, srcAddr, buf)
 		}
 	} else {
-		s.UnauthenticatedMessageDispatch(packetHeader, srcAddr, data)
+		s.UnauthenticatedMessageDispatch(packetHeader, srcAddr, buf)
 	}
 }
 
 // UnauthenticatedMessageDispatch 处理没有加密码的消息
-func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte) {
+func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
 
 	source := header.GetSourceNodeId()
 	destination := header.GetDestinationNodeId()
@@ -129,7 +103,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 	unsecuredSession.MarkActiveRx()
 
 	var payloadHeader = raw.NewPayloadHeader()
-	err := payloadHeader.DecodeAndConsume(data[header.EncodeSizeBytes():])
+	err := payloadHeader.DecodeAndConsume(buf)
 	if err != nil {
 		return
 	}
@@ -144,16 +118,41 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 		unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.GetMessageCounter())
 	}
 	if s.mCB != nil {
-		s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, data)
+		s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, buf)
 	}
 }
 
+func (s *SessionManagerImpl) HandleMessageReceived(addrPort netip.AddrPort, buf *raw.PacketBuffer) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) OnFabricRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) OnFabricCommitted(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, index lib.FabricIndex) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // SecureGroupMessageDispatch 处理加密的组播消息
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte) {
+func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
 
 }
 
 // SecureUnicastMessageDispatch 处理分支，加密的单播消息
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, data []byte) {
+func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
 
 }

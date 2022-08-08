@@ -14,6 +14,10 @@ type SessionHolderWithDelegate interface {
 	SessionHolder
 }
 
+func NewSessionHolderWithDelegateImpl() *SessionHolderWithDelegateImpl {
+	return &SessionHolderWithDelegateImpl{}
+}
+
 type SessionHolderWithDelegateImpl struct {
 }
 
@@ -38,8 +42,7 @@ func (s SessionHolderWithDelegateImpl) Release() {
 }
 
 func (s SessionHolderWithDelegateImpl) Get() SessionHandle {
-	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (s SessionHolderWithDelegateImpl) DispatchSessionEvent(delegate SessionDelegate) {
@@ -52,6 +55,3 @@ func (s SessionHolderWithDelegateImpl) Contains(session SessionHandle) bool {
 	panic("implement me")
 }
 
-func NewSessionHolderWithDelegateImpl() *SessionHolderWithDelegateImpl {
-	return &SessionHolderWithDelegateImpl{}
-}

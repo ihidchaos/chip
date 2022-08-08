@@ -20,7 +20,7 @@ type UDBTransport interface {
 
 // UDPTransportImpl impl TransportBase and add  init func
 type UDPTransportImpl struct {
-	mDelegate TransportBaseDelegate
+	mDelegate TransportDelegate
 	mState    uint8
 	mPort     uint16
 }
@@ -63,7 +63,7 @@ func (p *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 				Port: int(parameters.GetAddress().Port()),
 			})
 			if err != nil {
-				log.Error("UDBTransport err : %s", err.Error())
+				log.Error("UDPTransport err : %s", err.Error())
 				p.Close()
 				return
 			}
@@ -84,20 +84,21 @@ func (p *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 		log.Error(err.Error())
 		return
 	}
+	packetBuffer := NewPacketBuffer(data)
 	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
 	srcAddrPort := netip.AddrPortFrom(srcAddr, port)
-	p.OnUdpReceive(srcAddrPort, data)
+	p.OnUdpReceive(srcAddrPort, packetBuffer)
 }
 
-func (p *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data []byte) {
+func (p *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *PacketBuffer) {
 	p.HandleMessageReceived(srcAddr, data)
 }
 
-func (b *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, msg []byte) {
-	b.mDelegate.HandleMessageReceived(addrPort, msg)
+func (b *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *PacketBuffer) {
+	b.mDelegate.HandleMessageReceived(addrPort, data)
 }
 
-func (b *UDPTransportImpl) SetDelegate(m TransportBaseDelegate) {
+func (b *UDPTransportImpl) SetDelegate(m TransportDelegate) {
 	b.mDelegate = m
 }
 
