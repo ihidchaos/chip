@@ -3,7 +3,8 @@ package commission
 import (
 	"github.com/galenliu/chip/app"
 	"github.com/galenliu/chip/config"
-	"github.com/galenliu/gateway/pkg/log"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +14,7 @@ func (c *command) intCommission() (err error) {
 		Use:   "commission",
 		Short: "commission mode",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			log.SetReportCaller(true)
 
 			deviceOption := config.NewDeviceOptions()
 			deviceOption, _ = deviceOption.Init(c.config)

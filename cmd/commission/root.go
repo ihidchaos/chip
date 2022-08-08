@@ -38,7 +38,7 @@ func newCommand(opts ...option) (c *command, err error) {
 
 	err = c.initConfig()
 	if err != nil {
-		log.Infof("read config file err :%s", err.Error())
+		log.Warnf("load config file err :%s", err.Error())
 	}
 
 	err = c.initInitCmd()
@@ -91,7 +91,7 @@ func (c *command) initConfig() (err error) {
 	c.config.SetEnvPrefix("chip")
 	c.config.AutomaticEnv() // read in environment variables that match
 	c.config.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
+	log.Infof("load config: %s%s%s.%s", c.configPath, string(os.PathSeparator), c.configName, c.configFileType)
 	// If a conf file is found, read it in.
 	if err := c.config.ReadInConfig(); err != nil {
 		var e viper.ConfigFileNotFoundError
