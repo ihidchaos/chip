@@ -14,8 +14,6 @@ func (c *command) intCommission() (err error) {
 		Use:   "commission",
 		Short: "commission mode",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			log.SetReportCaller(true)
-
 			deviceOption := config.NewDeviceOptions()
 			deviceOption, _ = deviceOption.Init(c.config)
 			err = app.Init(deviceOption)
