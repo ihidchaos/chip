@@ -11,7 +11,9 @@ type ExchangeContextPool struct {
 }
 
 func NewExchangeContextContainer() *ExchangeContextPool {
-	return &ExchangeContextPool{}
+	return &ExchangeContextPool{
+		Container: sync.Map{},
+	}
 }
 
 func (c *ExchangeContextPool) Add(context *ExchangeContext) {

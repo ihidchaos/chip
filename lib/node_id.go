@@ -2,6 +2,10 @@ package lib
 
 type NodeId uint64
 
+func (aNodeId NodeId) HasValue() bool {
+	return aNodeId != KUndefinedNodeId
+}
+
 const (
 	KUndefinedNodeId NodeId = 0
 

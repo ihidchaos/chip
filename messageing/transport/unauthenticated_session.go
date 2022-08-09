@@ -12,7 +12,7 @@ type UnauthenticatedSession interface {
 
 type UnauthenticatedSessionImpl struct {
 	*SessionBaseImpl
-	mSessionRole              uint8
+	mSessionRole              TSessionRole
 	mEphemeralInitiatorNodeId lib.NodeId
 	mPeerAddress              netip.AddrPort
 	mLastActivityTime         time.Time
@@ -21,7 +21,7 @@ type UnauthenticatedSessionImpl struct {
 	mPeerMessageCounter       PeerMessageCounter
 }
 
-func NewUnauthenticatedSessionImpl(roleResponder uint8, id lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
+func NewUnauthenticatedSessionImpl(roleResponder TSessionRole, id lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
 	return &UnauthenticatedSessionImpl{
 		SessionBaseImpl:           NewSessionBaseImpl(),
 		mSessionRole:              roleResponder,

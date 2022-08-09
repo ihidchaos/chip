@@ -14,16 +14,21 @@ type SessionMessageDelegate interface {
 }
 
 const (
-	DuplicateMessageYes uint8  = 0
-	DuplicateMessageNo  uint8  = 1
-	FDuplicateMessage   uint32 = 0x00000001
+	kNotReady uint8 = iota
+	kInitialized
+)
+
+const (
+	KDuplicateMessageYes uint8  = 0
+	KDuplicateMessageNo  uint8  = 1
+	FDuplicateMessage    uint32 = 0x00000001
 )
 
 // SessionManager The delegate for TransportManager and FabricTable
 // TransportBaseDelegate is the indirect delegate for TransportManager
 type SessionManager interface {
 	credentials.FabricTableDelegate
-	ManagerDelegate
+	TransportManagerDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
 	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 	// SecureUnicastMessageDispatch  handle the unsecure messages
@@ -35,24 +40,53 @@ type SessionManager interface {
 }
 
 type SessionManagerImpl struct {
-	mUnauthenticatedSessions UnauthenticatedSessionTable
-	mSecureSessions          SecureSessionTable
-	mFabricTable             *credentials.FabricTableContainer
-	mState                   int
-	mCB                      SessionMessageDelegate
+	mUnauthenticatedSessions         *UnauthenticatedSessionTable
+	mSecureSessions                  *SecureSessionTable
+	mFabricTable                     *credentials.FabricTable
+	mState                           uint8
+	mTransportMgr                    TransportManagerBase
+	mGroupClientCounter              *GroupOutgoingCounters
+	mCB                              SessionMessageDelegate
+	mMessageCounterManager           MessageCounterManagerInterface
+	mGlobalUnencryptedMessageCounter *GlobalUnencryptedMessageCounterImpl
 }
 
 func NewSessionManagerImpl() *SessionManagerImpl {
-	return &SessionManagerImpl{}
+	return &SessionManagerImpl{
+		mUnauthenticatedSessions:         NewUnauthenticatedSessionTable(),
+		mSecureSessions:                  NewSecureSessionTable(),
+		mGroupClientCounter:              NewGroupOutgoingCounters(),
+		mGlobalUnencryptedMessageCounter: NewGlobalUnencryptedMessageCounterImpl(),
+		mFabricTable:                     nil,
+		mState:                           0,
+		mCB:                              nil,
+	}
 }
 
 func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate) {
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transports ManagerBase, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
-	transports.SetSessionManager(s)
-	return nil
+func (s *SessionManagerImpl) Init(transportMgr TransportManagerBase, counter MessageCounterManagerInterface, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+
+	err := s.mFabricTable.AddFabricDelegate(s)
+	if err != nil {
+		return err
+	}
+
+	s.mState = kInitialized
+
+	s.mFabricTable = table
+
+	s.mMessageCounterManager = counter
+	s.mSecureSessions.Init()
+
+	s.mGlobalUnencryptedMessageCounter.Init()
+
+	err = s.mGroupClientCounter.Init(storage)
+	s.mTransportMgr = transportMgr
+	s.mTransportMgr.SetSessionManager(s)
+	return err
 }
 
 func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *raw.PacketBuffer) {
@@ -84,7 +118,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 	}
 
 	var unsecuredSession *UnauthenticatedSessionImpl
-	if source != lib.KUndefinedNodeId {
+	if source.HasValue() {
 		unsecuredSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, GetLocalMRPConfig())
 		if unsecuredSession == nil {
 			log.Infof("UnauthenticatedSessionImpl exhausted")
@@ -97,8 +131,9 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 			return
 		}
 	}
+
 	unsecuredSession.SetPeerAddress(addr)
-	isDuplicate := DuplicateMessageNo
+	isDuplicate := KDuplicateMessageNo
 
 	unsecuredSession.MarkActiveRx()
 
@@ -109,8 +144,8 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 	}
 
 	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
-	if err == lib.ChipErrorDuplicateMessageReceived {
-		isDuplicate = DuplicateMessageNo
+	if err != nil {
+		isDuplicate = KDuplicateMessageYes
 		log.Infof(
 			"Received a duplicate message with MessageCounter: %v on exchange %v",
 			header.GetMessageCounter(), payloadHeader)
@@ -120,11 +155,6 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 	if s.mCB != nil {
 		s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, buf)
 	}
-}
-
-func (s *SessionManagerImpl) HandleMessageReceived(addrPort netip.AddrPort, buf *raw.PacketBuffer) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (s *SessionManagerImpl) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
@@ -148,11 +178,25 @@ func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, inde
 }
 
 // SecureGroupMessageDispatch 处理加密的组播消息
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
+func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
 
 }
 
 // SecureUnicastMessageDispatch 处理分支，加密的单播消息
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
+func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
+	secureSession := s.mSecureSessions.FindSecureSessionByLocalKey(header.GetSessionId())
+	isDuplicate := KDuplicateMessageNo
+	if msg.IsNull() {
+		log.Infof("Secure transport received Unicast NULL packet, discarding")
+		return
+	}
+	if secureSession == nil {
+		log.Infof("Data received on an unknown session (LSID=%d). Dropping it!", header.GetSessionId())
+		return
+	}
 
+	if secureSession.IsDefunct() && !secureSession.IsActiveSession() && !secureSession.IsPendingEviction() {
+		log.Infof("Secure transport received message on a session in an invalid state (state = '%s')",
+			secureSession.GetStateStr())
+	}
 }

@@ -60,23 +60,23 @@ func NewDnssdInstance() *Dnssd {
 	return GetInstance()
 }
 
-func (d Dnssd) SetFabricTable(fabrics *credentials.FabricTable) {
+func (d *Dnssd) SetFabricTable(fabrics *credentials.FabricTable) {
 	d.mFabricTable = fabrics
 }
 
-func (d Dnssd) SetCommissioningModeProvider(provider CommissioningModeProvider) {
+func (d *Dnssd) SetCommissioningModeProvider(provider CommissioningModeProvider) {
 	d.mCommissioningModeProvider = provider
 }
 
-func (d Dnssd) SetSecuredPort(port uint16) {
+func (d *Dnssd) SetSecuredPort(port uint16) {
 	d.mSecuredPort = port
 }
 
-func (d Dnssd) SetUnsecuredPort(port uint16) {
+func (d *Dnssd) SetUnsecuredPort(port uint16) {
 	d.mUnsecuredPort = port
 }
 
-func (d Dnssd) SetInterfaceId(n net.Interface) {
+func (d *Dnssd) SetInterfaceId(n net.Interface) {
 	d.mInterfaceId = n
 }
 
@@ -224,7 +224,7 @@ func (d *Dnssd) Advertise(commissionAbleNode bool, mode int) error {
 
 func (d *Dnssd) startServer(mode int) {
 
-	log.Printf("Updating services using commissioning mode %d", mode)
+	log.Printf("updating services using commissioning mode %d", mode)
 	err := d.mdnsAdvertiser.Init()
 	if err != nil {
 		log.Error("failed to initialize advertiser: %s", err.Error())
@@ -254,7 +254,7 @@ func (d *Dnssd) startServer(mode int) {
 	}
 	err = d.mdnsAdvertiser.FinalizeServiceUpdate()
 	if err != nil {
-		log.Errorf("Failed to finalize service update: %s", err.Error())
+		log.Errorf("failed to finalize service update: %s", err.Error())
 	}
 }
 

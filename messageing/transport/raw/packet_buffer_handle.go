@@ -68,3 +68,7 @@ func (header *PacketBuffer) ConsumeHead(aConsumeLength int) {
 	header.Len = header.Len - aConsumeLength
 	header.TotLen = header.Len - aConsumeLength
 }
+
+func (header *PacketBuffer) IsNull() bool {
+	return header.Bytes == nil
+}

@@ -194,7 +194,7 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	s.mSessionResumptionStorage = storage
 	s.mLocalMRPConfig = config
 
-	log.Info("Allocated SecureSession (%s) - waiting for Sigma1 msg")
+	log.Infof("Allocated SecureSessionBase-waiting for Sigma1 msg")
 	s.mSecureSessionHolder.Get()
 
 	return nil

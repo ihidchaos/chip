@@ -12,20 +12,28 @@ const (
 	CASE TSecureSession = 2
 )
 
+type TSecureState uint8
+
 const (
-	KStateEstablishing = iota
-	KStateActive
-	KStateDefunct
-	KStatePendingEviction
+	KEstablishing TSecureState = iota
+	KActive
+	KDefunct
+	KPendingEviction
 )
 
-type SecureSession interface {
+func (t TSecureState) Str() string {
+	return [...]string{
+		"Establishing", "Active", "Defunct", "PendingEviction",
+	}[t]
+}
+
+type SecureSessionBase interface {
 	Session
 }
 
-type SecureSessionImpl struct {
+type SecureSession struct {
 	*SessionBaseImpl
-	mState             uint8
+	mState             TSecureState
 	mTable             *SecureSessionTable
 	mSecureSessionType TSecureSession
 	mLocalSessionId    uint16
@@ -36,15 +44,15 @@ type SecureSessionImpl struct {
 	mPeerCATs          *lib.CATValues
 }
 
-func NewSecureSessionImpl(
+func NewSecureSession(
 	table *SecureSessionTable,
 	secureSessionType TSecureSession,
 	localSessionId uint16,
-) *SecureSessionImpl {
-	return &SecureSessionImpl{
+) *SecureSession {
+	return &SecureSession{
 		SessionBaseImpl:    NewSessionBaseImpl(),
 		mTable:             table,
-		mState:             KStateEstablishing,
+		mState:             KEstablishing,
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 	}
@@ -60,11 +68,11 @@ func NewSecureSessionImplWithNodeId(
 	peerSessionId uint16,
 	fabric lib.FabricIndex,
 	config *ReliableMessageProtocolConfig,
-) *SecureSessionImpl {
-	impl := &SecureSessionImpl{
+) *SecureSession {
+	impl := &SecureSession{
 		SessionBaseImpl:    NewSessionBaseImpl(),
 		mTable:             table,
-		mState:             KStateEstablishing,
+		mState:             KEstablishing,
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 		mLocalNodeId:       localNodeId,
@@ -77,61 +85,77 @@ func NewSecureSessionImplWithNodeId(
 	return impl
 }
 
-func (s *SecureSessionImpl) Release() {
+func (s *SecureSession) Release() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SecureSessionImpl) Retain() {
+func (s *SecureSession) Retain() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SecureSessionImpl) IsActiveSession() bool {
-	return s.mState == KStateActive
+func (s *SecureSession) IsActiveSession() bool {
+	return s.mState == KActive
 }
 
-func (s *SecureSessionImpl) GetSessionType() uint8 {
+func (s *SecureSession) GetSessionType() uint8 {
 	return kSessionTypeSecure
 }
 
-func (s *SecureSessionImpl) GetSessionTypeString() string {
+func (s *SecureSession) GetSessionTypeString() string {
 	return "secure"
 }
 
-func (s *SecureSessionImpl) IsGroupSession() bool {
+func (s *SecureSession) IsGroupSession() bool {
 	return s.GetSessionType() == kSessionTypeSecure
 }
 
-func (s *SecureSessionImpl) IsEstablishing() bool {
-	return s.mState == KStateEstablishing
+func (s *SecureSession) IsEstablishing() bool {
+	return s.mState == KEstablishing
 }
 
-func (s *SecureSessionImpl) IsSecureSession() bool {
+func (s *SecureSession) IsSecureSession() bool {
 	return s.GetSessionType() == kSessionTypeSecure
 }
 
-func (s *SecureSessionImpl) DispatchSessionEvent(delegate SessionDelegate) {
+func (s *SecureSession) DispatchSessionEvent(delegate SessionDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SecureSessionImpl) ComputeRoundTripTimeout(duration time.Duration) time.Duration {
+func (s *SecureSession) ComputeRoundTripTimeout(duration time.Duration) time.Duration {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SecureSessionImpl) SessionReleased() {
+func (s *SecureSession) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SecureSessionImpl) AsUnauthenticatedSession() *UnauthenticatedSessionImpl {
+func (s *SecureSession) AsUnauthenticatedSession() *UnauthenticatedSessionImpl {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SecureSessionImpl) ClearValue() {
+func (s *SecureSession) ClearValue() {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *SecureSession) GetLocalSessionId() uint16 {
+	return s.mLocalSessionId
+}
+
+func (s *SecureSession) IsDefunct() bool {
+	return s.mState == KDefunct
+}
+
+func (s *SecureSession) IsPendingEviction() bool {
+	return s.mState == KPendingEviction
+}
+
+func (s *SecureSession) GetStateStr() string {
+	return s.mState.Str()
 }

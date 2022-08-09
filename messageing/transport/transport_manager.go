@@ -5,28 +5,28 @@ import (
 	"net/netip"
 )
 
-type ManagerDelegate interface {
+type TransportManagerDelegate interface {
 	OnMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer)
 }
 
-// ManagerBase this is the delegate for TransportBase,
-type ManagerBase interface {
+// TransportManagerBase this is the delegate for TransportBase,
+type TransportManagerBase interface {
 	raw.TransportDelegate
-	SetSessionManager(sessionManager ManagerDelegate)
+	SetSessionManager(sessionManager TransportManagerDelegate)
 	SendMessage(port netip.AddrPort, msg []byte) error
 	Close()
 	Disconnect(addr netip.Addr)
 	MulticastGroupJoinLeave(addr netip.Addr, join bool) error
 }
 
-// ManagerImpl  impl ManagerBase
-type ManagerImpl struct {
+// TransportManagerImpl  impl TransportManagerBase
+type TransportManagerImpl struct {
 	mTransports     []raw.TransportBase
-	mSessionManager ManagerDelegate
+	mSessionManager TransportManagerDelegate
 }
 
-func NewTransportManagerImpl(transports ...raw.TransportBase) *ManagerImpl {
-	impl := &ManagerImpl{
+func NewTransportManagerImpl(transports ...raw.TransportBase) *TransportManagerImpl {
+	impl := &TransportManagerImpl{
 		mTransports: transports,
 	}
 	for _, t := range impl.mTransports {
@@ -35,36 +35,36 @@ func NewTransportManagerImpl(transports ...raw.TransportBase) *ManagerImpl {
 	return impl
 }
 
-func (t *ManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer) {
+func (t *TransportManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer) {
 	if t.mSessionManager != nil {
 		t.mSessionManager.OnMessageReceived(peerAddress, buf)
 	}
 }
 
-func (t *ManagerImpl) GetImplAtIndex(index int) raw.TransportBase {
+func (t *TransportManagerImpl) GetImplAtIndex(index int) raw.TransportBase {
 	return t.mTransports[index]
 }
 
-func (t *ManagerImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
+func (t *TransportManagerImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *ManagerImpl) SendMessage(port netip.AddrPort, msg []byte) error {
+func (t *TransportManagerImpl) SendMessage(port netip.AddrPort, msg []byte) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *ManagerImpl) Close() {
+func (t *TransportManagerImpl) Close() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *ManagerImpl) Disconnect(addr netip.Addr) {
+func (t *TransportManagerImpl) Disconnect(addr netip.Addr) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *ManagerImpl) SetSessionManager(sessionManager ManagerDelegate) {
+func (t *TransportManagerImpl) SetSessionManager(sessionManager TransportManagerDelegate) {
 	t.mSessionManager = sessionManager
 }

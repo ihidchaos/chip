@@ -22,7 +22,7 @@ import (
 var sDeviceTypeResolver = access.DeviceTypeResolver{}
 
 type ServerTransportManager interface {
-	transport.ManagerBase
+	transport.TransportManagerBase
 	GetImplAtIndex(index int) raw.TransportBase
 }
 
@@ -49,7 +49,7 @@ type Server struct {
 	mGroupsProvider           credentials.GroupDataProvider
 	mTestEventTriggerDelegate TestEventTriggerDelegate
 	mFabricDelegate           credentials.FabricTableDelegate
-	mCASEClientPool           CASEClientPool
+	mCASEClientPool           *CASEClientPool
 	mCASEServer               *sc.CASEServer
 	mSessionResumptionStorage lib.SessionResumptionStorage
 	mMessageCounterManager    *sc.MessageCounterManager
@@ -72,7 +72,36 @@ var _chipServerOnce sync.Once
 func GetChipServerInstance() *Server {
 	_chipServerOnce.Do(func() {
 		if _chipServerInstance == nil {
-			_chipServerInstance = &Server{}
+			_chipServerInstance = &Server{
+				mOperationalServicePort:        0,
+				mUserDirectedCommissioningPort: 0,
+				mInterfaceId:                   net.Interface{},
+				mDnssd:                         nil,
+				mFabrics:                       nil,
+				mCommissioningWindowManager:    nil,
+				mDeviceStorage:                 nil,
+				mAccessControl:                 nil,
+				mOpCerStore:                    nil,
+				mOperationalKeystore:           nil,
+				mCertificateValidityPolicy:     nil,
+				mGroupsProvider:                nil,
+				mTestEventTriggerDelegate:      TestEventTriggerDelegate{},
+				mFabricDelegate:                nil,
+				mCASEClientPool:                NewCASEClientPool(),
+				mCASEServer:                    sc.NewCASEServer(),
+				mSessionResumptionStorage:      nil,
+				mMessageCounterManager:         sc.NewMessageCounterManager(),
+				mUnsolicitedStatusHandler:      nil,
+				mAttributePersister:            nil,
+				mCASESessionManager:            NewCASESessionManager(),
+				mDevicePool:                    OperationalDeviceProxyPool{},
+				mAclStorage:                    nil,
+				mTransports:                    nil,
+				mExchangeMgr:                   nil,
+				mSessions:                      nil,
+				mListener:                      nil,
+				mInitialized:                   false,
+			}
 		}
 	})
 	return _chipServerInstance
@@ -176,7 +205,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 
 	{
 		session := transport.NewSessionManagerImpl()
-		err = session.Init(s.mTransports, s.mDeviceStorage, s.GetFabricTable())
+		err = session.Init(s.mTransports, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
 		if err != nil {
 			return nil, err
 		}
@@ -203,12 +232,11 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	}
 
 	{
-		messageCounterManager := sc.NewMessageCounterManager()
-		err = messageCounterManager.Init(s.mExchangeMgr)
+		err = s.mMessageCounterManager.Init(s.mExchangeMgr)
 		if err != nil {
 			return s, err
 		}
-		s.mMessageCounterManager = messageCounterManager
+
 	}
 
 	s.mUnsolicitedStatusHandler = sc.NewUnsolicitedStatusHandler()
@@ -297,13 +325,11 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 		DevicePool: s.mDevicePool,
 	}
 
-	s.mCASESessionManager = NewCASESessionManager()
 	err = s.mCASESessionManager.Init(SystemLayer(), caseSessionManagerConfig)
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
-	s.mCASEServer = sc.NewCASEServer()
 	err = s.mCASEServer.ListenForSessionEstablishment(s.mExchangeMgr, s.mSessions, s.mFabrics, s.mSessionResumptionStorage, s.mCertificateValidityPolicy, s.mGroupsProvider)
 	if err != nil {
 		log.Panic(err.Error())
@@ -335,6 +361,6 @@ func (s *Server) StartServer() error {
 	return nil
 }
 
-func (s *Server) GetTransportManager() transport.ManagerBase {
+func (s *Server) GetTransportManager() transport.TransportManagerBase {
 	return s.mTransports
 }

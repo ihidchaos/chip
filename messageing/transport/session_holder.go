@@ -8,6 +8,15 @@ type SessionHolder interface {
 	Get() SessionHandle
 	DispatchSessionEvent(delegate SessionDelegate)
 	Contains(session SessionHandle) bool
+	SessionDelegate
+}
+
+type SessionHolderImpl struct {
+	mSession Session
+}
+
+func NewSessionHolderImpl() *SessionHolderImpl {
+	return &SessionHolderImpl{}
 }
 
 type SessionHolderWithDelegate interface {
@@ -54,4 +63,3 @@ func (s SessionHolderWithDelegateImpl) Contains(session SessionHandle) bool {
 	//TODO implement me
 	panic("implement me")
 }
-

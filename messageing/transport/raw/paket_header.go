@@ -10,24 +10,29 @@ const (
 	SessionTypeUnicast uint8 = 0
 	SessionTypeGroup   uint8 = 1
 
-	//MsgFlagValues
-	kSourceNodeIdPresent       = 0b00000100
-	kDestinationNodeIdPresent  = 0b00000001
-	kDestinationGroupIdPresent = 0b00000010
-	kDSIZReserved              = 0b00000011
+	FSourceNodeIdPresent       uint8 = 0b00000100
+	FDestinationNodeIdPresent  uint8 = 0b00000001
+	FDestinationGroupIdPresent uint8 = 0b00000010
+	FDSIZReserved              uint8 = 0b00000011
 
-	//SecFlagValues
-	kPrivacyFlag      = 0b10000000
-	kControlMsgFlag   = 0b01000000
-	kMsgExtensionFlag = 0b00100000
+	FPrivacyFlag      uint8 = 0b10000000
+	FControlMsgFlag   uint8 = 0b01000000
+	FMsgExtensionFlag uint8 = 0b00100000
+	FSessionTypeMask  uint8 = 0b00100000
 )
+
+type TSessionType uint8
 
 const (
-	KSessiontypeUnicast = 0
-	KSessiontypeGroup   = 1
+	KUnicast TSessionType = 0
+	KGroup   TSessionType = 1
 )
 
-type PacketHeaderHandler interface {
+func (T TSessionType) Uint8() uint8 {
+	return uint8(T)
+}
+
+type PacketHeaderBase interface {
 	GetMessageCounter() uint32
 	GetSourceNodeId() lib.NodeId
 	GetDestinationNodeId() lib.NodeId
@@ -59,7 +64,6 @@ type PacketHeaderHandler interface {
 	SetSessionId(uint162 uint16)
 	SetMessageCounter(uint32)
 	SetUnsecured()
-	EncodeSizeBytes() uint8
 	DecodeAndConsume([]byte) error
 }
 
@@ -98,15 +102,25 @@ type PacketHeader struct {
 	mSecFlagMask uint8
 
 	mMessageCounter uint32
-	mSessionType    uint8
+	mSessionType    TSessionType
 	mSessionFlags   uint8
 
 	mSessionId uint16
-	mSize      uint8
 }
 
 func NewPacketHeader() *PacketHeader {
-	return &PacketHeader{}
+	return &PacketHeader{
+		mMessageFlags:       0,
+		mSecFlags:           0,
+		mSourceNodeId:       0,
+		mDestinationNodeId:  0,
+		mDestinationGroupId: 0,
+		mSecFlagMask:        0,
+		mMessageCounter:     0,
+		mSessionType:        0,
+		mSessionFlags:       0,
+		mSessionId:          0,
+	}
 }
 
 func (h *PacketHeader) GetMessageCounter() uint32 {
@@ -129,7 +143,7 @@ func (h *PacketHeader) GetSessionId() uint16 {
 	return h.mSessionId
 }
 
-func (h *PacketHeader) GetSessionType() uint8 {
+func (h *PacketHeader) GetSessionType() TSessionType {
 	return h.mSessionType
 }
 
@@ -142,22 +156,22 @@ func (h *PacketHeader) GetSecurityFlags() uint8 {
 }
 
 func (h *PacketHeader) HasPrivacyFlag() bool {
-	return (h.mSecFlags & kPrivacyFlag) != 0
+	return lib.HasFlags(h.mSecFlags, FPrivacyFlag)
 }
 
 func (h *PacketHeader) IsGroupSession() bool {
-	return h.mSessionType == SessionTypeGroup
+	return h.mSessionType.Uint8() == SessionTypeGroup
 }
 
 func (h *PacketHeader) IsUnicastSession() bool {
-	return h.mSessionType == SessionTypeUnicast
+	return h.mSessionType.Uint8() == SessionTypeUnicast
 }
 
 func (h *PacketHeader) IsSessionTypeValid() bool {
-	switch h.mSessionId {
-	case KSessiontypeUnicast:
+	switch h.mSessionType {
+	case KUnicast:
 		return true
-	case KSessiontypeGroup:
+	case KGroup:
 		return true
 	default:
 		return false
@@ -186,7 +200,7 @@ func (h *PacketHeader) MICTagLength() uint16 {
 }
 
 func (h *PacketHeader) IsSecureSessionControlMsg() bool {
-	return (h.mSecFlags & kControlMsgFlag) != 0
+	return (h.mSecFlags & FControlMsgFlag) != 0
 }
 
 func (h *PacketHeader) SetSecureSessionControlMsg(value bool) {
@@ -211,7 +225,7 @@ func (h *PacketHeader) ClearDestinationGroupId() {
 }
 
 func (h *PacketHeader) SetSessionType(t uint8) {
-	h.mSessionType = t
+	h.mSessionType = TSessionType(t)
 }
 
 func (h *PacketHeader) SetSessionId(id uint16) {
@@ -224,11 +238,7 @@ func (h *PacketHeader) SetMessageCounter(u uint32) {
 
 func (h *PacketHeader) SetUnsecured() {
 	h.mSessionId = kMsgUnicastSessionIdUnsecured
-	h.mSessionType = KSessiontypeUnicast
-}
-
-func (h *PacketHeader) EncodeSizeBytes() uint8 {
-	return h.mSize
+	h.mSessionType = KUnicast
 }
 
 func (h *PacketHeader) DecodeAndConsume(buf *PacketBuffer) error {
@@ -238,15 +248,15 @@ func (h *PacketHeader) DecodeAndConsume(buf *PacketBuffer) error {
 	}
 	h.mMessageFlags = buf.Read8()
 	h.mSecFlags = buf.Read8()
-	h.mSessionType = h.mSecFlags & 0x0003
+	h.mSessionType = TSessionType(h.mSecFlags & FSessionTypeMask)
 	h.mSessionFlags = buf.Read8()
 	h.mSessionId = buf.Read16()
 	h.mMessageCounter = buf.Read32()
 
-	if h.mMessageFlags&kSourceNodeIdPresent != 0 {
+	if h.mMessageFlags&FSourceNodeIdPresent != 0 {
 		h.mSourceNodeId = lib.NodeId(buf.Read64())
 	}
-	if h.mMessageFlags&kDestinationNodeIdPresent != 0 {
+	if h.mMessageFlags&FDestinationNodeIdPresent != 0 {
 		h.mDestinationNodeId = lib.NodeId(buf.Read64())
 		h.mDestinationGroupId = h.mDestinationNodeId.GetGroupId()
 	}

@@ -5,7 +5,6 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"github.com/galenliu/chip/pkg"
 	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
@@ -114,8 +113,8 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 		packetHeader.GetMessageCounter())
 
 	var msgFlags uint32 = 0
-	if isDuplicate == transport.DuplicateMessageYes {
-		msgFlags = msgFlags | pkg.KDuplicateMessage
+	if isDuplicate == transport.KDuplicateMessageYes {
+		msgFlags = lib.SetFlags(msgFlags, transport.FDuplicateMessage)
 	}
 
 	if !packetHeader.IsGroupSession() {

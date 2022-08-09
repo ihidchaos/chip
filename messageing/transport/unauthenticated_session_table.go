@@ -5,13 +5,25 @@ import (
 	"time"
 )
 
+type TSessionRole uint8
+
 const (
-	kSessionRoleInitiator uint8 = iota
-	kSessionRoleResponder
+	KInitiator TSessionRole = iota
+	KResponder
 )
+
+func (t TSessionRole) Uint8() uint8 {
+	return uint8(t)
+}
 
 type UnauthenticatedSessionTable struct {
 	mEntries []*UnauthenticatedSessionImpl
+}
+
+func NewUnauthenticatedSessionTable() *UnauthenticatedSessionTable {
+	return &UnauthenticatedSessionTable{
+		mEntries: make([]*UnauthenticatedSessionImpl, 0),
+	}
 }
 
 func (s *UnauthenticatedSessionImpl) SessionReleased() {
@@ -24,7 +36,7 @@ func (s *UnauthenticatedSessionImpl) DispatchSessionEvent(delegate SessionDelega
 	panic("implement me")
 }
 
-func (s UnauthenticatedSessionImpl) GetSessionRole() uint8 {
+func (s *UnauthenticatedSessionImpl) GetSessionRole() TSessionRole {
 	return s.mSessionRole
 }
 
@@ -37,25 +49,30 @@ func (s *UnauthenticatedSessionImpl) MarkActiveRx() {
 	s.MarkActive()
 }
 
-func (s UnauthenticatedSessionImpl) MarkActive() {
+func (s *UnauthenticatedSessionImpl) MarkActive() {
 	s.mLastActivityTime = time.Now()
 }
 
-func (s UnauthenticatedSessionImpl) GetPeerMessageCounter() PeerMessageCounter {
+func (s *UnauthenticatedSessionImpl) GetPeerMessageCounter() PeerMessageCounter {
 	return s.mPeerMessageCounter
 }
 
-func (t UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
-	result := t.FindEntry(kSessionRoleResponder, ephemeralInitiatorNodeID)
+func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
+	result := t.FindEntry(KResponder, ephemeralInitiatorNodeID)
 	if result != nil {
 		return result
 	}
-	entry := NewUnauthenticatedSessionImpl(kSessionRoleResponder, ephemeralInitiatorNodeID, config)
+	return t.AllocEntry(KResponder, ephemeralInitiatorNodeID, config)
+}
+
+func (t *UnauthenticatedSessionTable) AllocEntry(sessionRole TSessionRole, ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
+
+	entry := NewUnauthenticatedSessionImpl(sessionRole, ephemeralInitiatorNodeID, config)
 	t.mEntries = append(t.mEntries, entry)
 	return entry
 }
 
-func (t UnauthenticatedSessionTable) FindEntry(sessionRole uint8, ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
+func (t *UnauthenticatedSessionTable) FindEntry(sessionRole TSessionRole, ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
 	for _, entry := range t.mEntries {
 		if entry.GetSessionRole() == sessionRole && entry.GetEphemeralInitiatorNodeID() == ephemeralInitiatorNodeID {
 			return entry
@@ -64,8 +81,8 @@ func (t UnauthenticatedSessionTable) FindEntry(sessionRole uint8, ephemeralIniti
 	return nil
 }
 
-func (t UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
-	result := t.FindEntry(kSessionRoleInitiator, ephemeralInitiatorNodeID)
+func (t *UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
+	result := t.FindEntry(KInitiator, ephemeralInitiatorNodeID)
 	if result != nil {
 		return result
 	}
