@@ -5,14 +5,6 @@ import (
 	"time"
 )
 
-const (
-	kSessionTypeUndefined       uint8 = 0
-	kSessionTypeUnauthenticated uint8 = 1
-	kSessionTypeSecure          uint8 = 2
-	kSessionTypeGroupIncoming   uint8 = 3
-	kSessionTypeGroupOutgoing   uint8 = 4
-)
-
 type NewSessionHandlingPolicy uint8
 
 const (

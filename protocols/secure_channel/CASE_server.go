@@ -72,7 +72,7 @@ func (s *CASEServer) ListenForSessionEstablishment(
 }
 
 func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *lib.ScopedNodeId) {
-	log.Printf("CASE Server enabling CASE session setups")
+	log.Printf("K_CASE Server enabling K_CASE session setups")
 	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(protocols.StandardProtocolId, CASESigma1, s)
 	if err != nil {
 		log.Printf(err.Error())

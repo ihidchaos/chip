@@ -72,7 +72,7 @@ func (s *UnauthenticatedSessionImpl) IsGroupSession() bool {
 }
 
 func (s *UnauthenticatedSessionImpl) IsSecureSession() bool {
-	return s.GetSessionType() == kSessionTypeSecure
+	return s.GetSessionType() == kSecure.Uint8()
 }
 
 func (s *UnauthenticatedSessionImpl) ComputeRoundTripTimeout(duration time.Duration) time.Duration {
@@ -81,7 +81,7 @@ func (s *UnauthenticatedSessionImpl) ComputeRoundTripTimeout(duration time.Durat
 }
 
 func (s *UnauthenticatedSessionImpl) GetSessionType() uint8 {
-	return kSessionTypeUnauthenticated
+	return kUnauthenticated.Uint8()
 }
 
 func (s *UnauthenticatedSessionImpl) GetSessionTypeString() string {

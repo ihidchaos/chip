@@ -1,74 +1,79 @@
 package raw
 
 import (
+	"bytes"
 	"encoding/binary"
-	log "github.com/sirupsen/logrus"
 )
 
 type PacketBuffer struct {
-	Bytes   []byte
-	Payload int
-	Len     int
-	TotLen  int
+	data   []byte
+	buffer *bytes.Buffer
 }
 
 func NewPacketBuffer(data []byte) *PacketBuffer {
 	return &PacketBuffer{
-		Bytes:   data,
-		Payload: 0,
-		Len:     len(data),
-		TotLen:  len(data),
+		data:   data,
+		buffer: bytes.NewBuffer(data),
 	}
 }
 
-func (header *PacketBuffer) Read8() uint8 {
-	if header.TotLen < 1 {
-		log.Panic("Packet Buffer invalid")
+func (buf *PacketBuffer) Read8() (uint8, error) {
+	value, err := buf.buffer.ReadByte()
+	if err != nil {
+		return 0, err
 	}
-	value := header.Bytes[header.Payload]
-	header.ConsumeHead(1)
-	return value
+	return value, nil
 }
 
-func (header *PacketBuffer) Read16() uint16 {
+func (buf *PacketBuffer) Read16() (uint16, error) {
 	tSize := 2
-	if header.TotLen < tSize {
-		log.Panic("Packet Buffer invalid")
+	data := make([]byte, tSize)
+	_, err := buf.buffer.Read(data)
+	if err != nil {
+		return 0, err
 	}
-	value := binary.LittleEndian.Uint16(header.Bytes[header.Payload : header.Payload+tSize])
-	header.ConsumeHead(tSize)
-	return value
+	value := binary.LittleEndian.Uint16(data)
+	return value, nil
 }
 
-func (header *PacketBuffer) Read32() uint32 {
+func (buf *PacketBuffer) Read32() (uint32, error) {
 	tSize := 4
-	if header.TotLen < tSize {
-		log.Panic("Packet Buffer invalid")
+	data := make([]byte, tSize)
+	_, err := buf.buffer.Read(data)
+	if err != nil {
+		return 0, err
 	}
-	value := binary.LittleEndian.Uint32(header.Bytes[header.Payload : header.Payload+tSize])
-	header.ConsumeHead(tSize)
-	return value
+	value := binary.LittleEndian.Uint32(data)
+	return value, nil
 }
 
-func (header *PacketBuffer) Read64() uint64 {
+func (buf *PacketBuffer) Read64() (uint64, error) {
 	tSize := 8
-	if header.TotLen < tSize {
-		log.Panic("Packet Buffer invalid")
+	data := make([]byte, tSize)
+	_, err := buf.buffer.Read(data)
+	if err != nil {
+		return 0, err
 	}
-	value := binary.LittleEndian.Uint64(header.Bytes[header.Payload : header.Payload+tSize])
-	header.ConsumeHead(tSize)
-	return value
+	value := binary.LittleEndian.Uint64(data)
+	return value, nil
 }
 
-func (header *PacketBuffer) ConsumeHead(aConsumeLength int) {
-	if aConsumeLength > header.Len {
-		aConsumeLength = header.Len
+func (buf *PacketBuffer) ReadBytes(data []byte) error {
+	_, err := buf.buffer.Read(data)
+	if err != nil {
+		return err
 	}
-	header.Payload = header.Payload + aConsumeLength
-	header.Len = header.Len - aConsumeLength
-	header.TotLen = header.Len - aConsumeLength
+	return nil
 }
 
-func (header *PacketBuffer) IsNull() bool {
-	return header.Bytes == nil
+func (buf *PacketBuffer) IsNull() bool {
+	return buf.buffer.Len() == 0
+}
+
+func (buf *PacketBuffer) TotLength() int {
+	return len(buf.data)
+}
+
+func (buf *PacketBuffer) DataLength() uint16 {
+	return uint16(buf.buffer.Len())
 }

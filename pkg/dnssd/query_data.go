@@ -74,7 +74,7 @@ func (d QueryData) SendUnicast() bool {
 //	if validData.Size() < end {
 //		return false
 //	}
-//	data := validData.Bytes()[start:end]
+//	data := validData.data()[start:end]
 //	q.mType = validData.Get16At(start)
 //	return true
 //}

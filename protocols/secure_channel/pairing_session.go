@@ -26,7 +26,7 @@ type PairingSession interface {
 
 type PairingSessionImpl struct {
 	mRole              uint8
-	mSecureSessionType transport.TSecureSession
+	mSecureSessionType transport.TSecureSessionType
 
 	SessionManager       transport.SessionManager
 	mExchangeCtxt        messageing.ExchangeContext
@@ -90,7 +90,7 @@ func (p PairingSessionImpl) EncodeMRPParameters(tag lib.Tag, mrpLocalConfig *tra
 func NewPairingSessionImpl() *PairingSessionImpl {
 	return &PairingSessionImpl{
 		mRole:                0,
-		mSecureSessionType:   transport.CASE,
+		mSecureSessionType:   transport.K_CASE,
 		SessionManager:       nil,
 		mExchangeCtxt:        messageing.ExchangeContext{},
 		mSecureSessionHolder: nil,

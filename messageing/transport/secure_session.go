@@ -5,48 +5,27 @@ import (
 	"time"
 )
 
-type TSecureSession uint8
-
-const (
-	PASE TSecureSession = 1
-	CASE TSecureSession = 2
-)
-
-type TSecureState uint8
-
-const (
-	KEstablishing TSecureState = iota
-	KActive
-	KDefunct
-	KPendingEviction
-)
-
-func (t TSecureState) Str() string {
-	return [...]string{
-		"Establishing", "Active", "Defunct", "PendingEviction",
-	}[t]
-}
-
 type SecureSessionBase interface {
 	Session
 }
 
 type SecureSession struct {
 	*SessionBaseImpl
-	mState             TSecureState
+	mState             TSecureSessionState
 	mTable             *SecureSessionTable
-	mSecureSessionType TSecureSession
+	mSecureSessionType TSecureSessionType
 	mLocalSessionId    uint16
 	mPeerSessionId     uint16
 	mLocalNodeId       lib.NodeId
 	mPeerNodeId        lib.NodeId
 	mRemoteMRPConfig   *ReliableMessageProtocolConfig
+	mCryptoContext     *CryptoContext
 	mPeerCATs          *lib.CATValues
 }
 
 func NewSecureSession(
 	table *SecureSessionTable,
-	secureSessionType TSecureSession,
+	secureSessionType TSecureSessionType,
 	localSessionId uint16,
 ) *SecureSession {
 	return &SecureSession{
@@ -60,7 +39,7 @@ func NewSecureSession(
 
 func NewSecureSessionImplWithNodeId(
 	table *SecureSessionTable,
-	secureSessionType TSecureSession,
+	secureSessionType TSecureSessionType,
 	localSessionId uint16,
 	localNodeId lib.NodeId,
 	peerNodeId lib.NodeId,
@@ -100,7 +79,7 @@ func (s *SecureSession) IsActiveSession() bool {
 }
 
 func (s *SecureSession) GetSessionType() uint8 {
-	return kSessionTypeSecure
+	return uint8(kSecure)
 }
 
 func (s *SecureSession) GetSessionTypeString() string {
@@ -108,7 +87,7 @@ func (s *SecureSession) GetSessionTypeString() string {
 }
 
 func (s *SecureSession) IsGroupSession() bool {
-	return s.GetSessionType() == kSessionTypeSecure
+	return s.GetSessionType() == kSecure.Uint8()
 }
 
 func (s *SecureSession) IsEstablishing() bool {
@@ -116,7 +95,7 @@ func (s *SecureSession) IsEstablishing() bool {
 }
 
 func (s *SecureSession) IsSecureSession() bool {
-	return s.GetSessionType() == kSessionTypeSecure
+	return s.GetSessionType() == kSecure.Uint8()
 }
 
 func (s *SecureSession) DispatchSessionEvent(delegate SessionDelegate) {
@@ -158,4 +137,16 @@ func (s *SecureSession) IsPendingEviction() bool {
 
 func (s *SecureSession) GetStateStr() string {
 	return s.mState.Str()
+}
+
+func (s *SecureSession) GetSecureSessionType() TSecureSessionType {
+	return s.mSecureSessionType
+}
+
+func (s *SecureSession) GetCryptoContext() *CryptoContext {
+	return s.mCryptoContext
+}
+
+func (s *SecureSession) GetPeerNodeId() lib.NodeId {
+	return s.mPeerNodeId
 }

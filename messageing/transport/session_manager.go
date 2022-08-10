@@ -199,4 +199,9 @@ func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHead
 		log.Infof("Secure transport received message on a session in an invalid state (state = '%s')",
 			secureSession.GetStateStr())
 	}
+	var nodeId = lib.KUndefinedNodeId
+	if secureSession.GetSecureSessionType() == K_CASE {
+		nodeId = secureSession.GetPeerNodeId()
+	}
+
 }

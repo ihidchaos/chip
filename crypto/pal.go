@@ -8,6 +8,8 @@ const (
 	KSpake2pMaxPbkdfSaltLength        = 32
 
 	KSpake2pVerifierSerializedLength = kp256FeLength + kP256PointLength
+
+	ChipCryptoAeadMicLengthBytes uint16 = 16
 )
 
 type Spake2pVerifier struct {

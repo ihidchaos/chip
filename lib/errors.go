@@ -11,6 +11,7 @@ var (
 	ChipErrorDuplicateMessageReceived          = fmt.Errorf("CHIP_ERROR_DUPLICATE_MESSAGE_RECEIVED")
 	ChipErrorInvalidFabricIndex                = fmt.Errorf("CHIP_ERROR_INVALID_FABRIC_INDEX")
 	ChipErrorTooManyUnsolicitedMessageHandlers = fmt.Errorf("CHIP_ERROR_TOO_MANY_UNSOLICITED_MESSAGE_HANDLERS")
+	ChipErrorWrongEncryptionTypeFromPeer       = fmt.Errorf("CHIP_ERROR_WRONG_ENCRYPTION_TYPE_FROM_PEER")
 
 	ChipErrorNoUnsolicitedMessageHandler = fmt.Errorf("CHIP_ERROR_NO_UNSOLICITED_MESSAGE_HANDLER")
 )

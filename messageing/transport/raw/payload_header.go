@@ -84,20 +84,20 @@ func (header *PayloadHeader) DecodeAndConsume(data *PacketBuffer) error {
 }
 
 func (header *PayloadHeader) Decode(buf *PacketBuffer) error {
-	header.mExchangeFlags = buf.Read8()
-	header.mProtocolOpcode = buf.Read8()
-	header.mExchangeId = buf.Read16()
-	protocolId := buf.Read16()
+	header.mExchangeFlags, _ = buf.Read8()
+	header.mProtocolOpcode, _ = buf.Read8()
+	header.mExchangeId, _ = buf.Read16()
+	protocolId, _ := buf.Read16()
 	var vendorId = lib.KVidCommon
 	if header.HaveVendorId() {
-		vendorId = buf.Read16()
+		vendorId, _ = buf.Read16()
 	}
 	header.mProtocolId = protocols.Id{
 		VendorId:   vendorId,
 		ProtocolId: protocolId,
 	}
 	if header.IsAckMsg() {
-		header.mVendorId = buf.Read16()
+		header.mVendorId, _ = buf.Read16()
 	}
 	return nil
 }

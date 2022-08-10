@@ -1,6 +1,7 @@
 package raw
 
 import (
+	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 )
 
@@ -194,7 +195,7 @@ func (h *PacketHeader) IsEncrypted() bool {
 
 func (h *PacketHeader) MICTagLength() uint16 {
 	if h.IsEncrypted() {
-		return 16
+		return crypto.ChipCryptoAeadMicLengthBytes
 	}
 	return 0
 }
@@ -243,22 +244,30 @@ func (h *PacketHeader) SetUnsecured() {
 
 func (h *PacketHeader) DecodeAndConsume(buf *PacketBuffer) error {
 
-	if buf.Len < 36 {
+	if buf.DataLength() < 36 {
 		return lib.ChipErrorInvalidArgument
 	}
-	h.mMessageFlags = buf.Read8()
-	h.mSecFlags = buf.Read8()
+	h.mMessageFlags, _ = buf.Read8()
+	h.mSecFlags, _ = buf.Read8()
 	h.mSessionType = TSessionType(h.mSecFlags & FSessionTypeMask)
-	h.mSessionFlags = buf.Read8()
-	h.mSessionId = buf.Read16()
-	h.mMessageCounter = buf.Read32()
+	h.mSessionFlags, _ = buf.Read8()
+	h.mSessionId, _ = buf.Read16()
+	h.mMessageCounter, _ = buf.Read32()
 
-	if h.mMessageFlags&FSourceNodeIdPresent != 0 {
-		h.mSourceNodeId = lib.NodeId(buf.Read64())
+	if lib.HasFlags(h.mMessageFlags, FSourceNodeIdPresent) {
+		v, _ := buf.Read64()
+		h.mSourceNodeId = lib.NodeId(v)
 	}
-	if h.mMessageFlags&FDestinationNodeIdPresent != 0 {
-		h.mDestinationNodeId = lib.NodeId(buf.Read64())
-		h.mDestinationGroupId = h.mDestinationNodeId.GetGroupId()
+
+	if lib.HasFlags(h.mMessageFlags, FDestinationNodeIdPresent) {
+		v, _ := buf.Read64()
+		h.mDestinationNodeId = lib.NodeId(v)
+	}
+	if lib.HasFlags(h.mMessageFlags, FDestinationGroupIdPresent) {
+		v, _ := buf.Read16()
+		h.mDestinationGroupId = lib.GroupId(v)
+	} else {
+		h.mDestinationNodeId = lib.NodeId(h.GetDestinationNodeId().GetGroupId())
 	}
 	return nil
 }
