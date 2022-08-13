@@ -47,12 +47,11 @@ type CASESession struct {
 
 	mSessionResumptionStorage SessionResumptionStorage
 
-	mFabricsTable        *credentials.FabricTable
-	mFabricIndex         lib.FabricIndex
-	mPeerNodeId          lib.NodeId
-	mLocalNodeId         lib.NodeId
-	mPeerCATs            lib.CATValues
-	mSecureSessionHolder transport.SessionHolderWithDelegate
+	mFabricsTable *credentials.FabricTable
+	mFabricIndex  lib.FabricIndex
+	mPeerNodeId   lib.NodeId
+	mLocalNodeId  lib.NodeId
+	mPeerCATs     lib.CATValues
 
 	mInitiatorRandom []byte
 
@@ -64,8 +63,7 @@ type CASESession struct {
 
 func NewCASESession() *CASESession {
 	return &CASESession{
-		PairingSessionImpl:   NewPairingSessionImpl(),
-		mSecureSessionHolder: transport.NewSessionHolderWithDelegateImpl(),
+		PairingSessionImpl: NewPairingSessionImpl(),
 	}
 }
 

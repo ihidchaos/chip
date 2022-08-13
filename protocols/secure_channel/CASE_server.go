@@ -4,7 +4,7 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
-	transport2 "github.com/galenliu/chip/messageing/transport"
+	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
@@ -33,11 +33,11 @@ type CASEServer struct {
 	mSessionResumptionStorage  SessionResumptionStorage
 	mCertificateValidityPolicy credentials.CertificateValidityPolicy
 
-	mPinnedSecureSession transport2.SessionHandle
+	mPinnedSecureSession transport.SessionHandle
 
 	mPairingSession *CASESession
 
-	mSessionManager transport2.SessionManager
+	mSessionManager transport.SessionManager
 
 	mFabrics           *credentials.FabricTable
 	mGroupDataProvider credentials.GroupDataProvider
@@ -54,7 +54,7 @@ func NewCASEServer() *CASEServer {
 
 func (s *CASEServer) ListenForSessionEstablishment(
 	mgr messageing.ExchangeManager,
-	sessionManager transport2.SessionManager,
+	sessionManager transport.SessionManager,
 	fabrics *credentials.FabricTable,
 	storage lib.SessionResumptionStorage,
 	policy credentials.CertificateValidityPolicy,
@@ -72,7 +72,7 @@ func (s *CASEServer) ListenForSessionEstablishment(
 }
 
 func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *lib.ScopedNodeId) {
-	log.Printf("K_CASE Server enabling K_CASE session setups")
+	log.Printf("CASE Server enabling CASE session setups")
 	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(protocols.StandardProtocolId, uint8(messageing.CASESigma1), s)
 	if err != nil {
 		log.Printf(err.Error())
@@ -88,7 +88,7 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 		s.mCertificateValidityPolicy,
 		s,
 		previouslyEstablishedPeer,
-		transport2.GetLocalMRPConfig(),
+		transport.GetLocalMRPConfig(),
 	)
 	if err != nil {
 		log.Panic(err.Error())
@@ -101,11 +101,11 @@ func (s *CASEServer) InitCASEHandshake(ec *messageing.ExchangeContext) {
 }
 
 func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
-	//TODO implement me
-	panic("implement me")
+	delegate = s
+	return nil
 }
 
-func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header raw.PayloadHeader, data []byte) error {
+func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data []byte) error {
 	//TODO implement me
 	panic("implement me")
 }

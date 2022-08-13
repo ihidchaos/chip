@@ -17,21 +17,21 @@ const (
 const KAnyMessageType int16 = -1
 
 type UnsolicitedMessageHandlerSlot struct {
-	MessageType int16
-	Handler     UnsolicitedMessageHandler
-	ProtocolId  *protocols.Id
+	messageType int16
+	handler     UnsolicitedMessageHandler
+	protocolId  *protocols.Id
 }
 
 func (receiver *UnsolicitedMessageHandlerSlot) Matches(aProtocolId *protocols.Id, aMessageType int16) bool {
-	return aProtocolId == receiver.ProtocolId && aMessageType == receiver.MessageType
+	return aProtocolId == receiver.protocolId && aMessageType == receiver.messageType
 }
 
 func (receiver *UnsolicitedMessageHandlerSlot) Reset() {
-	receiver.Handler = nil
+	receiver.handler = nil
 }
 
 func (receiver *UnsolicitedMessageHandlerSlot) IsInUse() bool {
-	return receiver.Handler != nil
+	return receiver.handler != nil
 }
 
 // ExchangeManager
@@ -74,7 +74,7 @@ func (e *ExchangeManagerImpl) Init(sessionManager transport.SessionManager) erro
 	e.UMHandlerPool = [config.ChipConfigMaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot{}
 
 	for _, handler := range e.UMHandlerPool {
-		if handler.Handler != nil {
+		if handler.handler != nil {
 			handler.Reset()
 		}
 	}
@@ -136,11 +136,11 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 		matchingUMH = nil
 
 		for _, umh := range e.UMHandlerPool {
-			if umh.IsInUse() && payloadHeader.HasProtocol(umh.ProtocolId) {
+			if umh.IsInUse() && payloadHeader.HasProtocol(umh.protocolId) {
 				matchingUMH = &umh
 				break
 			}
-			if umh.MessageType == KAnyMessageType {
+			if umh.messageType == KAnyMessageType {
 				matchingUMH = &umh
 			}
 		}
@@ -150,7 +150,7 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 	}
 	if matchingUMH != nil {
 		var delegate ExchangeDelegate = nil
-		err := matchingUMH.Handler.OnUnsolicitedMessageReceived(payloadHeader, delegate)
+		err := matchingUMH.handler.OnUnsolicitedMessageReceived(payloadHeader, delegate)
 		if err != nil {
 			log.Infof("OnMessageReceived failed, err = %s", err.Error())
 			e.SendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags, buf)
@@ -159,7 +159,7 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 		var ec = e.mContextPool.Create(e, payloadHeader.GetExchangeID(), session, false, delegate, false)
 		if ec == nil {
 			if delegate == nil {
-				matchingUMH.Handler.OnExchangeCreationFailed(delegate)
+				matchingUMH.handler.OnExchangeCreationFailed(delegate)
 			}
 			log.Infof("OnMessageReceived failed, err = %s", err.Error())
 			return
@@ -195,9 +195,7 @@ func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(
 	msgType uint8,
 	handler UnsolicitedMessageHandler,
 ) error {
-
 	return e.RegisterUMH(protocolId, int16(msgType), handler)
-
 }
 
 func (e *ExchangeManagerImpl) RegisterUMH(id *protocols.Id, msgType int16, handle UnsolicitedMessageHandler) error {
@@ -209,16 +207,16 @@ func (e *ExchangeManagerImpl) RegisterUMH(id *protocols.Id, msgType int16, handl
 				selected = &umh
 			}
 		} else if umh.Matches(id, msgType) {
-			umh.Handler = handle
+			umh.handler = handle
 			return nil
 		}
 	}
 	if selected == nil {
 		return lib.ChipErrorTooManyUnsolicitedMessageHandlers
 	}
-	selected.Handler = handle
-	selected.ProtocolId = id
-	selected.MessageType = msgType
+	selected.handler = handle
+	selected.protocolId = id
+	selected.messageType = msgType
 	return nil
 }
 
