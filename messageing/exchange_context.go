@@ -1,6 +1,7 @@
 package messageing
 
 import (
+	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 )
@@ -10,23 +11,49 @@ type ExchangeSessionHolder interface {
 	transport.SessionHolder
 }
 
+type ExchangeSessionHolderImpl struct {
+	*transport.SessionHolderWithDelegateImpl
+}
+
+func NewExchangeSessionHolderImpl(delegate *ExchangeContext) *ExchangeSessionHolderImpl {
+	return &ExchangeSessionHolderImpl{
+		SessionHolderWithDelegateImpl: transport.NewSessionHolderWithDelegateImpl(delegate),
+	}
+}
+
 type ExchangeContext struct {
 	ReliableMessageContext
-	mExchangeId uint16
-	mDispatch   ExchangeMessageDispatch
-	mSession    ExchangeSessionHolder
-	mDelegate   ExchangeDelegate
+	mExchangeId  uint16
+	mExchangeMgr ExchangeManager
+	mDispatch    ExchangeMessageDispatch
+	mSession     *ExchangeSessionHolderImpl
+	mDelegate    ExchangeDelegate
+	mFlags       uint16
 }
 
 func NewExchangeContext(
-	ec ExchangeManager,
+	em ExchangeManager,
 	exchangeId uint16,
 	session transport.SessionHandle,
 	initiator bool,
 	delegate ExchangeDelegate,
 	isEphemeralExchange bool,
 ) *ExchangeContext {
-	return &ExchangeContext{}
+	var flags uint16 = 0
+	flags = lib.SetFlag(initiator, flags, kFlagInitiator)
+	flags = lib.SetFlag(isEphemeralExchange, flags, kFlagEphemeralExchange)
+	ec := &ExchangeContext{
+		ReliableMessageContext: ReliableMessageContext{},
+		mExchangeId:            exchangeId,
+		mExchangeMgr:           em,
+		mDispatch:              ExchangeMessageDispatch{},
+		mDelegate:              delegate,
+		mFlags:                 flags,
+	}
+	ec.mSession = NewExchangeSessionHolderImpl(ec)
+	ec.mSession.SessionHolderWithDelegateImpl.Grad(session)
+
+	return ec
 }
 
 func (c *ExchangeContext) MatchExchange(session transport.SessionHandle, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
@@ -36,7 +63,7 @@ func (c *ExchangeContext) MatchExchange(session transport.SessionHandle, packetH
 		(payloadHeader.IsInitiator() != c.IsInitiator())
 }
 
-func (c *ExchangeContext) HandleMessage(counter uint32, header *raw.PayloadHeader, flags uint32, buf *raw.PacketBuffer) error {
+func (c *ExchangeContext) HandleMessage(counter uint32, header *raw.PayloadHeader, flags uint32, buf *lib.PacketBuffer) error {
 	return nil
 }
 

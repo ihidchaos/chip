@@ -21,13 +21,14 @@ type SessionBase interface {
 	SetFabricIndex(index lib.FabricIndex)
 	GetFabricIndex() lib.FabricIndex
 	NotifySessionReleased()
+	DispatchSessionEvent(delegate SessionDelegate)
 }
 
 type Session interface {
+	SessionBase
 	GetSessionType() uint8
 	GetSessionTypeString() string
-
-	NotifySessionReleased()
+	AddHolder(s SessionHolder)
 
 	//NotifySessionReleased()
 
@@ -39,7 +40,6 @@ type Session interface {
 	IsSecureSession() bool
 	IsEstablishing() bool
 
-	DispatchSessionEvent(delegate SessionDelegate)
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
 
 	SessionReleased()
@@ -81,6 +81,12 @@ func (s *SessionBaseImpl) NotifySessionReleased() {
 
 func (s *SessionBaseImpl) SetFabricIndex(index lib.FabricIndex) {
 	s.mFabricIndex = index
+}
+
+func (s *SessionBaseImpl) DispatchSessionEvent(event SessionDelegate) {
+	for _, holder := range s.mHolders {
+		holder.DispatchSessionEvent(event)
+	}
 }
 
 func (s *SessionBaseImpl) AddHolder(holder SessionHolder) {

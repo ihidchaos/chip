@@ -2,12 +2,16 @@ package storage
 
 import (
 	"fmt"
+	"github.com/spf13/cast"
 	"strconv"
 	"sync"
 )
 
 type ChipStorage interface {
 	Init(mConfigPath string) error
+
+	WriteValue(key string, val any) error
+
 	ReadValueUint64(key string) (uint64, error)
 	WriteValueUint64(string, uint64) error
 
@@ -75,6 +79,45 @@ func (s *ChipStorageImpl) ReadValueInt(key string) (int64, error) {
 	value, err := s.storage.readUint64Value(key)
 	return int64(value), err
 
+}
+
+func (s *ChipStorageImpl) WriteValue(k string, v any) error {
+	switch v.(type) {
+	case int, int8, int16, int32, int64:
+		val := cast.ToInt64(v)
+		err := s.storage.addEntry(k, strconv.FormatInt(val, 10))
+		if err != nil {
+			return err
+		}
+	case uint, uint8, uint16, uint32, uint64:
+		val := cast.ToUint64(v)
+		err := s.storage.addEntry(k, strconv.FormatUint(val, 10))
+		if err != nil {
+			return err
+		}
+	case bool:
+		val := cast.ToBool(v)
+		err := s.storage.addEntry(k, strconv.FormatBool(val))
+		if err != nil {
+			return err
+		}
+	case string:
+		val := cast.ToString(v)
+		err := s.storage.addEntry(k, val)
+		if err != nil {
+			return err
+		}
+	case []byte:
+		val, _ := v.([]byte)
+		err := s.storage.addEntry(k, string(val))
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("type err")
+	}
+	s.mDirty = true
+	return s.commit()
 }
 
 func (s *ChipStorageImpl) WriteValueInt(k string, v int64) error {

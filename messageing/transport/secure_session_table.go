@@ -8,13 +8,17 @@ type SecureSessionTable struct {
 }
 
 func NewSecureSessionTable() *SecureSessionTable {
-	return &SecureSessionTable{}
+	return &SecureSessionTable{
+		mNextSessionId: 0,
+		mEntries:       make([]*SecureSession, 0),
+	}
 }
 
 func (t *SecureSessionTable) Init() {
 	t.mNextSessionId = uint16(rand.Uint32())
 }
 
+// FindSecureSessionByLocalKey 遍历所有的SecureSession,如果SessionId相同,则取出来
 func (t *SecureSessionTable) FindSecureSessionByLocalKey(id uint16) *SecureSession {
 	for _, e := range t.mEntries {
 		if e.GetLocalSessionId() == id {

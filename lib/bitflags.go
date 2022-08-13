@@ -20,3 +20,10 @@ func SetFlags[T Uint](value T, flags ...T) T {
 	}
 	return value
 }
+
+func SetFlag[T Uint](isSet bool, value T, flag T) T {
+	if isSet {
+		value = SetFlags(value, flag)
+	}
+	return value
+}

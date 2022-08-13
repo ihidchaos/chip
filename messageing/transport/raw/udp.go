@@ -1,6 +1,7 @@
 package raw
 
 import (
+	"github.com/galenliu/chip/lib"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
@@ -87,17 +88,17 @@ func (p *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 	if data == nil {
 		return
 	}
-	packetBuffer := NewPacketBuffer(data)
+	packetBuffer := lib.NewPacketBuffer(data)
 	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
 	srcAddrPort := netip.AddrPortFrom(srcAddr, port)
 	p.OnUdpReceive(srcAddrPort, packetBuffer)
 }
 
-func (p *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *PacketBuffer) {
+func (p *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *lib.PacketBuffer) {
 	p.HandleMessageReceived(srcAddr, data)
 }
 
-func (b *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *PacketBuffer) {
+func (b *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *lib.PacketBuffer) {
 	b.mDelegate.HandleMessageReceived(addrPort, data)
 }
 

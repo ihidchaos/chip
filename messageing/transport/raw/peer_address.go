@@ -22,9 +22,9 @@ func Multicast(id lib.FabricId, gid lib.GroupId) netip.Addr {
 	var lReserved uint8 = 0x0
 	var prefixLength uint8 = 0x40
 
-	var prefix uint64 = 0xfd00000000000000 | (uint64(id) >> 8 & 0x00ffffffffffffff)
+	var prefix = 0xfd00000000000000 | (uint64(id) >> 8 & 0x00ffffffffffffff)
 
-	var groupId uint32 = ((uint32(id) << 24) & 0xff000000) | uint32(gid)
+	var groupId = ((uint32(id) << 24) & 0xff000000) | uint32(gid)
 
 	ipV6 := netip.AddrFrom16([16]byte{
 		0xFF, lFlagsAndScope, lReserved, prefixLength,

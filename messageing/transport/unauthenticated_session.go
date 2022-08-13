@@ -18,7 +18,7 @@ type UnauthenticatedSessionImpl struct {
 	mLastActivityTime         time.Time
 	mLastPeerActivityTime     time.Time
 	mRemoteMRPConfig          *ReliableMessageProtocolConfig
-	mPeerMessageCounter       PeerMessageCounter
+	mPeerMessageCounter       *PeerMessageCounter
 }
 
 func NewUnauthenticatedSessionImpl(roleResponder TSessionRole, id lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
@@ -28,7 +28,7 @@ func NewUnauthenticatedSessionImpl(roleResponder TSessionRole, id lib.NodeId, co
 		mEphemeralInitiatorNodeId: id,
 		mPeerAddress:              netip.AddrPort{},
 		mRemoteMRPConfig:          config,
-		mPeerMessageCounter:       PeerMessageCounter{},
+		mPeerMessageCounter:       NewPeerMessageCounter(),
 	}
 }
 
@@ -86,4 +86,8 @@ func (s *UnauthenticatedSessionImpl) GetSessionType() uint8 {
 
 func (s *UnauthenticatedSessionImpl) GetSessionTypeString() string {
 	return "unauthenticated"
+}
+
+func (s *UnauthenticatedSessionImpl) GetLastActivityTime() time.Time {
+	return s.mLastActivityTime
 }

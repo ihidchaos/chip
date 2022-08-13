@@ -19,47 +19,59 @@ func NewSessionHolderImpl() *SessionHolderImpl {
 	return &SessionHolderImpl{}
 }
 
+type SessionHolderWithDelegateImpl struct {
+	*SessionHolderImpl
+	mDelegate SessionDelegate
+}
+
 type SessionHolderWithDelegate interface {
 	SessionHolder
 }
 
-func NewSessionHolderWithDelegateImpl() *SessionHolderWithDelegateImpl {
-	return &SessionHolderWithDelegateImpl{}
+func NewSessionHolderWithDelegateImpl(delegate SessionDelegate) *SessionHolderWithDelegateImpl {
+	return &SessionHolderWithDelegateImpl{
+		SessionHolderImpl: NewSessionHolderImpl(),
+		mDelegate:         delegate,
+	}
 }
 
-type SessionHolderWithDelegateImpl struct {
-}
-
-func (s SessionHolderWithDelegateImpl) SessionReleased() {
+func (s *SessionHolderWithDelegateImpl) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s SessionHolderWithDelegateImpl) ShiftToSession(session SessionHandle) {
+func (s *SessionHolderWithDelegateImpl) ShiftToSession(session SessionHandle) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s SessionHolderWithDelegateImpl) GrabPairingSession(session SessionHandle) {
+func (s *SessionHolderWithDelegateImpl) GrabPairingSession(session SessionHandle) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s SessionHolderWithDelegateImpl) Release() {
+func (s *SessionHolderWithDelegateImpl) Release() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s SessionHolderWithDelegateImpl) Get() SessionHandle {
+func (s *SessionHolderWithDelegateImpl) Get() SessionHandle {
 	return nil
 }
 
-func (s SessionHolderWithDelegateImpl) DispatchSessionEvent(delegate SessionDelegate) {
+func (s *SessionHolderWithDelegateImpl) DispatchSessionEvent(delegate SessionDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s SessionHolderWithDelegateImpl) Contains(session SessionHandle) bool {
-	//TODO implement me
-	panic("implement me")
+func (s *SessionHolderWithDelegateImpl) Grad(session SessionHandle) bool {
+	if !session.IsActiveSession() {
+		return false
+	}
+	session.AddHolder(s)
+	return true
+}
+
+func (s *SessionHolderImpl) Contains(session SessionHandle) bool {
+	return s.mSession != nil && session == s.mSession
 }

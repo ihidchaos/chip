@@ -19,17 +19,18 @@ type MessageAuthenticationCode struct {
 	mTag       []byte
 }
 
-func (c MessageAuthenticationCode) Decode(header *PacketHeader, msg *PacketBuffer, size uint16) error {
+func (c *MessageAuthenticationCode) Decode(header *PacketHeader, msg *lib.PacketBuffer, size uint16) error {
 	tagLen := header.MICTagLength()
-
 	if tagLen == 0 {
 		return lib.ChipErrorWrongEncryptionTypeFromPeer
 	}
 	if size < tagLen {
 		return lib.ChipErrorInvalidArgument
 	}
-	buf := make([]byte, tagLen)
-	err := msg.ReadBytes(buf)
-	c.mTag = buf
-	return err
+	c.mTag = msg.GetData()[msg.TotLength()-int(tagLen) : msg.DataLength()]
+	return nil
+}
+
+func (c *MessageAuthenticationCode) GetTag() []byte {
+	return c.mTag
 }

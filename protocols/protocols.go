@@ -8,7 +8,7 @@ type Id struct {
 }
 
 var StandardProtocolId = &Id{
-	VendorId:   lib.VidUnspecified,
+	VendorId:   lib.KVidCommon,
 	ProtocolId: 0xFFFF,
 }
 

@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
 	"time"
 )
@@ -18,11 +19,13 @@ func (t TSessionRole) Uint8() uint8 {
 
 type UnauthenticatedSessionTable struct {
 	mEntries []*UnauthenticatedSessionImpl
+	mMaxSize int
 }
 
 func NewUnauthenticatedSessionTable() *UnauthenticatedSessionTable {
 	return &UnauthenticatedSessionTable{
 		mEntries: make([]*UnauthenticatedSessionImpl, 0),
+		mMaxSize: config.ChipConfigSecureSessionPoolSize,
 	}
 }
 
@@ -53,7 +56,7 @@ func (s *UnauthenticatedSessionImpl) MarkActive() {
 	s.mLastActivityTime = time.Now()
 }
 
-func (s *UnauthenticatedSessionImpl) GetPeerMessageCounter() PeerMessageCounter {
+func (s *UnauthenticatedSessionImpl) GetPeerMessageCounter() *PeerMessageCounter {
 	return s.mPeerMessageCounter
 }
 
@@ -66,10 +69,11 @@ func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiator
 }
 
 func (t *UnauthenticatedSessionTable) AllocEntry(sessionRole TSessionRole, ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
-
 	entry := NewUnauthenticatedSessionImpl(sessionRole, ephemeralInitiatorNodeID, config)
-	t.mEntries = append(t.mEntries, entry)
-	return entry
+	if len(t.mEntries) < t.mMaxSize {
+		t.mEntries = append(t.mEntries, entry)
+	}
+	return t.FindLeastRecentUsedEntry(entry)
 }
 
 func (t *UnauthenticatedSessionTable) FindEntry(sessionRole TSessionRole, ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
@@ -83,8 +87,22 @@ func (t *UnauthenticatedSessionTable) FindEntry(sessionRole TSessionRole, epheme
 
 func (t *UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSessionImpl {
 	result := t.FindEntry(KInitiator, ephemeralInitiatorNodeID)
-	if result != nil {
-		return result
+	return result
+}
+
+func (t *UnauthenticatedSessionTable) FindLeastRecentUsedEntry(entry *UnauthenticatedSessionImpl) *UnauthenticatedSessionImpl {
+	var oldTime time.Time
+	var result *UnauthenticatedSessionImpl
+	for _, e := range t.mEntries {
+		if oldTime.IsZero() {
+			result = e
+			oldTime = e.GetLastActivityTime()
+		}
+		if e.GetLastActivityTime().After(oldTime) {
+			oldTime = e.GetLastActivityTime()
+			result = e
+		}
 	}
-	return nil
+	result = entry
+	return result
 }

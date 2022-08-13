@@ -4,7 +4,7 @@ type GroupId uint16
 
 // 0xFF00-0xFFFC Reserved for future use
 const (
-	kUndefinedGroupId    GroupId = 0
+	KUndefinedGroupId    GroupId = 0x0000
 	KMinUniversalGroupId GroupId = 0x8000
 	KMaxUniversalGroupId GroupId = 0xFFFF
 
@@ -19,7 +19,7 @@ const (
 )
 
 func (i GroupId) IsOperationalGroupId() bool {
-	return i != kUndefinedGroupId && (i < KMinUniversalGroupIdReserved || i > KMaxUniversalGroupIdReserved)
+	return i != KUndefinedGroupId && (i < KMinUniversalGroupIdReserved || i > KMaxUniversalGroupIdReserved)
 }
 
 func (i GroupId) IsFabricGroupId() bool {
@@ -31,5 +31,9 @@ func (i GroupId) IsUniversalGroupId() bool {
 }
 
 func (i GroupId) IsValidGroupId() bool {
-	return i != kUndefinedGroupId
+	return i != KUndefinedGroupId
+}
+
+func (i GroupId) HasValue() bool {
+	return i != KUndefinedGroupId
 }

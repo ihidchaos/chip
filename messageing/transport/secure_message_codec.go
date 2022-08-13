@@ -5,7 +5,7 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 )
 
-func Decrypt(context *CryptoContext, payloadHeader *raw.PayloadHeader, packetHeader *raw.PacketHeader, msg *raw.PacketBuffer) error {
+func Decrypt(context *CryptoContext, nonce []byte, packetHeader *raw.PacketHeader, msg *lib.PacketBuffer) error {
 
 	if msg.IsNull() {
 		return lib.ChipErrorInvalidArgument
@@ -14,12 +14,10 @@ func Decrypt(context *CryptoContext, payloadHeader *raw.PayloadHeader, packetHea
 	if footerLen >= msg.DataLength() {
 		return lib.ChipErrorInvalidArgument
 	}
-
 	mac := raw.NewMessageAuthenticationCode()
 	err := mac.Decode(packetHeader, msg, footerLen)
 	if err != nil {
 		return err
 	}
-	context.Decrypt()
 	return nil
 }

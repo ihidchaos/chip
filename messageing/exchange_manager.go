@@ -104,7 +104,7 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 	payloadHeader *raw.PayloadHeader,
 	session transport.SessionHandle,
 	isDuplicate uint8,
-	buf *raw.PacketBuffer,
+	buf *lib.PacketBuffer,
 ) {
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 	log.Infof("Received message of type %d with protocolId %d"+
@@ -113,9 +113,7 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 		packetHeader.GetMessageCounter())
 
 	var msgFlags uint32 = 0
-	if isDuplicate == transport.KDuplicateMessageYes {
-		msgFlags = lib.SetFlags(msgFlags, transport.FDuplicateMessage)
-	}
+	msgFlags = lib.SetFlag(isDuplicate == transport.KDuplicateMessageYes, msgFlags, transport.FDuplicateMessage)
 
 	if !packetHeader.IsGroupSession() {
 		ec := e.mContextPool.MatchExchange(session, packetHeader, payloadHeader)
@@ -238,7 +236,7 @@ func (e *ExchangeManagerImpl) SendStandaloneAckIfNeeded(
 	payloadHeader *raw.PayloadHeader,
 	session transport.SessionHandle,
 	msgFlag uint32,
-	buf *raw.PacketBuffer,
+	buf *lib.PacketBuffer,
 ) {
 
 }

@@ -1,6 +1,6 @@
 package lib
 
-type VendorId = uint16
+type VendorId uint16
 
 const (
 	KVidCommon     VendorId = 0x0000

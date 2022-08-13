@@ -14,7 +14,7 @@ import (
 
 // GenerateEccKey 生成Ecc秘钥对，P256
 func GenerateEccKey(privateKeyFile, publicKeyFile string) error {
-	//使用ecdsa生成密钥对
+	//使用ecdsa生成密钥对'
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return err

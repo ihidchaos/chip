@@ -10,7 +10,7 @@ import (
 )
 
 type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, buf *raw.PacketBuffer)
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, buf *lib.PacketBuffer)
 }
 
 const (
@@ -30,11 +30,11 @@ type SessionManager interface {
 	credentials.FabricTableDelegate
 	TransportManagerDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
-	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
+	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer)
 	// SecureUnicastMessageDispatch  handle the unsecure messages
-	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
+	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer)
 	// UnauthenticatedMessageDispatch handle the unauthenticated(未经认证的) messages
-	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
+	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer)
 
 	SetMessageDelegate(SessionMessageDelegate)
 }
@@ -89,7 +89,7 @@ func (s *SessionManagerImpl) Init(transportMgr TransportManagerBase, counter Mes
 	return err
 }
 
-func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *raw.PacketBuffer) {
+func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *lib.PacketBuffer) {
 	packetHeader := raw.NewPacketHeader()
 	err := packetHeader.DecodeAndConsume(buf)
 	if err != nil {
@@ -108,23 +108,29 @@ func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *raw.
 }
 
 // UnauthenticatedMessageDispatch 处理没有加密码的消息
-func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
+func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer) {
 
 	source := header.GetSourceNodeId()
 	destination := header.GetDestinationNodeId()
-	if (source == lib.KUndefinedNodeId && destination == lib.KUndefinedNodeId) || (source != lib.KUndefinedNodeId && destination != lib.KUndefinedNodeId) {
+
+	if (source.HasValue() && destination.HasValue()) || (!source.HasValue() && !destination.HasValue()) {
 		log.Infof("received malformed unsecure packet with source %d destination %d", source, destination)
-		return // ephemeral node id is only assigned to the initiator, there sho
+		return
+		//ephemeral node id is only assigned to the initiator, there should be one and only one node id exists.
 	}
 
 	var unsecuredSession *UnauthenticatedSessionImpl
 	if source.HasValue() {
+		// Assume peer is the initiator, we are the responder.
+		// 对方是发起人，我们是响应者
 		unsecuredSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, GetLocalMRPConfig())
 		if unsecuredSession == nil {
-			log.Infof("UnauthenticatedSessionImpl exhausted")
+			log.Infof("UnauthenticatedSession exhausted")
 			return
 		}
 	} else {
+		// Assume peer is the responder, we are the initiator.
+		// 对方为响应，我们是发起人
 		unsecuredSession = s.mUnauthenticatedSessions.FindInitiator(destination)
 		if unsecuredSession == nil {
 			log.Infof("Received unknown unsecure packet for initiator %d", destination)
@@ -134,17 +140,18 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 
 	unsecuredSession.SetPeerAddress(addr)
 	isDuplicate := KDuplicateMessageNo
-
+	// 更新Session新鲜度
 	unsecuredSession.MarkActiveRx()
 
 	var payloadHeader = raw.NewPayloadHeader()
 	err := payloadHeader.DecodeAndConsume(buf)
 	if err != nil {
+		log.Warnf("Received invaild packet")
 		return
 	}
 
 	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
-	if err != nil {
+	if err != nil && err == lib.ChipErrorDuplicateMessageReceived {
 		isDuplicate = KDuplicateMessageYes
 		log.Infof(
 			"Received a duplicate message with MessageCounter: %v on exchange %v",
@@ -178,14 +185,14 @@ func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, inde
 }
 
 // SecureGroupMessageDispatch 处理加密的组播消息
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
+func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *lib.PacketBuffer) {
 
 }
 
 // SecureUnicastMessageDispatch 处理分支，加密的单播消息
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
+func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *lib.PacketBuffer) {
 	secureSession := s.mSecureSessions.FindSecureSessionByLocalKey(header.GetSessionId())
-	isDuplicate := KDuplicateMessageNo
+	_ = KDuplicateMessageNo
 	if msg.IsNull() {
 		log.Infof("Secure transport received Unicast NULL packet, discarding")
 		return
@@ -203,5 +210,6 @@ func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHead
 	if secureSession.GetSecureSessionType() == K_CASE {
 		nodeId = secureSession.GetPeerNodeId()
 	}
-
+	nonce, _ := BuildNonce(header.GetSecurityFlags(), header.GetMessageCounter(), nodeId)
+	_ = Decrypt(secureSession.GetCryptoContext(), nonce, header, msg)
 }

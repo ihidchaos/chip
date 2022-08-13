@@ -5,18 +5,18 @@ import (
 	"github.com/galenliu/chip/protocols"
 )
 
-type TExchangeFlag = uint8
-
 const (
-	FInitiator TExchangeFlag = 0b1
+	FInitiator uint8 = 0b1
 	// FAckMsg / Set when current message is an acknowledgment for a previously received message.
-	FAckMsg TExchangeFlag = 0b10
+	FAckMsg uint8 = 0b10
 	// FNeedsAck / Set when current message is requesting an acknowledgment from the recipient.
-	FNeedsAck TExchangeFlag = 0b100
+	FNeedsAck uint8 = 0b100
+
 	// FSecuredExtension / Secured Extension block is present.
-	FSecuredExtension TExchangeFlag = 0b1000
+	//FSecuredExtension uint8 = 0b1000
+
 	// FVendorIdPresent / Set when a vendor id is prepended to the Message Protocol Id field.
-	FVendorIdPresent TExchangeFlag = 0b10000
+	FVendorIdPresent uint8 = 0b10000
 )
 
 /**********************************************
@@ -45,13 +45,13 @@ const (
 
 type PayloadHeader struct {
 	mExchangeFlags     uint8
+	mProtocolOpcode    uint8
 	mExchangeId        uint16
 	mProtocolId        protocols.Id
-	mVendorId          uint16
+	mVendorId          lib.VendorId
 	mAckMessageCounter uint32
-	mSize              uint8
-	mProtocolOpcode    uint8
-	mMessageType       uint8
+
+	mMessageType uint8
 }
 
 func NewPayloadHeader() *PayloadHeader {
@@ -79,27 +79,8 @@ func (header *PayloadHeader) HaveVendorId() bool {
 	return lib.HasFlags(header.mExchangeFlags, FVendorIdPresent)
 }
 
-func (header *PayloadHeader) DecodeAndConsume(data *PacketBuffer) error {
+func (header *PayloadHeader) DecodeAndConsume(data *lib.PacketBuffer) error {
 	return header.Decode(data)
-}
-
-func (header *PayloadHeader) Decode(buf *PacketBuffer) error {
-	header.mExchangeFlags, _ = buf.Read8()
-	header.mProtocolOpcode, _ = buf.Read8()
-	header.mExchangeId, _ = buf.Read16()
-	protocolId, _ := buf.Read16()
-	var vendorId = lib.KVidCommon
-	if header.HaveVendorId() {
-		vendorId, _ = buf.Read16()
-	}
-	header.mProtocolId = protocols.Id{
-		VendorId:   vendorId,
-		ProtocolId: protocolId,
-	}
-	if header.IsAckMsg() {
-		header.mVendorId, _ = buf.Read16()
-	}
-	return nil
 }
 
 func (header *PayloadHeader) GetProtocolID() protocols.Id {
@@ -116,4 +97,35 @@ func (header *PayloadHeader) GetExchangeID() uint16 {
 
 func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
 	return header.mProtocolId.Equal(id)
+}
+
+func (header *PayloadHeader) Decode(buf *lib.PacketBuffer) error {
+	var err error
+	header.mExchangeFlags, err = buf.Read8()
+	header.mProtocolOpcode, err = buf.Read8()
+	header.mExchangeId, err = buf.Read16()
+	protocolId, err := buf.Read16()
+	if err != nil {
+		return err
+	}
+	var vendorId = lib.KVidCommon
+	if header.HaveVendorId() {
+		vid, err := buf.Read16()
+		if err != nil {
+			return err
+		}
+		vendorId = lib.VendorId(vid)
+	}
+	header.mProtocolId = protocols.Id{
+		VendorId:   vendorId,
+		ProtocolId: protocolId,
+	}
+	if header.IsAckMsg() {
+		ackCounter, err := buf.Read32()
+		if err != nil {
+			return err
+		}
+		header.mAckMessageCounter = ackCounter
+	}
+	return nil
 }
