@@ -131,8 +131,10 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 		return
 	}
 
-	if lib.HasFlags(msgFlags, transport.FDuplicateMessage) && payloadHeader.IsInitiator() {
+	//如果不是重复的消息，而且如果消息是对方发起
+	if !lib.HasFlags(msgFlags, transport.FDuplicateMessage) && payloadHeader.IsInitiator() {
 		matchingUMH = nil
+
 		for _, umh := range e.UMHandlerPool {
 			if umh.IsInUse() && payloadHeader.HasProtocol(umh.ProtocolId) {
 				matchingUMH = &umh
@@ -144,7 +146,6 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 		}
 	} else if !payloadHeader.NeedsAck() {
 		log.Infof("OnMessageReceived failed")
-
 		return
 	}
 	if matchingUMH != nil {

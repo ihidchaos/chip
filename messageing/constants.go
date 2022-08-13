@@ -1,4 +1,4 @@
-package secure_channel
+package messageing
 
 // Opcode Password-based session establishment Message Types
 // Protocol Opcode

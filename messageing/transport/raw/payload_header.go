@@ -50,8 +50,6 @@ type PayloadHeader struct {
 	mProtocolId        protocols.Id
 	mVendorId          lib.VendorId
 	mAckMessageCounter uint32
-
-	mMessageType uint8
 }
 
 func NewPayloadHeader() *PayloadHeader {
@@ -64,7 +62,7 @@ func (header *PayloadHeader) IsInitiator() bool {
 }
 
 func (header *PayloadHeader) HasMessageType(t uint8) bool {
-	return header.mMessageType == t
+	return header.mProtocolOpcode == t
 }
 
 func (header *PayloadHeader) IsAckMsg() bool {
@@ -88,7 +86,7 @@ func (header *PayloadHeader) GetProtocolID() protocols.Id {
 }
 
 func (header *PayloadHeader) GetMessageType() uint8 {
-	return header.mMessageType
+	return header.mProtocolOpcode
 }
 
 func (header *PayloadHeader) GetExchangeID() uint16 {
@@ -101,16 +99,16 @@ func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
 
 func (header *PayloadHeader) Decode(buf *lib.PacketBuffer) error {
 	var err error
-	header.mExchangeFlags, err = buf.Read8()
-	header.mProtocolOpcode, err = buf.Read8()
-	header.mExchangeId, err = buf.Read16()
-	protocolId, err := buf.Read16()
+	header.mExchangeFlags, err = lib.Read8(buf)
+	header.mProtocolOpcode, err = lib.Read8(buf)
+	header.mExchangeId, err = lib.Read16(buf)
+	protocolId, err := lib.Read16(buf)
 	if err != nil {
 		return err
 	}
 	var vendorId = lib.KVidCommon
 	if header.HaveVendorId() {
-		vid, err := buf.Read16()
+		vid, err := lib.Read16(buf)
 		if err != nil {
 			return err
 		}
@@ -121,7 +119,7 @@ func (header *PayloadHeader) Decode(buf *lib.PacketBuffer) error {
 		ProtocolId: protocolId,
 	}
 	if header.IsAckMsg() {
-		ackCounter, err := buf.Read32()
+		ackCounter, err := lib.Read32(buf)
 		if err != nil {
 			return err
 		}
