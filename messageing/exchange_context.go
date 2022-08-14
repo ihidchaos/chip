@@ -65,8 +65,14 @@ func (c *ExchangeContext) MatchExchange(session transport.SessionHandle, packetH
 
 func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *lib.PacketBuffer) error {
 
-	isStandaloneAck := payloadHeader.HasMessageType(uint8(StandaloneAck))
-	isDuplicate := lib.HasFlags(flags, transport.FDuplicateMessage)
+	//isStandaloneAck := payloadHeader.HasMessageType(uint8(StandaloneAck))
+	//isDuplicate := lib.HasFlags(flags, transport.FDuplicateMessage)
+	if c.mDelegate != nil {
+		err := c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

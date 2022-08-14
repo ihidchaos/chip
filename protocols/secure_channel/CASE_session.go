@@ -67,7 +67,7 @@ func NewCASESession() *CASESession {
 	}
 }
 
-func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data []byte) error {
+func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *lib.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }

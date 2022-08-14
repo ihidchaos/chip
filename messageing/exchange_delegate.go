@@ -1,6 +1,7 @@
 package messageing
 
 import (
+	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport/raw"
 )
 
@@ -10,7 +11,7 @@ type UnsolicitedMessageHandler interface {
 }
 
 type ExchangeDelegate interface {
-	OnMessageReceived(context *ExchangeContext, header *raw.PayloadHeader, data []byte) error
+	OnMessageReceived(context *ExchangeContext, header *raw.PayloadHeader, data *lib.PacketBuffer) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
 }

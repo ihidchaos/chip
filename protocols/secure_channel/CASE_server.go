@@ -105,9 +105,9 @@ func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, del
 	return nil
 }
 
-func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data []byte) error {
-	//TODO implement me
-	panic("implement me")
+func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *lib.PacketBuffer) error {
+	s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(messageing.CASESigma1)
+	return nil
 }
 
 func (s *CASEServer) OnResponseTimeout(ec *messageing.ExchangeContext) {

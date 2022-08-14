@@ -41,6 +41,7 @@ type ExchangeManager interface {
 	transport.SessionMessageDelegate
 	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler UnsolicitedMessageHandler) error
 	RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler UnsolicitedMessageHandler) error
+	UnregisterUnsolicitedMessageHandlerForType(msgType uint8) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
 	GetMessageDispatch() ExchangeMessageDispatch
@@ -185,9 +186,7 @@ func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForProtocol(
 	protocolId *protocols.Id,
 	handler UnsolicitedMessageHandler,
 ) error {
-
 	return e.RegisterUMH(protocolId, KAnyMessageType, handler)
-
 }
 
 func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(
@@ -196,6 +195,10 @@ func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(
 	handler UnsolicitedMessageHandler,
 ) error {
 	return e.RegisterUMH(protocolId, int16(msgType), handler)
+}
+
+func (e *ExchangeManagerImpl) UnregisterUnsolicitedMessageHandlerForType(opcode uint8) error {
+	return nil
 }
 
 func (e *ExchangeManagerImpl) RegisterUMH(id *protocols.Id, msgType int16, handle UnsolicitedMessageHandler) error {
