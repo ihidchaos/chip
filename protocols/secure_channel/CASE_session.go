@@ -222,5 +222,9 @@ func (s *CASESession) HandleSigma1AndSendSigma2(buf *lib.PacketBuffer) error {
 }
 
 func (s *CASESession) HandleSigma1(buf *lib.PacketBuffer) error {
+	log.Infof("CASE Session HandleSigma1")
+	var err error
+	var tlvReader lib.PacketBufferTLVReader
+
 	return nil
 }
