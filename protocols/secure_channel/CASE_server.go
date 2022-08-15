@@ -10,17 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	kInitialized       = 0
-	kSentSigma1        = 1
-	kSentSigma2        = 2
-	kSentSigma3        = 3
-	kSentSigma1Resume  = 4
-	kSentSigma2Resume  = 5
-	kFinished          = 6
-	kFinishedViaResume = 7
-)
-
 type CASEServerBase interface {
 	messageing.UnsolicitedMessageHandler
 	SessionEstablishmentDelegate
@@ -106,8 +95,11 @@ func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, del
 }
 
 func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *lib.PacketBuffer) error {
-	s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(messageing.CASESigma1)
-	return nil
+	err := s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(uint8(messageing.CASESigma1))
+	if err != nil {
+		return err
+	}
+	return s.GetSession().OnMessageReceived(context, header, buf)
 }
 
 func (s *CASEServer) OnResponseTimeout(ec *messageing.ExchangeContext) {

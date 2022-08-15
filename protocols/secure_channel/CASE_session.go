@@ -67,8 +67,23 @@ func NewCASESession() *CASESession {
 	}
 }
 
-func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *lib.PacketBuffer) error {
-	//TODO implement me
+func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *lib.PacketBuffer) error {
+	msgType := messageing.MsgType(payloadHeader.GetMessageType())
+
+	switch s.mState {
+	case SInitialized:
+		if msgType == messageing.CASESigma1 {
+			return s.HandleSigma1AndSendSigma2(buf)
+		}
+	case SSentSigma1:
+	case SSentSigma1Resume:
+	case SSentSigma2:
+	case SSentSigma3:
+	case kSentSigma2Resume:
+	default:
+		return lib.ChipErrorInvalidMessageType
+	}
+
 	panic("implement me")
 }
 
@@ -199,5 +214,13 @@ func (s *CASESession) PrepareForSessionEstablishment(
 }
 
 func (s *CASESession) CopySecureSession() transport.SessionHandle {
+	return nil
+}
+
+func (s *CASESession) HandleSigma1AndSendSigma2(buf *lib.PacketBuffer) error {
+	return s.HandleSigma1(buf)
+}
+
+func (s *CASESession) HandleSigma1(buf *lib.PacketBuffer) error {
 	return nil
 }
