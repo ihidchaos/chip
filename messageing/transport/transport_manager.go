@@ -1,13 +1,13 @@
 package transport
 
 import (
-	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"net/netip"
 )
 
 type TransportManagerDelegate interface {
-	OnMessageReceived(peerAddress netip.AddrPort, buf *lib.PacketBuffer)
+	OnMessageReceived(peerAddress netip.AddrPort, buf *buffer.PacketBuffer)
 }
 
 // TransportManagerBase this is the delegate for TransportBase,
@@ -36,7 +36,7 @@ func NewTransportManagerImpl(transports ...raw.TransportBase) *TransportManagerI
 	return impl
 }
 
-func (t *TransportManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, buf *lib.PacketBuffer) {
+func (t *TransportManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, buf *buffer.PacketBuffer) {
 	if t.mSessionManager != nil {
 		t.mSessionManager.OnMessageReceived(peerAddress, buf)
 	}

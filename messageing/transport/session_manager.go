@@ -3,6 +3,7 @@ package transport
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/storage"
 	log "github.com/sirupsen/logrus"
@@ -10,7 +11,7 @@ import (
 )
 
 type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, buf *lib.PacketBuffer)
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, buf *buffer.PacketBuffer)
 }
 
 const (
@@ -30,11 +31,11 @@ type SessionManager interface {
 	credentials.FabricTableDelegate
 	TransportManagerDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
-	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer)
+	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer)
 	// SecureUnicastMessageDispatch  handle the unsecure messages
-	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer)
+	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer)
 	// UnauthenticatedMessageDispatch handle the unauthenticated(未经认证的) messages
-	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer)
+	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer)
 
 	SetMessageDelegate(SessionMessageDelegate)
 }
@@ -89,7 +90,7 @@ func (s *SessionManagerImpl) Init(transportMgr TransportManagerBase, counter Mes
 	return err
 }
 
-func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *lib.PacketBuffer) {
+func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *buffer.PacketBuffer) {
 	packetHeader := raw.NewPacketHeader()
 	err := packetHeader.DecodeAndConsume(buf)
 	if err != nil {
@@ -108,7 +109,7 @@ func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *lib.
 }
 
 // UnauthenticatedMessageDispatch 处理没有加密码的消息
-func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *lib.PacketBuffer) {
+func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer) {
 
 	source := header.GetSourceNodeId()
 	destination := header.GetDestinationNodeId()
@@ -185,12 +186,12 @@ func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, inde
 }
 
 // SecureGroupMessageDispatch 处理加密的组播消息
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *lib.PacketBuffer) {
+func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *buffer.PacketBuffer) {
 
 }
 
 // SecureUnicastMessageDispatch 处理分支，加密的单播消息
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *lib.PacketBuffer) {
+func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *buffer.PacketBuffer) {
 	secureSession := s.mSecureSessions.FindSecureSessionByLocalKey(header.GetSessionId())
 	_ = KDuplicateMessageNo
 	if msg.IsNull() {

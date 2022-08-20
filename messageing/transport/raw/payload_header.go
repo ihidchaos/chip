@@ -2,6 +2,7 @@ package raw
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/protocols"
 )
 
@@ -77,7 +78,7 @@ func (header *PayloadHeader) HaveVendorId() bool {
 	return lib.HasFlags(header.mExchangeFlags, FVendorIdPresent)
 }
 
-func (header *PayloadHeader) DecodeAndConsume(data *lib.PacketBuffer) error {
+func (header *PayloadHeader) DecodeAndConsume(data *buffer.PacketBuffer) error {
 	return header.Decode(data)
 }
 
@@ -97,18 +98,18 @@ func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
 	return header.mProtocolId.Equal(id)
 }
 
-func (header *PayloadHeader) Decode(buf *lib.PacketBuffer) error {
+func (header *PayloadHeader) Decode(buf *buffer.PacketBuffer) error {
 	var err error
-	header.mExchangeFlags, err = lib.Read8(buf)
-	header.mProtocolOpcode, err = lib.Read8(buf)
-	header.mExchangeId, err = lib.Read16(buf)
-	protocolId, err := lib.Read16(buf)
+	header.mExchangeFlags, err = buffer.Read8(buf)
+	header.mProtocolOpcode, err = buffer.Read8(buf)
+	header.mExchangeId, err = buffer.Read16(buf)
+	protocolId, err := buffer.Read16(buf)
 	if err != nil {
 		return err
 	}
 	var vendorId = lib.KVidCommon
 	if header.HaveVendorId() {
-		vid, err := lib.Read16(buf)
+		vid, err := buffer.Read16(buf)
 		if err != nil {
 			return err
 		}
@@ -119,7 +120,7 @@ func (header *PayloadHeader) Decode(buf *lib.PacketBuffer) error {
 		ProtocolId: protocolId,
 	}
 	if header.IsAckMsg() {
-		ackCounter, err := lib.Read32(buf)
+		ackCounter, err := buffer.Read32(buf)
 		if err != nil {
 			return err
 		}

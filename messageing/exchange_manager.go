@@ -3,6 +3,7 @@ package messageing
 import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/protocols"
@@ -105,7 +106,7 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 	payloadHeader *raw.PayloadHeader,
 	session transport.SessionHandle,
 	isDuplicate uint8,
-	buf *lib.PacketBuffer,
+	buf *buffer.PacketBuffer,
 ) {
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 	log.Infof("Received message of type %d with protocolId %d"+
@@ -238,7 +239,7 @@ func (e *ExchangeManagerImpl) SendStandaloneAckIfNeeded(
 	payloadHeader *raw.PayloadHeader,
 	session transport.SessionHandle,
 	msgFlag uint32,
-	buf *lib.PacketBuffer,
+	buf *buffer.PacketBuffer,
 ) {
 
 }

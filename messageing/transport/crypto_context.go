@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/binary"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport/raw"
 )
 
@@ -16,7 +17,7 @@ const (
 type CryptoContext struct {
 }
 
-func (c CryptoContext) Decrypt(msg *lib.PacketBuffer, nonce []byte, header *raw.PacketHeader, mac *raw.MessageAuthenticationCode) {
+func (c CryptoContext) Decrypt(msg *buffer.PacketBuffer, nonce []byte, header *raw.PacketHeader, mac *raw.MessageAuthenticationCode) {
 	_ = mac.GetTag()
 
 	//header.Ecode()

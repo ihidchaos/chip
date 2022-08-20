@@ -2,6 +2,7 @@ package secure_channel
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 )
@@ -21,7 +22,7 @@ type PairingSession interface {
 	DeriveSecureSession(ctx transport.CryptoContext) error
 	GetRemoteMRPConfig() *transport.ReliableMessageProtocolConfig
 	SetRemoteMRPConfig(mrpLocalConfig *transport.ReliableMessageProtocolConfig)
-	EncodeMRPParameters(tag lib.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig)
+	EncodeMRPParameters(tag tlv.ElementTag, mrpLocalConfig *transport.ReliableMessageProtocolConfig)
 }
 
 type PairingSessionImpl struct {
@@ -82,7 +83,7 @@ func (p PairingSessionImpl) SetRemoteMRPConfig(mrpLocalConfig *transport.Reliabl
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) EncodeMRPParameters(tag lib.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
+func (p PairingSessionImpl) EncodeMRPParameters(tag tlv.ElementTag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
 	//TODO implement me
 	panic("implement me")
 }

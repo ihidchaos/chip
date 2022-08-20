@@ -3,6 +3,7 @@ package secure_channel
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
@@ -94,7 +95,7 @@ func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, del
 	return nil
 }
 
-func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *lib.PacketBuffer) error {
+func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *buffer.PacketBuffer) error {
 	err := s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(uint8(messageing.CASESigma1))
 	if err != nil {
 		return err

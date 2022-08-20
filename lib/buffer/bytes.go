@@ -1,16 +1,17 @@
-package lib
+package buffer
 
 import (
 	"encoding/binary"
 	"io"
 )
 
-func Read8(buf io.ByteReader) (uint8, error) {
-	b, err := buf.ReadByte()
+func Read8(buf io.Reader) (uint8, error) {
+	data := make([]byte, 1)
+	_, err := buf.Read(data)
 	if err != nil {
 		return 0, nil
 	}
-	return b, nil
+	return data[0], nil
 }
 
 func Read16(buf io.Reader) (uint16, error) {
@@ -40,8 +41,14 @@ func Read64(buf io.Reader) (uint64, error) {
 	return binary.LittleEndian.Uint64(b), nil
 }
 
-func Write8(buf io.ByteWriter, val uint8) error {
-	return buf.WriteByte(val)
+func Write8(buf io.Writer, val uint8) error {
+	tSize := 1
+	data := make([]byte, tSize)
+	_, err := buf.Write(data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func Write16(buf io.Writer, val uint16) error {

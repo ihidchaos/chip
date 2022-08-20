@@ -2,10 +2,11 @@ package transport
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport/raw"
 )
 
-func Decrypt(context *CryptoContext, nonce []byte, packetHeader *raw.PacketHeader, msg *lib.PacketBuffer) error {
+func Decrypt(context *CryptoContext, nonce []byte, packetHeader *raw.PacketHeader, msg *buffer.PacketBuffer) error {
 
 	if msg.IsNull() {
 		return lib.ChipErrorInvalidArgument

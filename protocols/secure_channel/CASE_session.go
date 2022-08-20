@@ -4,6 +4,8 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/buffer"
+	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
@@ -67,7 +69,7 @@ func NewCASESession() *CASESession {
 	}
 }
 
-func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *lib.PacketBuffer) error {
+func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *buffer.PacketBuffer) error {
 	msgType := messageing.MsgType(payloadHeader.GetMessageType())
 
 	switch s.mState {
@@ -217,14 +219,63 @@ func (s *CASESession) CopySecureSession() transport.SessionHandle {
 	return nil
 }
 
-func (s *CASESession) HandleSigma1AndSendSigma2(buf *lib.PacketBuffer) error {
+func (s *CASESession) HandleSigma1AndSendSigma2(buf *buffer.PacketBuffer) error {
 	return s.HandleSigma1(buf)
 }
 
-func (s *CASESession) HandleSigma1(buf *lib.PacketBuffer) error {
+func (s *CASESession) HandleSigma1(buf *buffer.PacketBuffer) error {
 	log.Infof("CASE Session HandleSigma1")
-	var err error
-	var tlvReader lib.PacketBufferTLVReader
 
 	return nil
+}
+
+func (s *CASESession) ParseSigma1(buf *buffer.PacketBuffer) (initiatorRandom, destinationId, initiatorEphPubKey []byte, sessionId uint16, err error) {
+	var kInitiatorRandomTag uint8 = 1
+	var kInitiatorSessionIdTag uint8 = 2
+	var kDestinationIdTag uint8 = 3
+	var kInitiatorPubKeyTag uint8 = 4
+	//var kInitiatorMRPParamsTag uint8 = 5
+	//var kResumptionIDTag uint8 = 6
+	//var kResume1MICTag uint8 = 7
+
+	// Sigma1，这里应该读取到Structure 0x15
+
+	tlvReader := tlv.NewReader(buf)
+	err = tlvReader.NextE(tlv.AnonymousTag(), tlv.TypeStructure)
+	if err != nil {
+		return
+	}
+	// Sigma1，Tag = 1 initiatorRandom  20个字节的随机数
+	err = tlvReader.NextE(tlv.ContextTag(kInitiatorRandomTag))
+	initiatorRandom, err = tlvReader.GetBytesView()
+	if err != nil {
+
+		return
+	}
+
+	//Sigma1， Tag =2 Session id
+	err = tlvReader.NextE(tlv.ContextTag(kInitiatorSessionIdTag))
+	if err != nil {
+
+		return
+	}
+	sessionId, err = tlvReader.GetUint16()
+
+	//Sigma1，Tag=3	destination id 20个字节的认证码
+	err = tlvReader.NextE(tlv.ContextTag(kDestinationIdTag))
+	destinationId, err = tlvReader.GetBytesView()
+	if err != nil {
+
+		return
+	}
+
+	//Sigma1，Tag=4	 Initiator PubKey 1个字节的公钥
+	err = tlvReader.NextE(tlv.ContextTag(kInitiatorPubKeyTag))
+	initiatorEphPubKey, err = tlvReader.GetBytesView()
+	if err != nil {
+
+		return
+	}
+
+	return
 }
