@@ -7,6 +7,9 @@ const (
 type CompressedFabricId uint64
 type FabricId uint64
 type FabricIndex uint8
+type KeysetId uint16
+
+const KInvalidKeysetId KeysetId = 0xFFFF
 
 type ProductId uint16
 

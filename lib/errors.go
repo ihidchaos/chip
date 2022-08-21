@@ -15,6 +15,9 @@ var (
 	ChipErrorInvalidMessageType                = fmt.Errorf("CHIP_ERROR_INVALID_MESSAGE_TYPE")
 	ChipErrorWrongTlvType                      = fmt.Errorf("CHIP_ERROR_WRONG_TLV_TYPE")
 	ChipErrorUnexpectedTlvElement              = fmt.Errorf("CHIP_ERROR_UNEXPECTED_TLV_ELEMENT")
+	ChipErrorInvalidCaseParameter              = fmt.Errorf("CHIP_ERROR_INVALID_CASE_PARAMETER")
+
+	ChipErrorKeyNotFound = fmt.Errorf("CHIP_ERROR_KEY_NOT_FOUND")
 
 	ChipErrorNoUnsolicitedMessageHandler = fmt.Errorf("CHIP_ERROR_NO_UNSOLICITED_MESSAGE_HANDLER")
 )

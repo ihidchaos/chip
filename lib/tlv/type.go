@@ -6,18 +6,7 @@ type TagControl uint8
 type TLVType int8
 type ElementType int8
 
-// IMPORTANT: All values here must have no bits in common with specified
-// values of TLVElementType.
 const (
-	Anonymous             TagControl = 0x00
-	ContextSpecific       TagControl = 0x20
-	CommonProfile2Bytes   TagControl = 0x40
-	CommonProfile4Bytes   TagControl = 0x60
-	ImplicitProfile2Bytes TagControl = 0x80
-	ImplicitProfile4Bytes TagControl = 0xA0
-	FullQualified6Bytes   TagControl = 0xC0
-	FullyQualified8Bytes  TagControl = 0xE0
-
 	TypeNull                TLVType = 0x14
 	TypeStructure           TLVType = 0x15
 	TypeArray               TLVType = 0x16
@@ -30,6 +19,19 @@ const (
 	TypeFloatingPointNumber TLVType = 0x0A
 	TypeUTF8String          TLVType = 0x0C
 	TypeByteString          TLVType = 0x10
+)
+
+// IMPORTANT: All values here must have no bits in common with specified
+// values of TLVElementType.
+const (
+	Anonymous             TagControl = 0x00
+	ContextSpecific       TagControl = 0x20
+	CommonProfile2Bytes   TagControl = 0x40
+	CommonProfile4Bytes   TagControl = 0x60
+	ImplicitProfile2Bytes TagControl = 0x80
+	ImplicitProfile4Bytes TagControl = 0xA0
+	FullQualified6Bytes   TagControl = 0xC0
+	FullyQualified8Bytes  TagControl = 0xE0
 )
 
 const (

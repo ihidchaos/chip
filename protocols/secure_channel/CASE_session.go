@@ -224,58 +224,56 @@ func (s *CASESession) HandleSigma1AndSendSigma2(buf *buffer.PacketBuffer) error 
 }
 
 func (s *CASESession) HandleSigma1(buf *buffer.PacketBuffer) error {
-	log.Infof("CASE Session HandleSigma1")
+
+	tlvReader := tlv.NewReader(buf)
+	sigma1, err := ParseSigma1(tlvReader)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Peer assigned session key ID %d", sigma1.initiatorSessionId)
+	s.mPeerSessionId = sigma1.initiatorSessionId
+
+	if s.mFabricsTable == nil {
+		return lib.ChipErrorIncorrectState
+	}
+
+	err = s.FindLocalNodeFromDestinationId(sigma1.destinationId, sigma1.initiatorRandom)
+	if err == nil {
+		log.Infof("CASE matched destination ID: fabricIndex %x, NodeID 0x", s.mFabricIndex, s.mLocalNodeId)
+	} else {
+		log.Infof("CASE failed to match destination ID with local fabrics")
+	}
 
 	return nil
 }
 
-func (s *CASESession) ParseSigma1(buf *buffer.PacketBuffer) (initiatorRandom, destinationId, initiatorEphPubKey []byte, sessionId uint16, err error) {
-	var kInitiatorRandomTag uint8 = 1
-	var kInitiatorSessionIdTag uint8 = 2
-	var kDestinationIdTag uint8 = 3
-	var kInitiatorPubKeyTag uint8 = 4
-	//var kInitiatorMRPParamsTag uint8 = 5
-	//var kResumptionIDTag uint8 = 6
-	//var kResume1MICTag uint8 = 7
+func (s *CASESession) SendSigma2() {
 
-	// Sigma1，这里应该读取到Structure 0x15
+}
 
-	tlvReader := tlv.NewReader(buf)
-	err = tlvReader.NextE(tlv.AnonymousTag(), tlv.TypeStructure)
-	if err != nil {
-		return
+func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initiatorRandom []byte) error {
+
+	for _, fabricInfo := range s.mFabricsTable.GetFabrics() {
+
+		fabriceId := fabricInfo.GetFabricId()
+		nodeId := fabricInfo.GetNodeId()
+		rootPubKey, err := s.mFabricsTable.FetchRootPubkey(fabricInfo.GetFabricIndex())
+		if err != nil {
+			return err
+		}
+
+		ipKeySet, err := s.mGroupDataProvider.GetIpkKeySet(fabricInfo.GetFabricIndex())
+		if err != nil || (ipKeySet.NumKeysUsed == 0 || ipKeySet.NumKeysUsed > credentials.KEpochKeysMax) {
+			continue
+		}
+
+		// Try every IPK candidate we have for a match
+		for keyIdx := 0; keyIdx < ipKeySet.NumKeysUsed; keyIdx++ {
+			GenerateCaseDestinationId(ipKeySet.EpochKeys[keyIdx].Key, initiatorRandom, rootPubKey, fabriceId, nodeId)
+
+		}
+
 	}
-	// Sigma1，Tag = 1 initiatorRandom  20个字节的随机数
-	err = tlvReader.NextE(tlv.ContextTag(kInitiatorRandomTag))
-	initiatorRandom, err = tlvReader.GetBytesView()
-	if err != nil {
-
-		return
-	}
-
-	//Sigma1， Tag =2 Session id
-	err = tlvReader.NextE(tlv.ContextTag(kInitiatorSessionIdTag))
-	if err != nil {
-
-		return
-	}
-	sessionId, err = tlvReader.GetUint16()
-
-	//Sigma1，Tag=3	destination id 20个字节的认证码
-	err = tlvReader.NextE(tlv.ContextTag(kDestinationIdTag))
-	destinationId, err = tlvReader.GetBytesView()
-	if err != nil {
-
-		return
-	}
-
-	//Sigma1，Tag=4	 Initiator PubKey 1个字节的公钥
-	err = tlvReader.NextE(tlv.ContextTag(kInitiatorPubKeyTag))
-	initiatorEphPubKey, err = tlvReader.GetBytesView()
-	if err != nil {
-
-		return
-	}
-
-	return
+	return nil
 }

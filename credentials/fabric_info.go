@@ -28,7 +28,7 @@ type FabricInfoProvider interface {
 
 type FabricInfo struct {
 	mFabricLabel         string
-	mRootPublicKey       crypto.P256PublicKey
+	mRootPublicKey       *crypto.P256PublicKey
 	mNodeId              lib.NodeId
 	mFabricId            lib.FabricId
 	mFabricIndex         lib.FabricIndex
@@ -92,6 +92,13 @@ func (info *FabricInfo) GetNodeId() lib.NodeId {
 
 func (info *FabricInfo) Reset() {
 
+}
+
+func (info *FabricInfo) FetchRootPubkey() (*crypto.P256PublicKey, error) {
+	if !info.IsInitialized() {
+		return nil, lib.ChipErrorKeyNotFound
+	}
+	return info.mRootPublicKey, nil
 }
 
 type FabricInfoInitParams struct {

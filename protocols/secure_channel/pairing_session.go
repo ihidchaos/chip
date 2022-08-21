@@ -28,6 +28,7 @@ type PairingSession interface {
 type PairingSessionImpl struct {
 	mRole              uint8
 	mSecureSessionType transport.TSecureSessionType
+	mPeerSessionId     uint16
 
 	SessionManager       transport.SessionManager
 	mExchangeCtxt        messageing.ExchangeContext
@@ -86,6 +87,13 @@ func (p PairingSessionImpl) SetRemoteMRPConfig(mrpLocalConfig *transport.Reliabl
 func (p PairingSessionImpl) EncodeMRPParameters(tag tlv.ElementTag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (p PairingSessionImpl) DecodeMRPParametersIfPresent(tag tlv.ElementTag, reader *tlv.ReaderImpl) error {
+	if reader.GetTag() != tag {
+		return nil
+	}
+	return nil
 }
 
 func NewPairingSessionImpl() *PairingSessionImpl {

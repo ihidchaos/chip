@@ -9,4 +9,6 @@ const (
 	kSentSigma2Resume  = 5
 	kFinished          = 6
 	kFinishedViaResume = 7
+
+	kSigmaParamRandomNumberSize = 32
 )

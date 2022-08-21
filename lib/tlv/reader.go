@@ -15,7 +15,20 @@ import (
   | xxx  11111|  5bit  ElementTag TLVType
 **********************************************/
 
-type Reader struct {
+type Reader interface {
+	Next()
+	NextE(tag ElementTag, tlvTyp ...TLVType) error
+	GetBytesView() ([]byte, error)
+	EnterContainer() (TLVType, error)
+	GetUint8() (uint8, error)
+	GetUint16() (uint16, error)
+	GetUint32() (uint32, error)
+	GetUint64() (uint64, error)
+	GetTag() ElementTag
+	ExitContainer(tlvType TLVType) error
+}
+
+type ReaderImpl struct {
 	mBuffer      io.Reader
 	mControlTag  TagControl
 	mElementType ElementType
@@ -27,8 +40,8 @@ type Reader struct {
 	ImplicitProfileId uint32
 }
 
-func NewReader(reader io.Reader) *Reader {
-	return &Reader{
+func NewReader(reader io.Reader) *ReaderImpl {
+	return &ReaderImpl{
 		mBuffer:           reader,
 		mControlTag:       0,
 		mElementType:      0,
@@ -39,12 +52,8 @@ func NewReader(reader io.Reader) *Reader {
 }
 
 // NextE 读取一个指定tag的TLV
-func (r *Reader) NextE(tag ElementTag, tlvTyp ...TLVType) error {
-	r.reset()
-	err := r.ReadElement()
-	if err != nil {
-		return err
-	}
+func (r *ReaderImpl) NextE(tag ElementTag, tlvTyp ...TLVType) error {
+	r.Next()
 	if r.mElemTag != tag {
 		return lib.ChipErrorUnexpectedTlvElement
 	}
@@ -61,11 +70,19 @@ func (r *Reader) NextE(tag ElementTag, tlvTyp ...TLVType) error {
 	return r.VerifyElement()
 }
 
-func (r *Reader) Next() {
-
+func (r *ReaderImpl) Next() {
+	r.reset()
+	err := r.ReadElement()
+	if err != nil {
+		log.Errorf(err.Error())
+	}
 }
 
-func (r *Reader) ReadElement() error {
+func (r *ReaderImpl) GetTag() ElementTag {
+	return r.mElemTag
+}
+
+func (r *ReaderImpl) ReadElement() error {
 	//var err error
 	//stagingBuf := make([]byte, 17)
 	//var elemType ElementType
@@ -115,15 +132,15 @@ func (r *Reader) ReadElement() error {
 	return nil
 }
 
-func (r *Reader) ElementType() ElementType {
+func (r *ReaderImpl) ElementType() ElementType {
 	return r.mElementType
 }
 
-func (r *Reader) GetControlTag() TagControl {
+func (r *ReaderImpl) GetControlTag() TagControl {
 	return r.mControlTag
 }
 
-func (r *Reader) GetBytes(io io.Reader) ([]byte, error) {
+func (r *ReaderImpl) GetBytes(io io.Reader) ([]byte, error) {
 
 	var data = make([]byte, r.mElemLenOrVal)
 	if r.TLVTypeIsContainer() {
@@ -132,9 +149,8 @@ func (r *Reader) GetBytes(io io.Reader) ([]byte, error) {
 	return data, nil
 }
 
-func (r *Reader) GetBytesView() ([]byte, error) {
-	t := r.GetType()
-	if t == TypeStructure || t == TypeList || t == TypeArray {
+func (r *ReaderImpl) GetBytesView() ([]byte, error) {
+	if r.mElementType >= 0x0c && r.mElementType <= 0x13 {
 		var data = make([]byte, r.mElemLenOrVal)
 		_, err := r.mBuffer.Read(data)
 		return data, err
@@ -142,7 +158,7 @@ func (r *Reader) GetBytesView() ([]byte, error) {
 	return nil, lib.ChipErrorWrongTlvType
 }
 
-func (r *Reader) ReadTag(tagControl TagControl) ElementTag {
+func (r *ReaderImpl) ReadTag(tagControl TagControl) ElementTag {
 	switch tagControl {
 	case ContextSpecific:
 		val, _ := buffer.Read8(r.mBuffer)
@@ -180,16 +196,16 @@ func (r *Reader) ReadTag(tagControl TagControl) ElementTag {
 	}
 }
 
-func (r *Reader) TLVTypeIsContainer() bool {
+func (r *ReaderImpl) TLVTypeIsContainer() bool {
 	elementType := r.ElementType()
 	return elementType <= List && elementType <= Structure
 }
 
-func (r *Reader) VerifyElement() error {
+func (r *ReaderImpl) VerifyElement() error {
 	return nil
 }
 
-func (r *Reader) GetType() TLVType {
+func (r *ReaderImpl) GetType() TLVType {
 	elemType := r.ElementType()
 	if elemType == EndOfContainer {
 		return TypeNotSpecified
@@ -203,41 +219,48 @@ func (r *Reader) GetType() TLVType {
 	return TLVType(elemType)
 }
 
-func (r *Reader) GetUint8() (uint8, error) {
-	if r.ElementType() != UInt8 {
-		return 0, lib.ChipErrorWrongTlvType
-	}
-	return uint8(r.mElemLenOrVal), nil
+func (r *ReaderImpl) GetUint8() (uint8, error) {
+	v, err := r.GetUint64()
+	return uint8(v), err
 }
 
-func (r *Reader) GetUint16() (uint16, error) {
-	if r.ElementType() != UInt16 {
-		return 0, lib.ChipErrorWrongTlvType
-	}
-	return uint16(r.mElemLenOrVal), nil
+func (r *ReaderImpl) GetUint16() (uint16, error) {
+	v, err := r.GetUint64()
+	return uint16(v), err
 }
 
-func (r *Reader) GetUint32() (uint32, error) {
-	if r.ElementType() != UInt32 {
-		return 0, lib.ChipErrorWrongTlvType
-	}
-	return uint32(r.mElemLenOrVal), nil
+func (r *ReaderImpl) GetUint32() (uint32, error) {
+	v, err := r.GetUint64()
+	return uint32(v), err
 }
 
-func (r *Reader) GetUint64() (uint64, error) {
-	if r.ElementType() != UInt64 {
+func (r *ReaderImpl) GetUint64() (uint64, error) {
+	switch r.mElementType {
+	case UInt8, UInt16, UInt32, UInt64:
+		return r.mElemLenOrVal, nil
+	default:
 		return 0, lib.ChipErrorWrongTlvType
 	}
-	r.reset()
-	return r.mElemLenOrVal, nil
 }
 
-func (r *Reader) reset() {
+func (r *ReaderImpl) reset() {
 	r.mElemTag = 0
 	r.mControlTag = 0
 	r.mElementType = 0
 	r.mElemLenOrVal = 0
 	r.ImplicitProfileId = 0
+}
+
+func (r *ReaderImpl) EnterContainer() (TLVType, error) {
+	t := r.GetType()
+	if t == TypeStructure || t == TypeList || t == TypeArray {
+		return t, nil
+	}
+	return t, lib.ChipErrorWrongTlvType
+}
+
+func (r *ReaderImpl) ExitContainer(containerType TLVType) error {
+	return r.NextE(AnonymousTag(), containerType)
 }
 
 func FieldSizeToBytes(size FieldSize) uint8 {

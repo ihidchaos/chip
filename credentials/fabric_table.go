@@ -173,9 +173,13 @@ func (f *FabricTable) FetchNOCCert(index lib.FabricIndex) ([]byte, error) {
 	panic("implement me")
 }
 
-func (f *FabricTable) FetchRootPubkey(index lib.FabricIndex) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+func (f *FabricTable) FetchRootPubkey(index lib.FabricIndex) (*crypto.P256PublicKey, error) {
+	fabricInfo := f.FindFabricWithIndex(index)
+	if fabricInfo == nil {
+		return nil, lib.ChipErrorInvalidFabricIndex
+	}
+	return fabricInfo.FetchRootPubkey()
+
 }
 
 func (f *FabricTable) FetchCATs(index lib.FabricIndex) ([]byte, error) {

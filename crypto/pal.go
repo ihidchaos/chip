@@ -1,15 +1,29 @@
 package crypto
 
 const (
-	KSpake2pMaxPbkdfIterations uint32 = 100000
-	kp256FeLength                     = 32
-	kP256PointLength                  = 2*kp256FeLength + 1
-	KSpake2pMinPbkdfSaltLength        = 16
-	KSpake2pMaxPbkdfSaltLength        = 32
+	AeadMicLengthBytes = 16
+	HashLenBytes       = kSha256HashLength
 
-	KSpake2pVerifierSerializedLength = kp256FeLength + kP256PointLength
+	kSha256HashLength            = 32
+	kP256FELength                = 32
+	ChipCryptoGroupSizeBytes     = kP256FELength
+	kp256PointLength             = 2*kP256FELength + 1
+	KSha256HashLength            = 32
+	ChipCryptoPublicKeySizeBytes = 0
+
+	KP256PublicKeyLength = ChipCryptoPublicKeySizeBytes
+
+	KSpake2pMaxPbkdfIterations uint32 = 100000
+
+	kP256PointLength           = 2*kP256FELength + 1
+	KSpake2pMinPbkdfSaltLength = 16
+	KSpake2pMaxPbkdfSaltLength = 32
+
+	KSpake2pVerifierSerializedLength = kP256FELength + kP256PointLength
 
 	ChipCryptoAeadMicLengthBytes uint16 = 16
+
+	SymmetricKeyLengthBytes = 16
 )
 
 type Spake2pVerifier struct {
