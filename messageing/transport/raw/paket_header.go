@@ -197,7 +197,7 @@ func (h *PacketHeader) GetVersionId() uint8 {
 
 func (h *PacketHeader) MICTagLength() uint16 {
 	if h.IsEncrypted() {
-		return crypto.ChipCryptoAeadMicLengthBytes
+		return crypto.ChipCryptoAEADMicLengthBytes
 	}
 	return 0
 }

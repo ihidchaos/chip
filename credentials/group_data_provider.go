@@ -14,6 +14,7 @@ type KeySet struct {
 	EpochKeys   []EpochKey
 }
 
+// 对称加密密钥长度
 const lengthBytes = crypto.SymmetricKeyLengthBytes //Crypto::CHIP_CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
 type EpochKey struct {
 	StartTime time.Time

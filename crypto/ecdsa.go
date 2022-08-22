@@ -158,3 +158,14 @@ type P256PublicKey struct {
 type P256Keypair struct {
 	crypto.PrivateKey
 }
+
+func NewP256PublicKey(data []byte) (*P256PublicKey, error) {
+	block, _ := pem.Decode(data)
+	publicInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	publicKey := publicInterface.(*ecdsa.PublicKey)
+
+	return &P256PublicKey{publicKey}, nil
+}

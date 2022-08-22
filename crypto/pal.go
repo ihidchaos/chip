@@ -21,7 +21,7 @@ const (
 
 	KSpake2pVerifierSerializedLength = kP256FELength + kP256PointLength
 
-	ChipCryptoAeadMicLengthBytes uint16 = 16
+	ChipCryptoAEADMicLengthBytes uint16 = 16
 
 	SymmetricKeyLengthBytes = 16
 )

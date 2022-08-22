@@ -262,15 +262,14 @@ func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initi
 		if err != nil {
 			return err
 		}
-
-		ipKeySet, err := s.mGroupDataProvider.GetIpkKeySet(fabricInfo.GetFabricIndex())
-		if err != nil || (ipKeySet.NumKeysUsed == 0 || ipKeySet.NumKeysUsed > credentials.KEpochKeysMax) {
+		ipkKeySet, err := s.mGroupDataProvider.GetIpkKeySet(fabricInfo.GetFabricIndex())
+		if err != nil || (ipkKeySet.NumKeysUsed == 0 || ipkKeySet.NumKeysUsed > credentials.KEpochKeysMax) {
 			continue
 		}
 
 		// Try every IPK candidate we have for a match
-		for keyIdx := 0; keyIdx < ipKeySet.NumKeysUsed; keyIdx++ {
-			GenerateCaseDestinationId(ipKeySet.EpochKeys[keyIdx].Key, initiatorRandom, rootPubKey, fabriceId, nodeId)
+		for keyIdx := 0; keyIdx < ipkKeySet.NumKeysUsed; keyIdx++ {
+			GenerateCaseDestinationId(ipkKeySet.EpochKeys[keyIdx].Key, initiatorRandom, rootPubKey, fabriceId, nodeId)
 
 		}
 
