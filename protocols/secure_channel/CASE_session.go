@@ -338,7 +338,7 @@ func (s *CASESession) SendSigma2() error {
 	}
 
 	s.mNewResumptionId = make([]byte, kResumptionIdSize)
-	err = crypto.DRBGGetBytes(s.mNewResumptionId)
+	err = crypto.DRBGBytes(s.mNewResumptionId)
 	if err != nil {
 		return err
 	}

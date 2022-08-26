@@ -31,7 +31,7 @@ func SignP256ECDSASignature(plainTex, privateKeyFile []byte) (P256ECDSASignature
 type P256ECDHDerivedSecret struct {
 }
 
-func DRBGGetBytes(data []byte) error {
+func DRBGBytes(data []byte) error {
 	_, err := rand.Read(data)
 	if err != nil {
 		return err
