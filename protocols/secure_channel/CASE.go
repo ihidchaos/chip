@@ -7,21 +7,22 @@ import (
 )
 
 type Sigma1 struct {
-	initiatorRandom        []byte
-	initiatorSessionId     uint16
-	destinationId          []byte
-	destinationIdSize      int
-	initiatorEphPubKey     []byte
-	initiatorSEDParams     any      //optional
-	resumptionID           [16]byte //optional
-	initiatorResumeMIC     []byte   //optional
+	initiatorRandom    []byte
+	initiatorSessionId uint16
+	destinationId      []byte
+
+	initiatorEphPubKey     []byte //0x41 bytes
+	initiatorSEDParams     any    //optional
+	resumptionId           []byte //optional
+	initiatorResumeMIC     []byte //optional
 	initiatorResumeMICSize int
+
+	sessionResumptionRequested bool
 }
 
 func ParseSigma1(tlvReader tlv.Reader) (sigma1 Sigma1, err error) {
 	sigma1 = Sigma1{
 		initiatorResumeMICSize: crypto.AeadMicLengthBytes,
-		destinationIdSize:      crypto.HashLenBytes,
 	}
 	var kInitiatorRandomTag uint8 = 1
 	var kInitiatorSessionIdTag uint8 = 2
@@ -33,7 +34,7 @@ func ParseSigma1(tlvReader tlv.Reader) (sigma1 Sigma1, err error) {
 
 	// Sigma1，这里应该读取到Structure 0x15
 
-	err = tlvReader.NextE(tlv.AnonymousTag(), tlv.TypeStructure)
+	err = tlvReader.NextE(tlv.AnonymousTag(), tlv.Type_Structure)
 	containerType, err := tlvReader.EnterContainer()
 	if err != nil {
 		return
@@ -47,7 +48,7 @@ func ParseSigma1(tlvReader tlv.Reader) (sigma1 Sigma1, err error) {
 	}
 
 	//Sigma1， Tag =2 Session id
-	err = tlvReader.NextE(tlv.ContextTag(kInitiatorSessionIdTag), tlv.TypeUnsignedInteger)
+	err = tlvReader.NextE(tlv.ContextTag(kInitiatorSessionIdTag), tlv.Type_UnsignedInteger)
 	sigma1.initiatorSessionId, err = tlvReader.GetUint16()
 	if err != nil {
 		return

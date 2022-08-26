@@ -102,14 +102,14 @@ func (header *PayloadHeader) Decode(buf *buffer.PacketBuffer) error {
 	var err error
 	header.mExchangeFlags, err = buffer.Read8(buf)
 	header.mProtocolOpcode, err = buffer.Read8(buf)
-	header.mExchangeId, err = buffer.Read16(buf)
-	protocolId, err := buffer.Read16(buf)
+	header.mExchangeId, err = buffer.LittleEndianRead16(buf)
+	protocolId, err := buffer.LittleEndianRead16(buf)
 	if err != nil {
 		return err
 	}
 	var vendorId = lib.KVidCommon
 	if header.HaveVendorId() {
-		vid, err := buffer.Read16(buf)
+		vid, err := buffer.LittleEndianRead16(buf)
 		if err != nil {
 			return err
 		}
@@ -120,7 +120,7 @@ func (header *PayloadHeader) Decode(buf *buffer.PacketBuffer) error {
 		ProtocolId: protocolId,
 	}
 	if header.IsAckMsg() {
-		ackCounter, err := buffer.Read32(buf)
+		ackCounter, err := buffer.LittleEndianRead32(buf)
 		if err != nil {
 			return err
 		}

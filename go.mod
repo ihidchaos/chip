@@ -13,13 +13,14 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
 	go.dedis.ch/kyber/v3 v3.0.13
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8
 	gopkg.in/ini.v1 v1.66.6
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
+	github.com/aead/ecdh v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

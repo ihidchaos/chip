@@ -2,7 +2,6 @@ package credentials
 
 import (
 	"github.com/galenliu/chip/crypto"
-	"github.com/galenliu/chip/crypto/operational_storage"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/pkg/storage"
 	"time"
@@ -10,7 +9,7 @@ import (
 
 type FabricTableInitParams struct {
 	Storage             storage.KvsPersistentStorageDelegate
-	OperationalKeystore operational_storage.OperationalKeystore
+	OperationalKeystore crypto.OperationalKeystore
 	OpCertStore         PersistentStorageOpCertStore
 }
 
@@ -44,7 +43,7 @@ type FabricTableContainer interface {
 	FetchNOCCert(index lib.FabricIndex) ([]byte, error)
 	FetchRootPubkey(index lib.FabricIndex) ([]byte, error)
 	FetchCATs(index lib.FabricIndex) ([]byte, error)
-	SignWithOpKeypair(lib.FabricIndex) crypto.P256ECDSASignature
+	SignWithOpKeypair(lib.FabricIndex) *crypto.P256ECDSASignature
 	FindFabricWithIndex(index lib.FabricIndex) *FabricInfo
 }
 
@@ -53,7 +52,7 @@ type FabricTable struct {
 	mPendingFabric            *FabricInfo
 	mFabricLabel              string
 	mStorage                  storage.KvsPersistentStorageDelegate
-	operationalKeystore       operational_storage.OperationalKeystore
+	operationalKeystore       crypto.OperationalKeystore
 	mOpCertStore              PersistentStorageOpCertStore
 	mFabricCount              uint8
 	mNextAvailableFabricIndex lib.FabricIndex
@@ -164,13 +163,24 @@ func (f *FabricTable) FetchPendingNonFabricAssociatedRootCert() ([]byte, error) 
 }
 
 func (f *FabricTable) FetchICACert(index lib.FabricIndex) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+	if f.mOpCertStore == nil {
+		return nil, lib.ChipErrorIncorrectState
+	}
+	icaCert, err := f.mOpCertStore.GetCertificate(index, CertChainElement_Icac)
+	if err != nil {
+		if f.mOpCertStore.HasCertificateForFabric(index, CertChainElement_Noc) {
+			return icaCert, nil
+		}
+	}
+
+	return icaCert, err
 }
 
 func (f *FabricTable) FetchNOCCert(index lib.FabricIndex) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+	if f.mStorage == nil {
+		return nil, lib.ChipErrorIncorrectState
+	}
+	return f.mOpCertStore.GetCertificate(index, CertChainElement_Noc)
 }
 
 func (f *FabricTable) FetchRootPubkey(index lib.FabricIndex) (*crypto.P256PublicKey, error) {
@@ -187,7 +197,7 @@ func (f *FabricTable) FetchCATs(index lib.FabricIndex) ([]byte, error) {
 	panic("implement me")
 }
 
-func (f *FabricTable) SignWithOpKeypair(index lib.FabricIndex) crypto.P256ECDSASignature {
+func (f *FabricTable) SignWithOpKeypair(index lib.FabricIndex) *crypto.P256ECDSASignature {
 	//TODO implement me
 	panic("implement me")
 }
@@ -229,4 +239,11 @@ func (f *FabricTable) GetMutableFabricByIndex(index lib.FabricIndex) *FabricInfo
 func (f *FabricTable) RevertPendingFabricData() {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (f *FabricTable) AllocateEphemeralKeypairForCASE() *crypto.P256Keypair {
+	if f.operationalKeystore != nil {
+		return f.operationalKeystore.AllocateEphemeralKeypairForCASE()
+	}
+	return crypto.GenericP256Keypair()
 }

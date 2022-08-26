@@ -4,7 +4,7 @@ import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	crypto "github.com/galenliu/chip/crypto/operational_storage"
+	crypto2 "github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/pkg/storage"
 	"net"
@@ -60,7 +60,7 @@ type InitParams struct {
 	// provided.
 	TestEventTriggerDelegate TestEventTriggerDelegate
 	// Operational keystore with access to the operational keys: MUST be injected.
-	OperationalKeystore crypto.OperationalKeystore
+	OperationalKeystore crypto2.OperationalKeystore
 	// Operational certificate store with access to the operational certs in persisted storage:
 	// must not be null at timne of Server::initCommissionableData().
 	OpCertStore credentials.PersistentStorageOpCertStore
@@ -92,7 +92,7 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
 	var sKvsPersistentStorageDelegate storage.KvsPersistentStorageDelegate
-	var sPersistentStorageOperationalKeystore = crypto.NewPersistentStorageOperationalKeystoreImpl()
+	var sPersistentStorageOperationalKeystore = crypto2.NewPersistentStorageOperationalKeystoreImpl()
 	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
 	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
 	var sDefaultCertValidityPolicy = NewIgnoreCertificateValidityPolicy()

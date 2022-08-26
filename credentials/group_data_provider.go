@@ -10,8 +10,10 @@ import (
 const KEpochKeysMax = 3
 
 type KeySet struct {
-	NumKeysUsed int
+	keysetId    lib.KeysetId
+	NumKeysUsed uint8
 	EpochKeys   []EpochKey
+	Policy      any
 }
 
 // 对称加密密钥长度
@@ -19,6 +21,11 @@ const lengthBytes = crypto.SymmetricKeyLengthBytes //Crypto::CHIP_CRYPTO_SYMMETR
 type EpochKey struct {
 	StartTime time.Time
 	Key       []byte
+}
+
+func (e *EpochKey) Clear() {
+	e.StartTime = time.Time{}
+	e.Key = make([]byte, lengthBytes)
 }
 
 func NewEpochKey() *EpochKey {
@@ -48,10 +55,31 @@ func NewGroupDataProviderImpl() *GroupDataProviderImpl {
 	return &GroupDataProviderImpl{}
 }
 
-func (g *GroupDataProviderImpl) GetIpkKeySet(index lib.FabricIndex) (*KeySet, error) {
-	fabricData := NewFabricData(index)
-	fabricData.Load(g.mStorage)
-	return nil, nil
+func (g *GroupDataProviderImpl) GetIpkKeySet(index lib.FabricIndex) (outKeyset *KeySet, err error) {
+	outKeyset = &KeySet{}
+	fabric := NewFabricData(index)
+	err = fabric.Load(g.mStorage)
+
+	//mapping := NewKeyMapData(fabric.fabricIndex, fabric.firstMap)
+
+	keyset := KeySetData{}
+	keyset.Find(g.mStorage, fabric, lib.KeysetId(0))
+
+	outKeyset.keysetId = keyset.keysetId
+	outKeyset.NumKeysUsed = keyset.keysetCount
+	outKeyset.Policy = keyset.policy
+
+	for i, epoch := range outKeyset.EpochKeys {
+		if uint8(i) < keyset.keysetCount {
+			epoch.StartTime = keyset.operationalKeys[i].StateTime
+			epoch.Key = keyset.operationalKeys[i].EncryptionKey
+		}
+	}
+
+	if err != nil {
+		return
+	}
+	return
 }
 
 func (g *GroupDataProviderImpl) SetListener(listener GroupListener) {

@@ -14,7 +14,7 @@ func Read8(buf io.Reader) (uint8, error) {
 	return data[0], nil
 }
 
-func Read16(buf io.Reader) (uint16, error) {
+func LittleEndianRead16(buf io.Reader) (uint16, error) {
 	b := make([]byte, 2)
 	_, err := buf.Read(b)
 	if err != nil {
@@ -23,7 +23,7 @@ func Read16(buf io.Reader) (uint16, error) {
 	return binary.LittleEndian.Uint16(b), nil
 }
 
-func Read32(buf io.Reader) (uint32, error) {
+func LittleEndianRead32(buf io.Reader) (uint32, error) {
 	b := make([]byte, 4)
 	_, err := buf.Read(b)
 	if err != nil {
@@ -32,7 +32,7 @@ func Read32(buf io.Reader) (uint32, error) {
 	return binary.LittleEndian.Uint32(b), nil
 }
 
-func Read64(buf io.Reader) (uint64, error) {
+func LittleEndianRead64(buf io.Reader) (uint64, error) {
 	b := make([]byte, 8)
 	_, err := buf.Read(b)
 	if err != nil {
@@ -51,7 +51,7 @@ func Write8(buf io.Writer, val uint8) error {
 	return nil
 }
 
-func Write16(buf io.Writer, val uint16) error {
+func LittleEndianWrite16(buf io.Writer, val uint16) error {
 	tSize := 2
 	data := make([]byte, tSize)
 	binary.LittleEndian.PutUint16(data, val)
@@ -62,7 +62,7 @@ func Write16(buf io.Writer, val uint16) error {
 	return nil
 }
 
-func Write32(buf io.Writer, val uint32) error {
+func LittleEndianWrite32(buf io.Writer, val uint32) error {
 	tSize := 4
 	data := make([]byte, tSize)
 	binary.LittleEndian.PutUint32(data, val)
@@ -73,7 +73,7 @@ func Write32(buf io.Writer, val uint32) error {
 	return nil
 }
 
-func Write64(buf io.Writer, val uint64) error {
+func LittleEndianWrite64(buf io.Writer, val uint64) error {
 	tSize := 8
 	data := make([]byte, tSize)
 	binary.LittleEndian.PutUint64(data, val)

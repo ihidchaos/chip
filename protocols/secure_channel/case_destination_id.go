@@ -5,7 +5,6 @@ import (
 	"github.com/galenliu/chip/lib"
 )
 
-func GenerateCaseDestinationId(candidateIpkSpan, initiatorRandom []byte, pubKey *crypto.P256PublicKey, fabricId lib.FabricId, nodeId lib.NodeId) error {
-
-	return nil
+func GenerateCaseDestinationId(candidateIpkSpan, initiatorRandom []byte, pubKey *crypto.P256PublicKey, fabricId lib.FabricId, nodeId lib.NodeId) (data []byte, err error) {
+	return
 }

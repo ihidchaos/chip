@@ -23,39 +23,44 @@ type TLVCommonProfiles uint64
  * This is essentially the same as kCHIPProfile_NotSpecified defined in CHIPProfiles.h
  */
 
-const (
-	kProfileIdNotSpecified = 0xFFFFFFFF
+type Tag uint64
 
-	kChipProfileCommon = 0x0
-)
-
-type ElementTag uint64
-
-func (t ElementTag) Equal(tag ElementTag) bool {
+func (t Tag) Equal(tag Tag) bool {
 	return t == tag
 }
 
-func AnonymousTag() ElementTag {
-	return ElementTag(0xFFFFFFFF00000000 | 0x0000000FFFFFFFFF)
+func (t Tag) IsSpecialTag() bool {
+	return t&0xFFFFFFFF00000000 == 0xFFFFFFFF00000000
 }
 
-func ContextTag(tagNum uint8) ElementTag {
-	return ElementTag(0xFFFFFFFF00000000 | uint64(tagNum))
+func AnonymousTag() Tag {
+	return Tag(0xFFFFFFFF00000000 | 0x0000000FFFFFFFFF)
 }
 
-func CommonTag4Byte(val uint32) ElementTag {
+func ContextTag(tagNum uint8) Tag {
+	return Tag(0xFFFFFFFF00000000 | uint64(tagNum))
+}
+
+func CommonTag4Byte(val uint32) Tag {
 	return ProfileTag(0x0, val)
 }
 
-func CommonTag2Byte(val uint16) ElementTag {
+func CommonTag2Byte(val uint16) Tag {
 	return ProfileTag(0x0, uint32(val))
 }
 
-func ProfileTag(profileId, tagNum uint32) ElementTag {
-	return ElementTag((uint64(profileId))<<32 | uint64(tagNum))
+func ProfileTag(profileId, tagNum uint32) Tag {
+	return Tag((uint64(profileId))<<32 | uint64(tagNum))
 }
 
-func ProfileTag4Byte(vendorId uint16, profileNum uint16, tagNum uint32) ElementTag {
+func ProfileTag4Byte(vendorId uint16, profileNum uint16, tagNum uint32) Tag {
 	tag := uint64(vendorId)<<48 | uint64(profileNum)<<32 | uint64(tagNum)
-	return ElementTag(tag)
+	return Tag(tag)
+}
+
+func GetTLVFieldSize(elementType ElementType) FieldSize {
+	if elementType.HasValue() {
+		return FieldSize(uint8(elementType) & 0x03)
+	}
+	return kTLVFieldSize0Byte
 }

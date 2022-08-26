@@ -1,4 +1,4 @@
-package operational_storage
+package crypto
 
 import (
 	"crypto"
@@ -16,8 +16,8 @@ type OperationalKeystore interface {
 	RemoveOpKeypairForFabric(fabricIndex lib.FabricIndex) error
 	RevertPendingKeypair()
 	SignWithOpKeypair(fabricIndex lib.FabricIndex, message []byte) ([]byte, error)
-	AllocateEphemeralKeypairForCASE() crypto.PrivateKey
-	ReleaseEphemeralKeypair(key crypto.PrivateKey)
+	AllocateEphemeralKeypairForCASE() *P256Keypair
+	ReleaseEphemeralKeypair(key *P256Keypair)
 }
 
 func NewOperationalKeystoreImpl() *OperationalKeystoreImpl {
@@ -73,12 +73,11 @@ func (p OperationalKeystoreImpl) SignWithOpKeypair(fabricIndex lib.FabricIndex, 
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) AllocateEphemeralKeypairForCASE() crypto.PrivateKey {
-	//TODO implement me
-	panic("implement me")
+func (p OperationalKeystoreImpl) AllocateEphemeralKeypairForCASE() *P256Keypair {
+	return GenericP256Keypair()
 }
 
-func (p OperationalKeystoreImpl) ReleaseEphemeralKeypair(key crypto.PrivateKey) {
+func (p OperationalKeystoreImpl) ReleaseEphemeralKeypair(key *P256Keypair) {
 	//TODO implement me
 	panic("implement me")
 }

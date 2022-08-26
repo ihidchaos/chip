@@ -1,6 +1,7 @@
 package secure_channel
 
 import (
+	"errors"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
@@ -22,13 +23,15 @@ type PairingSession interface {
 	DeriveSecureSession(ctx transport.CryptoContext) error
 	GetRemoteMRPConfig() *transport.ReliableMessageProtocolConfig
 	SetRemoteMRPConfig(mrpLocalConfig *transport.ReliableMessageProtocolConfig)
-	EncodeMRPParameters(tag tlv.ElementTag, mrpLocalConfig *transport.ReliableMessageProtocolConfig)
+	EncodeMRPParameters(tag tlv.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig)
 }
 
 type PairingSessionImpl struct {
 	mRole              uint8
 	mSecureSessionType transport.TSecureSessionType
 	mPeerSessionId     uint16
+
+	mDelegate SessionEstablishmentDelegate
 
 	SessionManager       transport.SessionManager
 	mExchangeCtxt        messageing.ExchangeContext
@@ -45,13 +48,16 @@ func (p PairingSessionImpl) GetPeerCATs() lib.CATValues {
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy {
-	return transport.KStayAtOldSession
+func (p PairingSessionImpl) GetLocalSessionId() (uint16, error) {
+	ss := p.mSecureSessionHolder.AsSecureSession()
+	if ss != nil {
+		return ss.GetLocalSessionId(), nil
+	}
+	return 0, errors.New("secure session err")
 }
 
-func (p PairingSessionImpl) GetLocalSessionId() uint16 {
-	//TODO implement me
-	panic("implement me")
+func (p PairingSessionImpl) GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy {
+	return transport.KStayAtOldSession
 }
 
 func (p PairingSessionImpl) CopySecureSession() transport.SessionHandle {
@@ -84,12 +90,12 @@ func (p PairingSessionImpl) SetRemoteMRPConfig(mrpLocalConfig *transport.Reliabl
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) EncodeMRPParameters(tag tlv.ElementTag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
+func (p PairingSessionImpl) EncodeMRPParameters(tag tlv.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) DecodeMRPParametersIfPresent(tag tlv.ElementTag, reader *tlv.ReaderImpl) error {
+func (p PairingSessionImpl) DecodeMRPParametersIfPresent(tag tlv.Tag, reader *tlv.ReaderImpl) error {
 	if reader.GetTag() != tag {
 		return nil
 	}

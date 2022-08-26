@@ -9,6 +9,7 @@ type SessionHolder interface {
 	DispatchSessionEvent(delegate SessionDelegate)
 	Contains(session SessionHandle) bool
 	SessionDelegate
+	AsSecureSession() *SecureSession
 }
 
 type SessionHolderImpl struct {
@@ -33,6 +34,14 @@ func NewSessionHolderWithDelegateImpl(delegate SessionDelegate) *SessionHolderWi
 		SessionHolderImpl: NewSessionHolderImpl(),
 		mDelegate:         delegate,
 	}
+}
+
+func (s *SessionHolderWithDelegateImpl) AsSecureSession() *SecureSession {
+	ss, ok := s.mSession.(*SecureSession)
+	if ok {
+		return ss
+	}
+	return nil
 }
 
 func (s *SessionHolderWithDelegateImpl) SessionReleased() {

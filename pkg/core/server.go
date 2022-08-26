@@ -4,7 +4,7 @@ import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	storage2 "github.com/galenliu/chip/crypto/operational_storage"
+	storage2 "github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"

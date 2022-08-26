@@ -11,20 +11,20 @@ import (
 
 /**********************************************
 * TAG
-  | 111  xxxxx|  3bit  ElementTag Control
-  | xxx  11111|  5bit  ElementTag TLVType
+  | 111  xxxxx|  3bit  Tag Control
+  | xxx  11111|  5bit  Tag TLVType
 **********************************************/
 
 type Reader interface {
 	Next()
-	NextE(tag ElementTag, tlvTyp ...TLVType) error
+	NextE(tag Tag, tlvTyp ...TLVType) error
 	GetBytesView() ([]byte, error)
 	EnterContainer() (TLVType, error)
 	GetUint8() (uint8, error)
 	GetUint16() (uint16, error)
 	GetUint32() (uint32, error)
 	GetUint64() (uint64, error)
-	GetTag() ElementTag
+	GetTag() Tag
 	ExitContainer(tlvType TLVType) error
 }
 
@@ -33,7 +33,7 @@ type ReaderImpl struct {
 	mControlTag  TagControl
 	mElementType ElementType
 
-	mElemTag ElementTag
+	mElemTag Tag
 
 	mElemLenOrVal uint64
 
@@ -52,7 +52,7 @@ func NewReader(reader io.Reader) *ReaderImpl {
 }
 
 // NextE 读取一个指定tag的TLV
-func (r *ReaderImpl) NextE(tag ElementTag, tlvTyp ...TLVType) error {
+func (r *ReaderImpl) NextE(tag Tag, tlvTyp ...TLVType) error {
 	r.Next()
 	if r.mElemTag != tag {
 		return lib.ChipErrorUnexpectedTlvElement
@@ -78,7 +78,7 @@ func (r *ReaderImpl) Next() {
 	}
 }
 
-func (r *ReaderImpl) GetTag() ElementTag {
+func (r *ReaderImpl) GetTag() Tag {
 	return r.mElemTag
 }
 
@@ -111,19 +111,19 @@ func (r *ReaderImpl) ReadElement() error {
 		}
 		r.mElemLenOrVal = uint64(val)
 	case kTLVFieldSize2Byte:
-		val, err := buffer.Read16(r.mBuffer)
+		val, err := buffer.LittleEndianRead16(r.mBuffer)
 		if err != nil {
 			return err
 		}
 		r.mElemLenOrVal = uint64(val)
 	case kTLVFieldSize4Byte:
-		val, err := buffer.Read32(r.mBuffer)
+		val, err := buffer.LittleEndianRead32(r.mBuffer)
 		if err != nil {
 			return err
 		}
 		r.mElemLenOrVal = uint64(val)
 	case kTLVFieldSize8Byte:
-		val, err := buffer.Read64(r.mBuffer)
+		val, err := buffer.LittleEndianRead64(r.mBuffer)
 		if err != nil {
 			return err
 		}
@@ -158,38 +158,38 @@ func (r *ReaderImpl) GetBytesView() ([]byte, error) {
 	return nil, lib.ChipErrorWrongTlvType
 }
 
-func (r *ReaderImpl) ReadTag(tagControl TagControl) ElementTag {
+func (r *ReaderImpl) ReadTag(tagControl TagControl) Tag {
 	switch tagControl {
 	case ContextSpecific:
 		val, _ := buffer.Read8(r.mBuffer)
 		return ContextTag(val)
 	case CommonProfile2Bytes:
-		val, _ := buffer.Read16(r.mBuffer)
+		val, _ := buffer.LittleEndianRead16(r.mBuffer)
 		return CommonTag2Byte(val)
 	case CommonProfile4Bytes:
-		val, _ := buffer.Read32(r.mBuffer)
+		val, _ := buffer.LittleEndianRead32(r.mBuffer)
 		return CommonTag4Byte(val)
 	//case ImplicitProfile2Bytes:
 	//	if r.ImplicitProfileId == kProfileIdNotSpecified {
 	//		return ContextTag(UnknownImplicitTag)
 	//	}
-	//	val, _ := buffer.Read16(r.mBuffer)
+	//	val, _ := buffer.LittleEndianRead16(r.mBuffer)
 	//	return ProfileTag(r.ImplicitProfileId, uint32(val))
 	//case ImplicitProfile4Bytes:
 	//	if r.ImplicitProfileId == kProfileIdNotSpecified {
 	//		return ContextTag(UnknownImplicitTag)
 	//	}
-	//	val, _ := buffer.Read32(r.mBuffer)
+	//	val, _ := buffer.LittleEndianRead32(r.mBuffer)
 	//	return ProfileTag(r.ImplicitProfileId, val)
-	case FullQualified6Bytes:
-		vendorId, _ := buffer.Read16(r.mBuffer)
-		profileNum, _ := buffer.Read16(r.mBuffer)
-		val, _ := buffer.Read16(r.mBuffer)
+	case FullyQualified6Bytes:
+		vendorId, _ := buffer.LittleEndianRead16(r.mBuffer)
+		profileNum, _ := buffer.LittleEndianRead16(r.mBuffer)
+		val, _ := buffer.LittleEndianRead16(r.mBuffer)
 		return ProfileTag4Byte(vendorId, profileNum, uint32(val))
 	case FullyQualified8Bytes:
-		vendorId, _ := buffer.Read16(r.mBuffer)
-		profileNum, _ := buffer.Read16(r.mBuffer)
-		val, _ := buffer.Read32(r.mBuffer)
+		vendorId, _ := buffer.LittleEndianRead16(r.mBuffer)
+		profileNum, _ := buffer.LittleEndianRead16(r.mBuffer)
+		val, _ := buffer.LittleEndianRead32(r.mBuffer)
 		return ProfileTag4Byte(vendorId, profileNum, val)
 	default:
 		return AnonymousTag()
@@ -208,10 +208,10 @@ func (r *ReaderImpl) VerifyElement() error {
 func (r *ReaderImpl) GetType() TLVType {
 	elemType := r.ElementType()
 	if elemType == EndOfContainer {
-		return TypeNotSpecified
+		return Type_NotSpecified
 	}
 	if elemType == FloatingPointNumber32 || elemType == FloatingPointNumber64 {
-		return TypeFloatingPointNumber
+		return Type_FloatingPointNumber
 	}
 	if elemType == NotSpecified || elemType == Null {
 		return TLVType(elemType)
@@ -253,7 +253,7 @@ func (r *ReaderImpl) reset() {
 
 func (r *ReaderImpl) EnterContainer() (TLVType, error) {
 	t := r.GetType()
-	if t == TypeStructure || t == TypeList || t == TypeArray {
+	if t == Type_Structure || t == Type_List || t == Type_Array {
 		return t, nil
 	}
 	return t, lib.ChipErrorWrongTlvType
@@ -268,11 +268,4 @@ func FieldSizeToBytes(size FieldSize) uint8 {
 		return 1 << size
 	}
 	return 0
-}
-
-func GetTLVFieldSize(elementType ElementType) FieldSize {
-	if elementType.HasValue() {
-		return FieldSize(uint8(elementType) & 0x03)
-	}
-	return kTLVFieldSize0Byte
 }

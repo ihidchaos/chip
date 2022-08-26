@@ -7,18 +7,18 @@ type TLVType int8
 type ElementType int8
 
 const (
-	TypeNull                TLVType = 0x14
-	TypeStructure           TLVType = 0x15
-	TypeArray               TLVType = 0x16
-	TypeList                TLVType = 0x17
-	TypeNotSpecified        TLVType = -1
-	TypeUnknownContainer    TLVType = -2
-	TypeSignedInteger       TLVType = 0x00
-	TypeUnsignedInteger     TLVType = 0x04
-	TypeBoolean             TLVType = 0x08
-	TypeFloatingPointNumber TLVType = 0x0A
-	TypeUTF8String          TLVType = 0x0C
-	TypeByteString          TLVType = 0x10
+	TypeNull                 TLVType = 0x14
+	Type_Structure           TLVType = 0x15
+	Type_Array               TLVType = 0x16
+	Type_List                TLVType = 0x17
+	Type_NotSpecified        TLVType = -1
+	TypeUnknownContainer     TLVType = -2
+	TypeSignedInteger        TLVType = 0x00
+	Type_UnsignedInteger     TLVType = 0x04
+	TypeBoolean              TLVType = 0x08
+	Type_FloatingPointNumber TLVType = 0x0A
+	Type_UTF8String          TLVType = 0x0C
+	Type_ByteString          TLVType = 0x10
 )
 
 // IMPORTANT: All values here must have no bits in common with specified
@@ -30,9 +30,17 @@ const (
 	CommonProfile4Bytes   TagControl = 0x60
 	ImplicitProfile2Bytes TagControl = 0x80
 	ImplicitProfile4Bytes TagControl = 0xA0
-	FullQualified6Bytes   TagControl = 0xC0
+	FullyQualified6Bytes  TagControl = 0xC0
 	FullyQualified8Bytes  TagControl = 0xE0
 )
+
+func controlByte(control TagControl, elementType ElementType) byte {
+	return byte(control) & byte(elementType)
+}
+
+func (t TagControl) Uint8() uint8 {
+	return uint8(t)
+}
 
 const (
 	kTLVFieldSize0Byte FieldSize = -1
@@ -72,10 +80,36 @@ const (
 	EndOfContainer ElementType = 0x18
 )
 
+func IsContainerType(elementType ElementType) bool {
+	return elementType <= List && elementType <= Structure
+}
+
 func (t ElementType) HasValue() bool {
-	return t <= UInt64 || (t >= FloatingPointNumber32 && t <= ByteString1ByteLength)
+	return t <= UInt64 || (t >= FloatingPointNumber32 && t <= ByteString8ByteLength)
 }
 
 func (t ElementType) Uint8() uint8 {
 	return uint8(t)
 }
+
+func WriterControl(buffer Writer, control TagControl, elementType ElementType) error {
+	data := control.Uint8() & elementType.Uint8()
+	err := buffer.WriteByte(data)
+	return err
+}
+
+//func WriterUin16(buffer Writer, val uint16) error {
+//	data := make([]byte,2)
+//	binary.LittleEndian.PutUint16(data,val)
+//	_,err:= buffer.Write(data)
+//	return err
+//}
+//
+//func WriterUin16(buffer Writer, val uint16) error {
+//	data := make([]byte,2)
+//	binary.LittleEndian.PutUint16(data,val)
+//	_,err:= buffer.Write(data)
+//	return err
+//
+//
+//}

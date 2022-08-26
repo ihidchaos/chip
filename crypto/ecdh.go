@@ -1,13 +1,13 @@
 package crypto
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"github.com/aead/ecdh"
 	"math/big"
 	"os"
 )
@@ -151,21 +151,44 @@ func EccVerify(plainText, rText, sTest []byte, publicKeyFile string) (b bool, er
 	return
 }
 
-type P256PublicKey struct {
-	crypto.PublicKey
+type P256PublicKey ecdsa.PublicKey
+
+type P256Keypair ecdsa.PrivateKey
+
+func (k *P256Keypair) MarshalPublicKey() []byte {
+	return elliptic.Marshal(elliptic.P256(), k.X, k.Y)
 }
 
-type P256Keypair struct {
-	crypto.PrivateKey
+func (p *P256PublicKey) Marshal() []byte {
+	return elliptic.Marshal(elliptic.P256(), p.X, p.Y)
 }
 
-func NewP256PublicKey(data []byte) (*P256PublicKey, error) {
-	block, _ := pem.Decode(data)
-	publicInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+func (k *P256Keypair) ECDHDeriveSecret(key P256PublicKey) []byte {
+	p256 := ecdh.Generic(elliptic.P256())
+	return p256.ComputeSecret(k, key)
+}
+
+func GenericP256Keypair() *P256Keypair {
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	publicKey := publicInterface.(*ecdsa.PublicKey)
+	return (*P256Keypair)(privateKey)
+}
 
-	return &P256PublicKey{publicKey}, nil
+// UnmarshalP256PublicKey  接收到的字节序列化成公钥
+func UnmarshalP256PublicKey(data []byte) (P256PublicKey, error) {
+	x, y := elliptic.Unmarshal(elliptic.P256(), data)
+	pubKey := ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     x,
+		Y:     y,
+	}
+	return P256PublicKey(pubKey), nil
+}
+
+func MarshalP256PublicKey(pubKey P256PublicKey) ([]byte, error) {
+	key := ecdsa.PublicKey(pubKey)
+	data := elliptic.Marshal(elliptic.P256(), key.X, key.Y)
+	return data, nil
 }

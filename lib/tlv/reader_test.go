@@ -53,7 +53,7 @@ func TestTLV(t *testing.T) {
 	var initiatorRandom, destinationId, initiatorEphPubKey []byte
 
 	tlvReader := NewReader(buf)
-	err = tlvReader.NextE(AnonymousTag(), TypeStructure)
+	err = tlvReader.NextE(AnonymousTag(), Type_Structure)
 	if err != nil {
 		t.Log(err.Error())
 		return
@@ -69,7 +69,7 @@ func TestTLV(t *testing.T) {
 	}
 
 	//Sigma1， Tag =2 Session id
-	err = tlvReader.NextE(ContextTag(kInitiatorSessionIdTag), TypeUnsignedInteger)
+	err = tlvReader.NextE(ContextTag(kInitiatorSessionIdTag), Type_UnsignedInteger)
 	if err != nil {
 		t.Log(err.Error())
 	}

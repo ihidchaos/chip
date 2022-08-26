@@ -1,6 +1,9 @@
 package secure_channel
 
 import (
+	"bytes"
+	"crypto/elliptic"
+	"errors"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
@@ -11,6 +14,7 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/protocols"
 	"github.com/galenliu/gateway/pkg/log"
+	rand "math/rand"
 )
 
 // SessionEstablishmentDelegate : CASEServer implementation
@@ -38,9 +42,9 @@ type CASESessionBase interface {
 type CASESession struct {
 	*PairingSessionImpl
 	mCommissioningHash crypto.HashSha256Stream
-	mRemotePubKey      crypto.P256PublicKey
-	mEphemeralKey      crypto.P256Keypair
-	mSharedSecret      crypto.P256ECDHDerivedSecret
+	mRemotePubKey      *crypto.P256PublicKey
+	mEphemeralKey      *crypto.P256Keypair
+	mSharedSecret      []byte //crypto.P256ECDHDerivedSecret
 	mValidContext      credentials.ValidationContext
 	mGroupDataProvider credentials.GroupDataProvider
 
@@ -57,8 +61,8 @@ type CASESession struct {
 
 	mInitiatorRandom []byte
 
-	mResumeResumptionId []byte
-	mNewResumptionId    []byte
+	mResumeResumptionId []byte //会话恢复ID 16个字节
+	mNewResumptionId    []byte //会话恢复ID 16个字节
 
 	mState uint8
 }
@@ -238,6 +242,9 @@ func (s *CASESession) HandleSigma1(buf *buffer.PacketBuffer) error {
 		return lib.ChipErrorIncorrectState
 	}
 
+	if sigma1.sessionResumptionRequested && len(sigma1.resumptionId) == 16 {
+	}
+
 	err = s.FindLocalNodeFromDestinationId(sigma1.destinationId, sigma1.initiatorRandom)
 	if err == nil {
 		log.Infof("CASE matched destination ID: fabricIndex %x, NodeID 0x", s.mFabricIndex, s.mLocalNodeId)
@@ -245,11 +252,109 @@ func (s *CASESession) HandleSigma1(buf *buffer.PacketBuffer) error {
 		log.Infof("CASE failed to match destination ID with local fabrics")
 	}
 
+	pubKey, err := crypto.UnmarshalP256PublicKey(sigma1.initiatorEphPubKey)
+	if err != nil {
+		return err
+	}
+	s.mRemotePubKey = &pubKey
+
+	err = s.SendSigma2()
+	if err != nil {
+		//s.SendStatusReport()
+		s.mState = SInitialized
+		return err
+	}
+	s.mDelegate.OnSessionEstablishmentStarted()
 	return nil
 }
 
-func (s *CASESession) SendSigma2() {
+func (s *CASESession) SendSigma2() error {
+	_, err := s.GetLocalSessionId()
+	if err != nil {
+		return err
+	}
+	//获取ICA证书
+	icaCert, err := s.mFabricsTable.FetchICACert(s.mFabricIndex)
+	if err != nil && len(icaCert) != credentials.MaxCHIPCertLength {
+		return errors.New("sigma2 icaCert err")
+	}
+	//获取节点操作证书(NOC)
+	nocCert, err := s.mFabricsTable.FetchNOCCert(s.mFabricIndex)
+	if err != nil && len(nocCert) != credentials.MaxCHIPCertLength {
+		return errors.New("sigma2 nocCert err")
+	}
 
+	//生成一个32字节的随机数
+	msgRand := make([]byte, kSigmaParamRandomNumberSize)
+	_, err = rand.Read(msgRand)
+
+	//生成临时密钥对
+	s.mEphemeralKey = s.mFabricsTable.AllocateEphemeralKeypairForCASE()
+	if s.mEphemeralKey == nil {
+		return errors.New("sigma2 ephemeral key error")
+	}
+
+	// 生成共享密钥
+	s.mSharedSecret = s.mEphemeralKey.ECDHDeriveSecret(*s.mRemotePubKey)
+
+	//生成一个盐值
+
+	salt, err := s.ConstructSaltSigma2(msgRand, elliptic.Marshal(elliptic.P256(), s.mEphemeralKey.PublicKey.X, s.mEphemeralKey.Y), s.mIPK)
+	if err != nil || salt == nil {
+		return errors.New("sigma2 salt error")
+	}
+
+	// 使用HKDF函数派生出密钥sr2k
+	sr2k := crypto.HKDFSha256(s.mSharedSecret, salt, KDFSR2Info)
+	if sr2k == nil || len(sr2k) != crypto.SymmetricKeyLengthBytes {
+		return errors.New("sigma2 hkdfSha256 error")
+	}
+
+	//msgR2SignedLen := tlv.EstimateStructOverhead(credentials.MaxCHIPCertLength, credentials.MaxCHIPCertLength, crypto.KP256PublicKeyLength, crypto.KP256PublicKeyLength)
+
+	//msgR2Signed := s.ConstructTBSData(nocCert, icaCert, s.mEphemeralKey.MarshalPublicKey(), s.mRemotePubKey.Marshal())
+
+	tbsData2Signature := s.mFabricsTable.SignWithOpKeypair(s.mFabricIndex).Bytes()
+
+	tlvWriter := tlv.NewWriterBuffer()
+	err = tlvWriter.StartContainer(tlv.AnonymousTag(), tlv.Type_Structure)
+	if err != nil {
+		return err
+	}
+
+	err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_SenderNOC), nocCert)
+	if err != nil {
+		return err
+	}
+	if len(icaCert) > 0 {
+		err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_SenderICAC), icaCert)
+		if err != nil {
+			return err
+		}
+	}
+	err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_Signature), tbsData2Signature)
+	if err != nil {
+		return err
+	}
+
+	s.mNewResumptionId = make([]byte, kResumptionIdSize)
+	err = crypto.DRBGGetBytes(s.mNewResumptionId)
+	if err != nil {
+		return err
+	}
+	err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_ResumptionID), s.mNewResumptionId)
+	if err != nil {
+		return err
+	}
+
+	err = tlvWriter.EndContainer(tlv.Type_Structure)
+	if err != nil {
+		return err
+	}
+
+	//msgR2SignedEncLen := tlvWriter.Len()
+
+	return nil
 }
 
 func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initiatorRandom []byte) error {
@@ -268,11 +373,30 @@ func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initi
 		}
 
 		// Try every IPK candidate we have for a match
-		for keyIdx := 0; keyIdx < ipkKeySet.NumKeysUsed; keyIdx++ {
-			GenerateCaseDestinationId(ipkKeySet.EpochKeys[keyIdx].Key, initiatorRandom, rootPubKey, fabriceId, nodeId)
-
+		for keyIdx := 0; uint8(keyIdx) < ipkKeySet.NumKeysUsed; keyIdx++ {
+			candidateDestinationId, err := GenerateCaseDestinationId(ipkKeySet.EpochKeys[keyIdx].Key, initiatorRandom, rootPubKey, fabriceId, nodeId)
+			if err != nil && len(candidateDestinationId) == len(destinationId) {
+				s.mFabricIndex = fabricInfo.GetFabricIndex()
+				s.mLocalNodeId = nodeId
+			}
 		}
-
 	}
+	return nil
+}
+
+func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []byte) (saltSpan []byte, err error) {
+	//md := make([]byte, crypto.KSha256HashLength)
+
+	saltSpan = make([]byte, kIpkSize+kSigmaParamRandomNumberSize+crypto.KP256PublicKeyLength+crypto.KSha256HashLength)
+	buf := bytes.NewBuffer(saltSpan)
+	_, err = buf.Write(ipk)
+	_, err = buf.Write(rand)
+	_, err = buf.Write(publicKey)
+	_, err = buf.Write(s.mCommissioningHash.Bytes())
+	return saltSpan, nil
+}
+
+func (s *CASESession) ConstructTBSData(senderNOC []byte, senderICAC []byte, senderPubKey []byte, receiverPubKey []byte) []byte {
+
 	return nil
 }

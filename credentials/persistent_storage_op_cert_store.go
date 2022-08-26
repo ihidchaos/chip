@@ -24,7 +24,7 @@ type PersistentStorageOpCertStore interface {
 
 	RevertPendingOpCertsExceptRoot()
 
-	GetCertificate(fabricIndex lib.FabricIndex, element uint8) []byte
+	GetCertificate(fabricIndex lib.FabricIndex, element uint8) ([]byte, error)
 }
 
 type PersistentStorageOpCertStoreImpl struct {
@@ -78,6 +78,6 @@ func (s PersistentStorageOpCertStoreImpl) RevertPendingOpCertsExceptRoot() {
 
 }
 
-func (s PersistentStorageOpCertStoreImpl) GetCertificate(fabricIndex lib.FabricIndex, element uint8) []byte {
-	return nil
+func (s PersistentStorageOpCertStoreImpl) GetCertificate(fabricIndex lib.FabricIndex, element uint8) ([]byte, error) {
+	return nil, nil
 }

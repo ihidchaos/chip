@@ -250,24 +250,24 @@ func (h *PacketHeader) DecodeAndConsume(buf *bytes2.PacketBuffer) error {
 		return lib.ChipErrorInvalidArgument
 	}
 	h.mMessageFlags, err = bytes2.Read8(buf)
-	h.mSessionId, err = bytes2.Read16(buf)
+	h.mSessionId, err = bytes2.LittleEndianRead16(buf)
 	h.mSecFlags, err = bytes2.Read8(buf)
-	h.mMessageCounter, err = bytes2.Read32(buf)
+	h.mMessageCounter, err = bytes2.LittleEndianRead32(buf)
 	if err != nil {
 		return err
 	}
 
 	if lib.HasFlags(h.mMessageFlags, FSourceNodeIdPresent) {
-		v, _ := bytes2.Read64(buf)
+		v, _ := bytes2.LittleEndianRead64(buf)
 		h.mSourceNodeId = lib.NodeId(v)
 	}
 
 	if lib.HasFlags(h.mMessageFlags, FDestinationNodeIdPresent) {
-		v, _ := bytes2.Read64(buf)
+		v, _ := bytes2.LittleEndianRead64(buf)
 		h.mDestinationNodeId = lib.NodeId(v)
 	}
 	if lib.HasFlags(h.mMessageFlags, FDestinationGroupIdPresent) {
-		v, _ := bytes2.Read16(buf)
+		v, _ := bytes2.LittleEndianRead16(buf)
 		h.mDestinationGroupId = lib.GroupId(v)
 	}
 	return nil
@@ -283,16 +283,16 @@ func (h *PacketHeader) Encode() (*bytes.Buffer, error) {
 
 	buf := bytes.NewBuffer(nil)
 	err := bytes2.Write8(buf, msgFlags)
-	err = bytes2.Write16(buf, h.mSessionId)
+	err = bytes2.LittleEndianWrite16(buf, h.mSessionId)
 	err = bytes2.Write8(buf, h.mSecFlags)
-	err = bytes2.Write32(buf, h.mMessageCounter)
+	err = bytes2.LittleEndianWrite32(buf, h.mMessageCounter)
 	if h.mSourceNodeId.HasValue() {
-		err = bytes2.Write64(buf, uint64(h.mSourceNodeId))
+		err = bytes2.LittleEndianWrite64(buf, uint64(h.mSourceNodeId))
 	}
 	if h.mDestinationNodeId.HasValue() {
-		err = bytes2.Write64(buf, uint64(h.mDestinationNodeId))
+		err = bytes2.LittleEndianWrite64(buf, uint64(h.mDestinationNodeId))
 	} else if h.mDestinationGroupId.HasValue() {
-		err = bytes2.Write16(buf, uint16(h.mDestinationGroupId))
+		err = bytes2.LittleEndianWrite16(buf, uint16(h.mDestinationGroupId))
 	}
 	if err != nil {
 		return nil, err
