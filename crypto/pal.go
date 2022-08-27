@@ -1,6 +1,9 @@
 package crypto
 
-import "crypto/rand"
+import (
+	"crypto/aes"
+	"crypto/rand"
+)
 
 type Spake2pVerifier struct {
 }
@@ -37,4 +40,9 @@ func DRBGBytes(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+func AesCcmEncrypt() {
+	cip, _ := aes.NewCipher([]byte{})
+
 }
