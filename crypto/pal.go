@@ -2,7 +2,9 @@ package crypto
 
 import (
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
+	"fmt"
 )
 
 type Spake2pVerifier struct {
@@ -42,7 +44,24 @@ func DRBGBytes(data []byte) error {
 	return nil
 }
 
-func AesCcmEncrypt() {
-	cip, _ := aes.NewCipher([]byte{})
+// AesCcmEncrypt AES 要求的Key长度为16个字节
+func AesCcmEncrypt(plainText, key []byte) (outPut []byte, err error) {
+	if len(key) != SymmetricKeyLengthBytes {
+		return nil, fmt.Errorf("key length mismatch:%d", len(key))
+	}
+	return
+}
 
+func AesCtrEncryptOrDecrypt(inputText, key, iv []byte) (outPut []byte, err error) {
+	//创建一个底层使用AES的密码接口
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+
+	//创建一个使用CTR分组接口, iv的长度等于明文分组的长度
+	stream := cipher.NewCTR(block, iv)
+	outPut = make([]byte, len(inputText))
+	stream.XORKeyStream(outPut, inputText)
+	return
 }

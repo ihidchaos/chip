@@ -304,7 +304,7 @@ func (s *CASESession) SendSigma2() error {
 		return errors.New("sigma2 salt error")
 	}
 
-	// 使用HKDF函数派生出密钥sr2k
+	// 使用HKDF函数派生出密钥sr2k,sr2k为16个字节
 	sr2k := crypto.HKDFSha256(s.mSharedSecret, salt, KDFSR2Info)
 	if sr2k == nil || len(sr2k) != crypto.SymmetricKeyLengthBytes {
 		return errors.New("sigma2 hkdfSha256 error")
@@ -351,6 +351,9 @@ func (s *CASESession) SendSigma2() error {
 	if err != nil {
 		return err
 	}
+
+	// 使用对称密钥sr2k 对 Sigma2数量进行加密
+	_, err = crypto.AesCcmEncrypt(tlvWriter.Bytes(), sr2k)
 
 	//msgR2SignedEncLen := tlvWriter.Len()
 
