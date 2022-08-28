@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
+	"github.com/CrimsonAIO/aesccm"
 )
 
 type Spake2pVerifier struct {
@@ -44,11 +45,23 @@ func DRBGBytes(data []byte) error {
 	return nil
 }
 
-// AesCcmEncrypt AES 要求的Key长度为16个字节
-func AesCcmEncrypt(plainText, key []byte) (outPut []byte, err error) {
+// AesCcmEncrypt
+// AES 要求的Key长度为16个字节
+// Nonce 13个字节的
+// tagLength = AeadMicLengthBytes
+func AesCcmEncrypt(plainText, key, nonce []byte, tagLength int) (outPut []byte, err error) {
 	if len(key) != SymmetricKeyLengthBytes {
 		return nil, fmt.Errorf("key length mismatch:%d", len(key))
 	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+	aesCCM, err := aesccm.NewCCM(block, len(nonce), tagLength)
+	if err != nil {
+		return
+	}
+	outPut = aesCCM.Seal(nil, nonce, plainText, nil)
 	return
 }
 
