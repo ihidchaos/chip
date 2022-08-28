@@ -1,7 +1,7 @@
 package crypto
 
 const (
-	AeadMicLengthBytes = 16
+	AEADMicLengthBytes = 16
 	HashLenBytes       = kSha256HashLength
 
 	kSha256HashLength            = 32

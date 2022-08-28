@@ -22,7 +22,7 @@ type Sigma1 struct {
 
 func ParseSigma1(tlvReader tlv.Reader) (sigma1 Sigma1, err error) {
 	sigma1 = Sigma1{
-		initiatorResumeMICSize: crypto.AeadMicLengthBytes,
+		initiatorResumeMICSize: crypto.AEADMicLengthBytes,
 	}
 	var kInitiatorRandomTag uint8 = 1
 	var kInitiatorSessionIdTag uint8 = 2

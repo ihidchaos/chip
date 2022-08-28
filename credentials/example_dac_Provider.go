@@ -1,4 +1,4 @@
-package dac
+package credentials
 
 type ExampleDACProvider interface {
 	DeviceAttestationCredentialsProvider

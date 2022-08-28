@@ -48,7 +48,7 @@ func DRBGBytes(data []byte) error {
 // AesCcmEncrypt
 // AES 要求的Key长度为16个字节
 // Nonce 13个字节的
-// tagLength = AeadMicLengthBytes
+// tagLength = AEADMicLengthBytes
 func AesCcmEncrypt(plainText, key, nonce []byte, tagLength int) (outPut []byte, err error) {
 	if len(key) != SymmetricKeyLengthBytes {
 		return nil, fmt.Errorf("key length mismatch:%d", len(key))

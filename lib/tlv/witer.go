@@ -6,6 +6,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/buffer"
 	"io"
+	"math"
 )
 
 type Element struct {
@@ -34,7 +35,7 @@ func (w *WriterImpl) WriteByte(b byte) error {
 	return err
 }
 
-func NewWriterBuffer() *WriterImpl {
+func NewWriter() *WriterImpl {
 	w := &WriterImpl{}
 	w.Buffer = bytes.NewBuffer(make([]byte, 0))
 	return w
@@ -194,6 +195,20 @@ func (w *WriterImpl) WriteElementWithData(tlvType TLVType, tag Tag, data []byte)
 func (w *WriterImpl) EndContainer(t TLVType) error {
 	w.mContainerType = t
 	return w.WriteElement(EndOfContainer, AnonymousTag(), 0)
+}
+
+func (w *WriterImpl) Put(tag Tag, val uint64) error {
+	var elementType ElementType
+	if val <= math.MaxUint8 {
+		elementType = UInt8
+	} else if val <= math.MaxUint16 {
+		elementType = UInt16
+	} else if val <= math.MaxUint32 {
+		elementType = UInt32
+	} else {
+		elementType = UInt64
+	}
+	return w.WriteElement(elementType, tag, val)
 }
 
 func EstimateStructOverhead(firstFieldSize int, args ...int) int {

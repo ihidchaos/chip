@@ -77,15 +77,15 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 	msgType := messageing.MsgType(payloadHeader.GetMessageType())
 
 	switch s.mState {
-	case SInitialized:
+	case StateInitialized:
 		if msgType == messageing.CASESigma1 {
 			return s.HandleSigma1AndSendSigma2(buf)
 		}
-	case SSentSigma1:
-	case SSentSigma1Resume:
-	case SSentSigma2:
-	case SSentSigma3:
-	case kSentSigma2Resume:
+	case StateSentSigma1:
+	case StateSentSigma1Resume:
+	case StateSentSigma2:
+	case StateSentSigma3:
+	case StateSentSigma2Resume:
 	default:
 		return lib.ChipErrorInvalidMessageType
 	}
@@ -261,7 +261,7 @@ func (s *CASESession) HandleSigma1(buf *buffer.PacketBuffer) error {
 	err = s.SendSigma2()
 	if err != nil {
 		//s.SendStatusReport()
-		s.mState = SInitialized
+		s.mState = StateInitialized
 		return err
 	}
 	s.mDelegate.OnSessionEstablishmentStarted()
@@ -269,7 +269,7 @@ func (s *CASESession) HandleSigma1(buf *buffer.PacketBuffer) error {
 }
 
 func (s *CASESession) SendSigma2() error {
-	_, err := s.GetLocalSessionId()
+	sessionId, err := s.LocalSessionId()
 	if err != nil {
 		return err
 	}
@@ -316,23 +316,23 @@ func (s *CASESession) SendSigma2() error {
 
 	tbsData2Signature := s.mFabricsTable.SignWithOpKeypair(s.mFabricIndex).Bytes()
 
-	tlvWriter := tlv.NewWriterBuffer()
-	err = tlvWriter.StartContainer(tlv.AnonymousTag(), tlv.Type_Structure)
+	tlvWriterMsg1 := tlv.NewWriter()
+	err = tlvWriterMsg1.StartContainer(tlv.AnonymousTag(), tlv.Type_Structure)
 	if err != nil {
 		return err
 	}
 
-	err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_SenderNOC), nocCert)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_SenderNOC), nocCert)
 	if err != nil {
 		return err
 	}
 	if len(icaCert) > 0 {
-		err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_SenderICAC), icaCert)
+		err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_SenderICAC), icaCert)
 		if err != nil {
 			return err
 		}
 	}
-	err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_Signature), tbsData2Signature)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_Signature), tbsData2Signature)
 	if err != nil {
 		return err
 	}
@@ -342,20 +342,59 @@ func (s *CASESession) SendSigma2() error {
 	if err != nil {
 		return err
 	}
-	err = tlvWriter.PutBytes(tlv.ContextTag(kTag_TBEData_ResumptionID), s.mNewResumptionId)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_ResumptionID), s.mNewResumptionId)
 	if err != nil {
 		return err
 	}
 
-	err = tlvWriter.EndContainer(tlv.Type_Structure)
+	err = tlvWriterMsg1.EndContainer(tlv.Type_Structure)
 	if err != nil {
 		return err
 	}
 
 	// 使用对称密钥sr2k 对 Sigma2数量进行加密
-	_, err = crypto.AesCcmEncrypt(tlvWriter.Bytes(), sr2k)
+	msgR2Encrypted, err := crypto.AesCcmEncrypt(tlvWriterMsg1.Bytes(), sr2k, kTBEData2Nonce, crypto.AEADMicLengthBytes)
 
-	//msgR2SignedEncLen := tlvWriter.Len()
+	tlvWriterMsg2 := tlv.NewWriter()
+	err = tlvWriterMsg2.StartContainer(tlv.AnonymousTag(), tlv.Type_Structure)
+	if err != nil {
+		return err
+	}
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(1), msgRand)
+	if err != nil {
+		return err
+	}
+	err = tlvWriterMsg2.Put(tlv.ContextTag(2), uint64(sessionId))
+	if err != nil {
+		return err
+	}
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.MarshalPublicKey())
+	if err != nil {
+		return err
+	}
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(4), msgR2Encrypted)
+	if err != nil {
+		return err
+	}
+
+	if s.mLocalMRPConfig != nil {
+
+	}
+	err = tlvWriterMsg2.EndContainer(tlv.Type_Structure)
+	if err != nil {
+		return err
+	}
+
+	msgR2 := s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
+
+	err = s.mExchangeCtxt.SendMessage(messageing.CASESigma2, msgR2, messageing.ExpectResponse)
+	if err != nil {
+		return err
+	}
+
+	s.mState = StateSentSigma2
+
+	log.Infof("Sent sigma2 message")
 
 	return nil
 }

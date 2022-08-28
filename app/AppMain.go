@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/galenliu/chip/config"
-	"github.com/galenliu/chip/credentials/dac"
+	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/device"
 	core2 "github.com/galenliu/chip/pkg/core"
 	"github.com/galenliu/chip/pkg/storage"
@@ -67,7 +67,7 @@ func Init(options *config.DeviceOptions) error {
 
 	}
 
-	dac.SetDeviceAttestationCredentialsProvider(options.DacProvider)
+	credentials.SetDeviceAttestationCredentialsProvider(options.DacProvider)
 
 	deviceInstanceInfo := device.NewDeviceInstanceInfo()
 	deviceInstanceInfo, err = deviceInstanceInfo.Init(configMgr)

@@ -39,7 +39,7 @@ type PairingSessionImpl struct {
 	mLocalMRPConfig      *transport.ReliableMessageProtocolConfig
 }
 
-func (p PairingSessionImpl) GetSecureSessionType() uint8 {
+func (p PairingSessionImpl) SecureSessionType() uint8 {
 	return uint8(p.mSecureSessionType)
 }
 
@@ -48,12 +48,12 @@ func (p PairingSessionImpl) GetPeerCATs() lib.CATValues {
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) GetLocalSessionId() (uint16, error) {
+func (p PairingSessionImpl) LocalSessionId() (uint16, error) {
 	ss := p.mSecureSessionHolder.AsSecureSession()
 	if ss != nil {
 		return ss.GetLocalSessionId(), nil
 	}
-	return 0, errors.New("secure session err")
+	return 0, errors.New("secure session is not available")
 }
 
 func (p PairingSessionImpl) GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy {

@@ -97,3 +97,8 @@ func (c *ExchangeContext) GetDelegate() ExchangeDelegate {
 func (c *ExchangeContext) Close() {
 
 }
+
+func (c *ExchangeContext) SendMessage(sigma2 MsgType, r2 []byte, response uint16) error {
+
+	return nil
+}

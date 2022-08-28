@@ -3,6 +3,7 @@ module github.com/galenliu/chip
 go 1.19
 
 require (
+	github.com/CrimsonAIO/aesccm v1.0.1
 	github.com/aead/ecdh v0.2.0
 	github.com/bits-and-blooms/bitset v1.3.0
 	github.com/frankban/quicktest v1.14.3
@@ -21,7 +22,6 @@ require (
 )
 
 require (
-	github.com/CrimsonAIO/aesccm v1.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
