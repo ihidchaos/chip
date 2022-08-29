@@ -1,4 +1,4 @@
-package secure_channel
+package secure
 
 import (
 	"errors"
@@ -10,11 +10,11 @@ import (
 
 type PairingSession interface {
 	transport.SessionDelegate
-	GetSecureSessionType() uint8
-	GetPeer() lib.ScopedNodeId
+	SecureSessionType() uint8
+	Peer() lib.ScopedNodeId
 
-	GetLocalScopedNodeId() lib.ScopedNodeId
-	GetPeerCATs() lib.CATValues
+	LocalScopedNodeId() lib.ScopedNodeId
+	PeerCATs() lib.CATValues
 	GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy
 
 	CopySecureSession() transport.SessionHandle
@@ -43,7 +43,7 @@ func (p PairingSessionImpl) SecureSessionType() uint8 {
 	return uint8(p.mSecureSessionType)
 }
 
-func (p PairingSessionImpl) GetPeerCATs() lib.CATValues {
+func (p PairingSessionImpl) PeerCATs() lib.CATValues {
 	//TODO implement me
 	panic("implement me")
 }
@@ -65,7 +65,7 @@ func (p PairingSessionImpl) CopySecureSession() transport.SessionHandle {
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) GetPeerSessionId() uint16 {
+func (p PairingSessionImpl) PeerSessionId() uint16 {
 	//TODO implement me
 	panic("implement me")
 }
@@ -80,7 +80,7 @@ func (p PairingSessionImpl) DeriveSecureSession(ctx transport.CryptoContext) err
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) GetRemoteMRPConfig() *transport.ReliableMessageProtocolConfig {
+func (p PairingSessionImpl) RemoteMRPConfig() *transport.ReliableMessageProtocolConfig {
 	//TODO implement me
 	panic("implement me")
 }

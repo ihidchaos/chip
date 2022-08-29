@@ -1,4 +1,4 @@
-package secure_channel
+package secure
 
 import (
 	"github.com/galenliu/chip/lib/buffer"

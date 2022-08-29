@@ -1,8 +1,9 @@
-package secure_channel
+package secure
 
 import (
 	"bytes"
 	"crypto/elliptic"
+	"crypto/sha256"
 	"errors"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
@@ -42,6 +43,7 @@ type CASESessionBase interface {
 type CASESession struct {
 	*PairingSessionImpl
 	mCommissioningHash crypto.HashSha256Stream
+
 	mRemotePubKey      *crypto.P256PublicKey
 	mEphemeralKey      *crypto.P256Keypair
 	mSharedSecret      []byte //crypto.P256ECDHDerivedSecret
@@ -75,6 +77,7 @@ func NewCASESession() *CASESession {
 
 func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *buffer.PacketBuffer) error {
 	msgType := messageing.MsgType(payloadHeader.GetMessageType())
+	sha256.New()
 
 	switch s.mState {
 	case StateInitialized:
@@ -96,14 +99,14 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 func (s *CASESession) GetPeer() lib.ScopedNodeId {
 	return lib.ScopedNodeId{
 		NodeId:      s.mPeerNodeId,
-		FabricIndex: s.GetFabricIndex(),
+		FabricIndex: s.FabricIndex(),
 	}
 }
 
 func (s *CASESession) GetLocalScopedNodeId() lib.ScopedNodeId {
 	return lib.ScopedNodeId{
 		NodeId:      s.mLocalNodeId,
-		FabricIndex: s.GetFabricIndex(),
+		FabricIndex: s.FabricIndex(),
 	}
 }
 
@@ -149,6 +152,7 @@ func (s *CASESession) Init(
 	previouslyEstablishedPeer *lib.ScopedNodeId,
 ) error {
 	s.Clear()
+	s.mCommissioningHash.Begin()
 
 	return nil
 }
@@ -187,7 +191,7 @@ func (s *CASESession) SetGroupDataProvider(provider credentials.GroupDataProvide
 	s.mGroupDataProvider = provider
 }
 
-func (s *CASESession) GetFabricIndex() lib.FabricIndex {
+func (s *CASESession) FabricIndex() lib.FabricIndex {
 	return s.mFabricIndex
 }
 
@@ -368,7 +372,7 @@ func (s *CASESession) SendSigma2() error {
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.MarshalPublicKey())
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.PublicKeyBytes())
 	if err != nil {
 		return err
 	}
@@ -385,9 +389,10 @@ func (s *CASESession) SendSigma2() error {
 		return err
 	}
 
-	msgR2 := s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
+	//记录下Hash值
+	s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(messageing.CASESigma2, msgR2, messageing.ExpectResponse)
+	err = s.mExchangeCtxt.SendMessage(messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}
@@ -436,9 +441,4 @@ func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []b
 	_, err = buf.Write(publicKey)
 	_, err = buf.Write(s.mCommissioningHash.Bytes())
 	return saltSpan, nil
-}
-
-func (s *CASESession) ConstructTBSData(senderNOC []byte, senderICAC []byte, senderPubKey []byte, receiverPubKey []byte) []byte {
-
-	return nil
 }

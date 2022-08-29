@@ -1,4 +1,4 @@
-package secure_channel
+package secure
 
 type SessionResumptionStorage interface {
 }

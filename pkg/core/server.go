@@ -12,7 +12,7 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/dnssd"
 	"github.com/galenliu/chip/pkg/storage"
-	sc "github.com/galenliu/chip/protocols/secure_channel"
+	sc "github.com/galenliu/chip/protocols/secure"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"net/netip"
