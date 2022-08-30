@@ -107,7 +107,7 @@ func (header *PayloadHeader) Decode(buf *buffer.PacketBuffer) error {
 	if err != nil {
 		return err
 	}
-	var vendorId = lib.KVidCommon
+	var vendorId = lib.VendorIdCommon
 	if header.HaveVendorId() {
 		vid, err := buffer.LittleEndianRead16(buf)
 		if err != nil {

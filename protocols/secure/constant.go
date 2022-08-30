@@ -9,17 +9,17 @@ const (
 	StateSentSigma3             = 3
 	StateSentSigma1Resume       = 4
 	StateSentSigma2Resume       = 5
-	kFinished                   = 6
-	kFinishedViaResume          = 7
+	StateFinished               = 6
+	StateFinishedViaResume      = 7
 	kSigmaParamRandomNumberSize = 32
 	kIpkSize                    = crypto.SymmetricKeyLengthBytes
 
-	kTag_TBEData_SenderNOC    = 1
-	kTag_TBEData_SenderICAC   = 2
-	kTag_TBEData_Signature    = 3
-	kTag_TBEData_ResumptionID = 4
+	TagTBEDataSenderNOC    = 1
+	TagTBEDataSenderICAC   = 2
+	TagTBEDataSignature    = 3
+	TagTBEDataResumptionID = 4
 
-	kResumptionIdSize = 16
+	ResumptionIdSize = 16
 
 	/* "NCASE_Sigma2N" */
 

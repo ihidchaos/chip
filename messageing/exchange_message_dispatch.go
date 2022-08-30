@@ -1,8 +1,21 @@
 package messageing
 
-type ExchangeMessageDispatch struct {
+type ExchangeMessageDispatch interface {
+	IsEncryptionRequired() bool
 }
 
-func (d ExchangeMessageDispatch) IsEncryptionRequired() bool {
+type ExchangeMessageDispatchImpl struct {
+	delegate ExchangeDelegate
+}
+
+type EphemeralExchangeDispatchImpl struct {
+	delegate ExchangeDelegate
+}
+
+func (d ExchangeMessageDispatchImpl) IsEncryptionRequired() bool {
+	return true
+}
+
+func (d EphemeralExchangeDispatchImpl) IsEncryptionRequired() bool {
 	return false
 }

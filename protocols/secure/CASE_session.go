@@ -92,8 +92,7 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 	default:
 		return lib.ChipErrorInvalidMessageType
 	}
-
-	panic("implement me")
+	return nil
 }
 
 func (s *CASESession) GetPeer() lib.ScopedNodeId {
@@ -326,27 +325,27 @@ func (s *CASESession) SendSigma2() error {
 		return err
 	}
 
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_SenderNOC), nocCert)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderNOC), nocCert)
 	if err != nil {
 		return err
 	}
 	if len(icaCert) > 0 {
-		err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_SenderICAC), icaCert)
+		err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderICAC), icaCert)
 		if err != nil {
 			return err
 		}
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_Signature), tbsData2Signature)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSignature), tbsData2Signature)
 	if err != nil {
 		return err
 	}
 
-	s.mNewResumptionId = make([]byte, kResumptionIdSize)
+	s.mNewResumptionId = make([]byte, ResumptionIdSize)
 	err = crypto.DRBGBytes(s.mNewResumptionId)
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(kTag_TBEData_ResumptionID), s.mNewResumptionId)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataResumptionID), s.mNewResumptionId)
 	if err != nil {
 		return err
 	}
@@ -382,7 +381,22 @@ func (s *CASESession) SendSigma2() error {
 	}
 
 	if s.mLocalMRPConfig != nil {
-
+		err = tlvWriterMsg2.StartContainer(tlv.ContextTag(5), tlv.Type_Structure)
+		if err != nil {
+			return err
+		}
+		err = tlvWriterMsg2.Put(tlv.ContextTag(1), uint64(s.mLocalMRPConfig.IdleRetransTimeout.Milliseconds()))
+		if err != nil {
+			return err
+		}
+		err = tlvWriterMsg2.Put(tlv.ContextTag(2), uint64(s.mLocalMRPConfig.ActiveRetransTimeout.Milliseconds()))
+		if err != nil {
+			return err
+		}
+		err = tlvWriterMsg2.EndContainer(tlv.Type_Structure)
+		if err != nil {
+			return err
+		}
 	}
 	err = tlvWriterMsg2.EndContainer(tlv.Type_Structure)
 	if err != nil {
@@ -392,7 +406,7 @@ func (s *CASESession) SendSigma2() error {
 	//记录下Hash值
 	s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
+	err = s.mExchangeCtxt.SendMessage(protocols.StandardSecureChannelProtocolId, messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}
@@ -433,7 +447,6 @@ func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initi
 
 func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []byte) (saltSpan []byte, err error) {
 	//md := make([]byte, crypto.KSha256HashLength)
-
 	saltSpan = make([]byte, kIpkSize+kSigmaParamRandomNumberSize+crypto.KP256PublicKeyLength+crypto.KSha256HashLength)
 	buf := bytes.NewBuffer(saltSpan)
 	_, err = buf.Write(ipk)
