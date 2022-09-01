@@ -10,6 +10,7 @@ import (
 	"net/netip"
 )
 
+// SessionMessageDelegate 这里的delegate实例为ExchangeManager
 type SessionMessageDelegate interface {
 	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, buf *buffer.PacketBuffer)
 }
@@ -29,7 +30,7 @@ const (
 // TransportBaseDelegate is the indirect delegate for TransportManager
 type SessionManager interface {
 	credentials.FabricTableDelegate
-	TransportManagerDelegate
+	ManagerDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
 	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer)
 	// SecureUnicastMessageDispatch  handle the unsecure messages
@@ -45,7 +46,7 @@ type SessionManagerImpl struct {
 	mSecureSessions                  *SecureSessionTable
 	mFabricTable                     *credentials.FabricTable
 	mState                           uint8
-	mTransportMgr                    TransportManagerBase
+	mTransportMgr                    ManagerBase
 	mGroupClientCounter              *GroupOutgoingCounters
 	mCB                              SessionMessageDelegate
 	mMessageCounterManager           MessageCounterManagerInterface
@@ -68,7 +69,7 @@ func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate)
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transportMgr TransportManagerBase, counter MessageCounterManagerInterface, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManagerImpl) Init(transportMgr ManagerBase, counter MessageCounterManagerInterface, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
 
 	err := s.mFabricTable.AddFabricDelegate(s)
 	if err != nil {
@@ -120,7 +121,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 		//ephemeral node id is only assigned to the initiator, there should be one and only one node id exists.
 	}
 
-	var unsecuredSession *UnauthenticatedSessionImpl
+	var unsecuredSession *UnauthenticatedSession
 	if source.HasValue() {
 		// Assume peer is the initiator, we are the responder.
 		// 对方是发起人，我们是响应者
@@ -161,7 +162,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 		unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.GetMessageCounter())
 	}
 	if s.mCB != nil {
-		s.mCB.OnMessageReceived(header, payloadHeader, unsecuredSession, isDuplicate, buf)
+		s.mCB.OnMessageReceived(header, payloadHeader, NewSessionHandle(unsecuredSession), isDuplicate, buf)
 	}
 }
 
@@ -208,7 +209,7 @@ func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHead
 			secureSession.GetStateStr())
 	}
 	var nodeId = lib.KUndefinedNodeId
-	if secureSession.GetSecureSessionType() == K_CASE {
+	if secureSession.GetSecureSessionType() == CASE {
 		nodeId = secureSession.GetPeerNodeId()
 	}
 	nonce, _ := BuildNonce(header.GetSecurityFlags(), header.GetMessageCounter(), nodeId)

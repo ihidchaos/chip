@@ -10,7 +10,6 @@ type TransportDelegate interface {
 }
 
 type TransportBase interface {
-	TransportDelegate
-	GetBoundPort() uint16
+	BoundPort() uint16
 	SetDelegate(m TransportDelegate)
 }

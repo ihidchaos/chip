@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-type UnauthenticatedSession interface {
+type UnauthenticatedSessionBase interface {
 	Session
 }
 
-type UnauthenticatedSessionImpl struct {
+type UnauthenticatedSession struct {
 	*SessionBaseImpl
-	mSessionRole              TSessionRole
+	mSessionRole              TypeSessionRole
 	mEphemeralInitiatorNodeId lib.NodeId
 	mPeerAddress              netip.AddrPort
 	mLastActivityTime         time.Time
@@ -21,8 +21,8 @@ type UnauthenticatedSessionImpl struct {
 	mPeerMessageCounter       *PeerMessageCounter
 }
 
-func NewUnauthenticatedSessionImpl(roleResponder TSessionRole, id lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSessionImpl {
-	return &UnauthenticatedSessionImpl{
+func NewUnauthenticatedSessionImpl(roleResponder TypeSessionRole, id lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSession {
+	return &UnauthenticatedSession{
 		SessionBaseImpl:           NewSessionBaseImpl(),
 		mSessionRole:              roleResponder,
 		mEphemeralInitiatorNodeId: id,
@@ -32,62 +32,62 @@ func NewUnauthenticatedSessionImpl(roleResponder TSessionRole, id lib.NodeId, co
 	}
 }
 
-func (s *UnauthenticatedSessionImpl) Release() {
+func (s *UnauthenticatedSession) Release() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) IsActiveSession() bool {
+func (s *UnauthenticatedSession) IsActiveSession() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) IsEstablishing() bool {
+func (s *UnauthenticatedSession) IsEstablishing() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) ClearValue() {
+func (s *UnauthenticatedSession) ClearValue() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) SetPeerAddress(addr netip.AddrPort) {
+func (s *UnauthenticatedSession) SetPeerAddress(addr netip.AddrPort) {
 	s.mPeerAddress = addr
 }
 
-func (s *UnauthenticatedSessionImpl) AsUnauthenticatedSession() *UnauthenticatedSessionImpl {
+func (s *UnauthenticatedSession) AsUnauthenticatedSession() *UnauthenticatedSession {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) Retain() {
+func (s *UnauthenticatedSession) Retain() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) IsGroupSession() bool {
+func (s *UnauthenticatedSession) IsGroupSession() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) IsSecureSession() bool {
-	return s.GetSessionType() == kSecure.Uint8()
+func (s *UnauthenticatedSession) IsSecureSession() bool {
+	return s.SessionType() == Secure.Uint8()
 }
 
-func (s *UnauthenticatedSessionImpl) ComputeRoundTripTimeout(duration time.Duration) time.Duration {
+func (s *UnauthenticatedSession) ComputeRoundTripTimeout(duration time.Duration) time.Duration {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSessionImpl) GetSessionType() uint8 {
-	return kUnauthenticated.Uint8()
+func (s *UnauthenticatedSession) SessionType() uint8 {
+	return Unauthenticated.Uint8()
 }
 
-func (s *UnauthenticatedSessionImpl) GetSessionTypeString() string {
+func (s *UnauthenticatedSession) SessionTypeString() string {
 	return "unauthenticated"
 }
 
-func (s *UnauthenticatedSessionImpl) GetLastActivityTime() time.Time {
+func (s *UnauthenticatedSession) LastActivityTime() time.Time {
 	return s.mLastActivityTime
 }

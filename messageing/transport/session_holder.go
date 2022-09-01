@@ -3,30 +3,82 @@ package transport
 type SessionHolder interface {
 	SessionReleased()
 	ShiftToSession(session SessionHandle)
-	GrabPairingSession(session SessionHandle)
+	GrabUnchecked(session SessionHandle)
+	GrabPairingSession(session SessionHandle) bool
 	Release()
-	Get() SessionHandle
 	DispatchSessionEvent(delegate SessionDelegate)
 	Contains(session SessionHandle) bool
 	SessionDelegate
-	AsSecureSession() *SecureSession
+	SessionHandle() SessionHandle
 }
 
 type SessionHolderImpl struct {
-	mSession Session
+	mSession          Session
+	mReferenceCounted int
+}
+
+func (s *SessionHolderImpl) SessionReleased() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionHolderImpl) ShiftToSession(session SessionHandle) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionHolderImpl) GrabPairingSession(session SessionHandle) bool {
+	if !session.Session().IsSecureSession() {
+		return false
+	}
+
+	if session.Session().IsEstablishing() {
+		return false
+	}
+	s.GrabUnchecked(session)
+	return true
+}
+
+func (s *SessionHolderImpl) Release() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionHolderImpl) DispatchSessionEvent(delegate SessionDelegate) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *SessionHolderImpl) SessionHandle() SessionHandle {
+	if s.mSession == nil {
+		return nil
+	}
+	return NewSessionHandle(s.mSession)
 }
 
 func NewSessionHolderImpl() *SessionHolderImpl {
 	return &SessionHolderImpl{}
 }
 
-type SessionHolderWithDelegateImpl struct {
-	*SessionHolderImpl
-	mDelegate SessionDelegate
+func (s *SessionHolderImpl) Grad(session SessionHandle) bool {
+	if !session.IsActiveSession() {
+		return false
+	}
+	s.GrabUnchecked(session)
+	return true
+}
+
+func (s *SessionHolderImpl) GrabUnchecked(handle SessionHandle) {
+	handle.Session().AddHolder(s)
 }
 
 type SessionHolderWithDelegate interface {
 	SessionHolder
+}
+
+type SessionHolderWithDelegateImpl struct {
+	*SessionHolderImpl
+	mDelegate SessionDelegate
 }
 
 func NewSessionHolderWithDelegateImpl(delegate SessionDelegate) *SessionHolderWithDelegateImpl {
@@ -64,23 +116,11 @@ func (s *SessionHolderWithDelegateImpl) Release() {
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegateImpl) Get() SessionHandle {
-	return nil
-}
-
 func (s *SessionHolderWithDelegateImpl) DispatchSessionEvent(delegate SessionDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegateImpl) Grad(session SessionHandle) bool {
-	if !session.IsActiveSession() {
-		return false
-	}
-	session.AddHolder(s)
-	return true
-}
-
 func (s *SessionHolderImpl) Contains(session SessionHandle) bool {
-	return s.mSession != nil && session == s.mSession
+	return s.mSession != nil && session.Session() == s.mSession
 }

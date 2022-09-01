@@ -106,6 +106,10 @@ func (c *ExchangeContext) Close() {
 
 }
 
+func (c *ExchangeContext) ExchangeMgr() ExchangeManager {
+	return c.mExchangeMgr
+}
+
 func (c *ExchangeContext) SendMessage(protocolId protocols.Id, msgType MsgType, r2 []byte, response uint16) error {
 
 	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
@@ -115,5 +119,6 @@ func (c *ExchangeContext) SendMessage(protocolId protocols.Id, msgType MsgType, 
 
 func (c *ExchangeContext) sendMessage(id protocols.Id) error {
 
+	//c.mDispatch.SendMessage(c.ExchangeMgr().SessionManager(),c.mSession.)
 	return nil
 }

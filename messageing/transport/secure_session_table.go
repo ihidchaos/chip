@@ -27,3 +27,9 @@ func (t *SecureSessionTable) FindSecureSessionByLocalKey(id uint16) *SecureSessi
 	}
 	return nil
 }
+
+func (t *SecureSessionTable) CreateNewSecureSession(sessionType TypeSecureSession, sessionId uint16) *SecureSession {
+	secureSession := NewSecureSession(t, sessionType, sessionId)
+	t.mEntries = append(t.mEntries, secureSession)
+	return secureSession
+}

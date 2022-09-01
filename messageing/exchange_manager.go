@@ -40,6 +40,7 @@ func (receiver *UnsolicitedMessageHandlerSlot) IsInUse() bool {
 type ExchangeManager interface {
 	// SessionMessageDelegate the delegate for transport session manager
 	transport.SessionMessageDelegate
+	SessionManager() transport.SessionManager
 	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler UnsolicitedMessageHandler) error
 	RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler UnsolicitedMessageHandler) error
 	UnregisterUnsolicitedMessageHandlerForType(msgType uint8) error
@@ -99,6 +100,10 @@ func (e *ExchangeManagerImpl) OnExchangeClosing(ec *ExchangeContext) {
 func (e *ExchangeManagerImpl) GetMessageDispatch() ExchangeMessageDispatch {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (e *ExchangeManagerImpl) SessionManager() transport.SessionManager {
+	return e.mSessionManager
 }
 
 func (e *ExchangeManagerImpl) OnMessageReceived(

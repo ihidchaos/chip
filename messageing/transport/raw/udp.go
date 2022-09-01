@@ -13,8 +13,8 @@ const (
 	Initialized
 )
 
-// UDBTransport Must impl TransportBase
-type UDBTransport interface {
+// UDPTransport Must impl TransportBase
+type UDPTransport interface {
 	TransportBase
 	Init(parameters *UdpListenParameters) error
 }
@@ -32,27 +32,27 @@ func NewUdpTransportImpl() *UDPTransportImpl {
 	}
 }
 
-func (p *UDPTransportImpl) Disconnect(addr netip.Addr) {
+func (u *UDPTransportImpl) Disconnect(addr netip.Addr) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *UDPTransportImpl) SendMessage(port netip.AddrPort, msg []byte) error {
+func (u *UDPTransportImpl) SendMessage(port netip.AddrPort, msg []byte) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *UDPTransportImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
+func (u *UDPTransportImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
+func (u *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 
-	if p.mState != NotReady {
-		p.Close()
+	if u.mState != NotReady {
+		u.Close()
 	}
-	p.mPort = parameters.GetAddress().Port()
+	u.mPort = parameters.GetAddress().Port()
 	network := "udp6"
 	if parameters.GetAddress().Addr().Is4() {
 		network = "udp4"
@@ -65,20 +65,20 @@ func (p *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 			})
 			if err != nil {
 				log.Infof("UDPTransport listen err : %s", err.Error())
-				p.Close()
+				u.Close()
 				return
 			}
-			go p.handelConnection(udpConn, parameters.mAddress.Port())
+			go u.handelConnection(udpConn, parameters.mAddress.Port())
 		}
 	}()
 	return nil
 }
 
-func (p *UDPTransportImpl) GetBoundPort() uint16 {
-	return p.mPort
+func (u *UDPTransportImpl) BoundPort() uint16 {
+	return u.mPort
 }
 
-func (p *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
+func (u *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 	var data []byte
 	_, err := io.ReadFull(conn, data)
 	if err != nil {
@@ -91,21 +91,21 @@ func (p *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 	packetBuffer := buffer.NewPacketBuffer(data)
 	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
 	srcAddrPort := netip.AddrPortFrom(srcAddr, port)
-	p.OnUdpReceive(srcAddrPort, packetBuffer)
+	u.OnUdpReceive(srcAddrPort, packetBuffer)
 }
 
-func (p *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *buffer.PacketBuffer) {
-	p.HandleMessageReceived(srcAddr, data)
+func (u *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *buffer.PacketBuffer) {
+	u.mDelegate.HandleMessageReceived(srcAddr, data)
 }
 
-func (b *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *buffer.PacketBuffer) {
-	b.mDelegate.HandleMessageReceived(addrPort, data)
+func (u *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *buffer.PacketBuffer) {
+	u.mDelegate.HandleMessageReceived(addrPort, data)
 }
 
-func (b *UDPTransportImpl) SetDelegate(m TransportDelegate) {
-	b.mDelegate = m
+func (u *UDPTransportImpl) SetDelegate(m TransportDelegate) {
+	u.mDelegate = m
 }
 
-func (p *UDPTransportImpl) Close() {
+func (u *UDPTransportImpl) Close() {
 
 }

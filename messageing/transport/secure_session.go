@@ -11,9 +11,9 @@ type SecureSessionBase interface {
 
 type SecureSession struct {
 	*SessionBaseImpl
-	mState             TSecureSessionState
+	mState             StateSecureSession
 	mTable             *SecureSessionTable
-	mSecureSessionType TSecureSessionType
+	mSecureSessionType TypeSecureSession
 	mLocalSessionId    uint16
 	mPeerSessionId     uint16
 	mLocalNodeId       lib.NodeId
@@ -25,13 +25,13 @@ type SecureSession struct {
 
 func NewSecureSession(
 	table *SecureSessionTable,
-	secureSessionType TSecureSessionType,
+	secureSessionType TypeSecureSession,
 	localSessionId uint16,
 ) *SecureSession {
 	return &SecureSession{
 		SessionBaseImpl:    NewSessionBaseImpl(),
 		mTable:             table,
-		mState:             KEstablishing,
+		mState:             Establishing,
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 	}
@@ -39,7 +39,7 @@ func NewSecureSession(
 
 func NewSecureSessionImplWithNodeId(
 	table *SecureSessionTable,
-	secureSessionType TSecureSessionType,
+	secureSessionType TypeSecureSession,
 	localSessionId uint16,
 	localNodeId lib.NodeId,
 	peerNodeId lib.NodeId,
@@ -51,7 +51,7 @@ func NewSecureSessionImplWithNodeId(
 	impl := &SecureSession{
 		SessionBaseImpl:    NewSessionBaseImpl(),
 		mTable:             table,
-		mState:             KEstablishing,
+		mState:             Establishing,
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 		mLocalNodeId:       localNodeId,
@@ -75,27 +75,27 @@ func (s *SecureSession) Retain() {
 }
 
 func (s *SecureSession) IsActiveSession() bool {
-	return s.mState == KActive
+	return s.mState == Active
 }
 
-func (s *SecureSession) GetSessionType() uint8 {
-	return uint8(kSecure)
+func (s *SecureSession) SessionType() uint8 {
+	return uint8(Secure)
 }
 
-func (s *SecureSession) GetSessionTypeString() string {
+func (s *SecureSession) SessionTypeString() string {
 	return "secure"
 }
 
 func (s *SecureSession) IsGroupSession() bool {
-	return s.GetSessionType() == kSecure.Uint8()
+	return s.SessionType() == Secure.Uint8()
 }
 
 func (s *SecureSession) IsEstablishing() bool {
-	return s.mState == KEstablishing
+	return s.mState == Establishing
 }
 
 func (s *SecureSession) IsSecureSession() bool {
-	return s.GetSessionType() == kSecure.Uint8()
+	return s.SessionType() == Secure.Uint8()
 }
 
 func (s *SecureSession) DispatchSessionEvent(delegate SessionDelegate) {
@@ -113,11 +113,6 @@ func (s *SecureSession) SessionReleased() {
 	panic("implement me")
 }
 
-func (s *SecureSession) AsUnauthenticatedSession() *UnauthenticatedSessionImpl {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *SecureSession) ClearValue() {
 	//TODO implement me
 	panic("implement me")
@@ -128,18 +123,18 @@ func (s *SecureSession) GetLocalSessionId() uint16 {
 }
 
 func (s *SecureSession) IsDefunct() bool {
-	return s.mState == KDefunct
+	return s.mState == Defunct
 }
 
 func (s *SecureSession) IsPendingEviction() bool {
-	return s.mState == KPendingEviction
+	return s.mState == PendingEviction
 }
 
 func (s *SecureSession) GetStateStr() string {
 	return s.mState.Str()
 }
 
-func (s *SecureSession) GetSecureSessionType() TSecureSessionType {
+func (s *SecureSession) GetSecureSessionType() TypeSecureSession {
 	return s.mSecureSessionType
 }
 

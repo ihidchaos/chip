@@ -22,7 +22,7 @@ import (
 var sDeviceTypeResolver = access.DeviceTypeResolver{}
 
 type ServerTransportManager interface {
-	transport.TransportManagerBase
+	transport.ManagerBase
 	GetImplAtIndex(index int) raw.TransportBase
 }
 
@@ -298,7 +298,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	// a valid port at bind time), that will result in two possible ports being provided back from the resultant endpoint
 	// initializations. Since IPv6 is POR for Matter, let's go ahead and pick that port.
 
-	dnssdServer.SetSecuredPort(s.mTransports.GetImplAtIndex(0).GetBoundPort())
+	dnssdServer.SetSecuredPort(s.mTransports.GetImplAtIndex(0).BoundPort())
 	dnssdServer.SetUnsecuredPort(s.mUserDirectedCommissioningPort)
 	dnssdServer.SetInterfaceId(s.mInterfaceId)
 
@@ -361,6 +361,6 @@ func (s *Server) StartServer() error {
 	return nil
 }
 
-func (s *Server) GetTransportManager() transport.TransportManagerBase {
+func (s *Server) GetTransportManager() transport.ManagerBase {
 	return s.mTransports
 }

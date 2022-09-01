@@ -26,8 +26,8 @@ type SessionBase interface {
 
 type Session interface {
 	SessionBase
-	GetSessionType() uint8
-	GetSessionTypeString() string
+	SessionType() uint8
+	SessionTypeString() string
 	AddHolder(s SessionHolder)
 
 	//NotifySessionReleased()
@@ -43,7 +43,7 @@ type Session interface {
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
 
 	SessionReleased()
-	AsUnauthenticatedSession() *UnauthenticatedSessionImpl
+
 	ClearValue()
 
 	//virtual void Retain()  = 0;

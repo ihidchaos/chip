@@ -1,51 +1,51 @@
 package transport
 
-type TSecureSessionType uint8
+type TypeSecureSession uint8
 
 const (
-	K_PASE TSecureSessionType = 1
-	K_CASE TSecureSessionType = 2
+	PASE TypeSecureSession = 1
+	CASE TypeSecureSession = 2
 )
 
-func (t TSecureSessionType) Uint8() uint8 {
+func (t TypeSecureSession) Uint8() uint8 {
 	return uint8(t)
 }
 
-type TSecureSessionState uint8
+type StateSecureSession uint8
 
 const (
-	KEstablishing TSecureSessionState = iota
-	KActive
-	KDefunct
-	KPendingEviction
+	Establishing StateSecureSession = iota
+	Active
+	Defunct
+	PendingEviction
 )
 
-func (t TSecureSessionState) Str() string {
+func (t StateSecureSession) Str() string {
 	return [...]string{
 		"Establishing", "Active", "Defunct", "PendingEviction",
 	}[t]
 }
 
-func (t TSecureSessionState) Uint8() uint8 {
+func (t StateSecureSession) Uint8() uint8 {
 	return uint8(t)
 }
 
-type TSessionType uint8
+type TypeSession uint8
 
 const (
-	kUndefined       TSessionType = 0
-	kUnauthenticated TSessionType = 1
-	kSecure          TSessionType = 2
-	kGroupIncoming   TSessionType = 3
-	kGroupOutgoing   TSessionType = 4
+	Undefined       TypeSession = 0
+	Unauthenticated TypeSession = 1
+	Secure          TypeSession = 2
+	GroupIncoming   TypeSession = 3
+	GroupOutgoing   TypeSession = 4
 )
 
-func (t TSessionType) Str() string {
+func (t TypeSession) Str() string {
 	return [...]string{
-		"Undefined", "kUnauthenticated", "Secure", "GroupIncoming", "GroupOutgoing",
+		"Undefined", "Unauthenticated", "Secure", "GroupIncoming", "GroupOutgoing",
 	}[t]
 }
 
-func (t TSessionType) Uint8() uint8 {
+func (t TypeSession) Uint8() uint8 {
 	return uint8(t)
 }
