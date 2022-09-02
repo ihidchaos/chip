@@ -52,16 +52,16 @@ func (u *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 	if u.mState != NotReady {
 		u.Close()
 	}
-	u.mPort = parameters.GetAddress().Port()
+	u.mPort = parameters.Address().Port()
 	network := "udp6"
-	if parameters.GetAddress().Addr().Is4() {
+	if parameters.Address().Addr().Is4() {
 		network = "udp4"
 	}
 	go func() {
 		for {
 			udpConn, err := net.ListenUDP(network, &net.UDPAddr{
-				IP:   parameters.GetAddress().Addr().AsSlice(),
-				Port: int(parameters.GetAddress().Port()),
+				IP:   parameters.Address().Addr().AsSlice(),
+				Port: int(parameters.Address().Port()),
 			})
 			if err != nil {
 				log.Infof("UDPTransport listen err : %s", err.Error())

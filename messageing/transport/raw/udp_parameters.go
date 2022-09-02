@@ -11,6 +11,6 @@ func (l *UdpListenParameters) SetAddress(address netip.AddrPort) *UdpListenParam
 	return l
 }
 
-func (l *UdpListenParameters) GetAddress() netip.AddrPort {
+func (l *UdpListenParameters) Address() netip.AddrPort {
 	return l.mAddress
 }

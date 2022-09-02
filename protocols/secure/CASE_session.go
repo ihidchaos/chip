@@ -371,7 +371,7 @@ func (s *CASESession) SendSigma2() error {
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.PublicKeyBytes())
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.PubBytes())
 	if err != nil {
 		return err
 	}

@@ -155,8 +155,9 @@ type P256PublicKey ecdsa.PublicKey
 
 type P256Keypair ecdsa.PrivateKey
 
-func (k *P256Keypair) PublicKeyBytes() []byte {
-	return elliptic.Marshal(elliptic.P256(), k.X, k.Y)
+func (k *P256Keypair) PubBytes() []byte {
+	p256publicKey := P256PublicKey(k.PublicKey)
+	return p256publicKey.Marshal()
 }
 
 func (p *P256PublicKey) Marshal() []byte {
