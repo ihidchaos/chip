@@ -142,7 +142,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 
 	unsecuredSession.SetPeerAddress(addr)
 	isDuplicate := KDuplicateMessageNo
-	// 更新Session新鲜度
+	// 更新Session
 	unsecuredSession.MarkActiveRx()
 
 	var payloadHeader = raw.NewPayloadHeader()

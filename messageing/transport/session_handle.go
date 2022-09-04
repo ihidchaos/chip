@@ -2,11 +2,10 @@ package transport
 
 type SessionHandle interface {
 	IsActiveSession() bool
-	Session() Session
 }
 
 type SessionHandleImpl struct {
-	mSession          Session
+	Session
 	mReferenceCounted int
 }
 
@@ -15,13 +14,9 @@ func (s SessionHandleImpl) IsActiveSession() bool {
 	panic("implement me")
 }
 
-func (s SessionHandleImpl) Session() Session {
-	return s.mSession
-}
-
 func NewSessionHandle(session Session) SessionHandleImpl {
 	return SessionHandleImpl{
-		mSession:          session,
+		Session:           session,
 		mReferenceCounted: 0,
 	}
 }

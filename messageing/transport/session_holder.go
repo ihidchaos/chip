@@ -28,7 +28,7 @@ func (s *SessionHolderImpl) ShiftToSession(session SessionHandle) {
 }
 
 func (s *SessionHolderImpl) GrabPairingSession(session SessionHandle) bool {
-	if !session.Session().IsSecureSession() {
+	if !session.Session.IsSecureSession() {
 		return false
 	}
 
