@@ -22,7 +22,7 @@ func (c *ExchangeContextPool) Add(context *ExchangeContext) {
 
 func (c *ExchangeContextPool) Create(ec ExchangeManager,
 	exchangeId uint16,
-	session transport.SessionHandle,
+	session transport.SessionHandleBase,
 	initiator bool,
 	delegate ExchangeDelegate,
 	isEphemeralExchange bool) *ExchangeContext {
@@ -47,7 +47,7 @@ func (c *ExchangeContextPool) Get(id uint16) *ExchangeContext {
 }
 
 func (c *ExchangeContextPool) MatchExchange(
-	session transport.SessionHandle,
+	session transport.SessionHandleBase,
 	packetHeader *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader,
 ) *ExchangeContext {

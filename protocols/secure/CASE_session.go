@@ -222,7 +222,7 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	return nil
 }
 
-func (s *CASESession) CopySecureSession() transport.SessionHandle {
+func (s *CASESession) CopySecureSession() transport.SessionHandleBase {
 	return nil
 }
 

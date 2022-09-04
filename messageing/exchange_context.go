@@ -36,7 +36,7 @@ type ExchangeContext struct {
 func NewExchangeContext(
 	em ExchangeManager,
 	exchangeId uint16,
-	session transport.SessionHandle,
+	session transport.SessionHandleBase,
 	initiator bool,
 	delegate ExchangeDelegate,
 	isEphemeralExchange bool,
@@ -58,7 +58,7 @@ func NewExchangeContext(
 	return ec
 }
 
-func (c *ExchangeContext) MatchExchange(session transport.SessionHandle, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
+func (c *ExchangeContext) MatchExchange(session transport.SessionHandleBase, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
 	return (c.mExchangeId == payloadHeader.GetExchangeID()) &&
 		(c.mSession.Contains(session)) &&
 		(c.IsEncryptionRequired() == packetHeader.IsEncrypted()) &&

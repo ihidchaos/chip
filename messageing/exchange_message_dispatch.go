@@ -4,7 +4,7 @@ import "github.com/galenliu/chip/messageing/transport"
 
 type ExchangeMessageDispatch interface {
 	IsEncryptionRequired() bool
-	SendMessage(mgr transport.SessionManager, handle transport.SessionHandle)
+	SendMessage(mgr transport.SessionManager, handle transport.SessionHandleBase)
 }
 
 type ExchangeMessageDispatchImpl struct {
@@ -23,10 +23,10 @@ func (d EphemeralExchangeDispatchImpl) IsEncryptionRequired() bool {
 	return false
 }
 
-func (d ExchangeMessageDispatchImpl) SendMessage(mgr transport.SessionManager, handle transport.SessionHandle) {
+func (d ExchangeMessageDispatchImpl) SendMessage(mgr transport.SessionManager, handle transport.SessionHandleBase) {
 
 }
 
-func (d EphemeralExchangeDispatchImpl) SendMessage(mgr transport.SessionManager, handle transport.SessionHandle) {
+func (d EphemeralExchangeDispatchImpl) SendMessage(mgr transport.SessionManager, handle transport.SessionHandleBase) {
 
 }

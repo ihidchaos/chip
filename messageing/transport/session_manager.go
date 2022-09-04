@@ -12,7 +12,7 @@ import (
 
 // SessionMessageDelegate 这里的delegate实例为ExchangeManager
 type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandle, duplicate uint8, buf *buffer.PacketBuffer)
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandleBase, duplicate uint8, buf *buffer.PacketBuffer)
 }
 
 const (

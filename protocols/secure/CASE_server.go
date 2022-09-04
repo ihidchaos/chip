@@ -23,7 +23,7 @@ type CASEServer struct {
 	mSessionResumptionStorage  SessionResumptionStorage
 	mCertificateValidityPolicy credentials.CertificateValidityPolicy
 
-	mPinnedSecureSession transport.SessionHandle
+	mPinnedSecureSession transport.SessionHandleBase
 
 	mPairingSession *CASESession
 

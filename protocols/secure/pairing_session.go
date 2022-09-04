@@ -17,7 +17,7 @@ type PairingSession interface {
 	PeerCATs() lib.CATValues
 	GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy
 
-	CopySecureSession() transport.SessionHandle
+	CopySecureSession() transport.SessionHandleBase
 
 	IsValidPeerSessionId() bool
 	DeriveSecureSession(ctx transport.CryptoContext) error
@@ -60,7 +60,7 @@ func (p PairingSessionImpl) GetNewSessionHandlingPolicy() transport.NewSessionHa
 	return transport.KStayAtOldSession
 }
 
-func (p PairingSessionImpl) CopySecureSession() transport.SessionHandle {
+func (p PairingSessionImpl) CopySecureSession() transport.SessionHandleBase {
 	//TODO implement me
 	panic("implement me")
 }

@@ -7,10 +7,10 @@ import (
 )
 
 type MessageCounterManagerInterface interface {
-	StartSync(handle SessionHandle, session SecureSessionBase) error
+	StartSync(handle SessionHandleBase, session SecureSessionBase) error
 	QueueReceivedMessageAndStartSync(
 		header *raw.PacketHeader,
-		handle SessionHandle,
+		handle SessionHandleBase,
 		state uint8,
 		peerAdders netip.AddrPort,
 		buf *buffer.PacketBuffer,
@@ -28,12 +28,12 @@ func (g *GlobalUnencryptedMessageCounterImpl) Init() {
 
 }
 
-func (g *GlobalUnencryptedMessageCounterImpl) StartSync(handle SessionHandle, session SecureSessionBase) error {
+func (g *GlobalUnencryptedMessageCounterImpl) StartSync(handle SessionHandleBase, session SecureSessionBase) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (g *GlobalUnencryptedMessageCounterImpl) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle SessionHandle, state uint8, peerAdders netip.AddrPort, buf *buffer.PacketBuffer) error {
+func (g *GlobalUnencryptedMessageCounterImpl) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle SessionHandleBase, state uint8, peerAdders netip.AddrPort, buf *buffer.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }

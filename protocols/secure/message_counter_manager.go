@@ -11,12 +11,12 @@ import (
 type MessageCounterManager struct {
 }
 
-func (m MessageCounterManager) StartSync(handle transport.SessionHandle, session transport.SecureSessionBase) error {
+func (m MessageCounterManager) StartSync(handle transport.SessionHandleBase, session transport.SecureSessionBase) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle transport.SessionHandle, state uint8, peerAdders netip.AddrPort, buf *buffer.PacketBuffer) error {
+func (m MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle transport.SessionHandleBase, state uint8, peerAdders netip.AddrPort, buf *buffer.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }
