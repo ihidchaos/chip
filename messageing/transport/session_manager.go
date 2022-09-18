@@ -59,7 +59,7 @@ func NewSessionManagerImpl() *SessionManagerImpl {
 		mSecureSessions:                  NewSecureSessionTable(),
 		mGroupClientCounter:              NewGroupOutgoingCounters(),
 		mGlobalUnencryptedMessageCounter: NewGlobalUnencryptedMessageCounterImpl(),
-		mFabricTable:                     nil,
+		mFabricTable:                     credentials.NewFabricTable(),
 		mState:                           0,
 		mCB:                              nil,
 	}
@@ -208,7 +208,7 @@ func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHead
 		log.Infof("Secure transport received message on a session in an invalid state (state = '%s')",
 			secureSession.GetStateStr())
 	}
-	var nodeId = lib.KUndefinedNodeId
+	var nodeId = lib.UndefinedNodeId
 	if secureSession.GetSecureSessionType() == CASE {
 		nodeId = secureSession.GetPeerNodeId()
 	}

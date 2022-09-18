@@ -32,7 +32,7 @@ func NewCommissioningWindowManagerImpl() *CommissioningWindowManagerImpl {
 	return &CommissioningWindowManagerImpl{}
 }
 
-func (m CommissioningWindowManagerImpl) Init(s ServerDelegate) error {
+func (m *CommissioningWindowManagerImpl) Init(s ServerDelegate) error {
 	m.mServer = s
 	return nil
 }
@@ -58,7 +58,8 @@ func (m *CommissioningWindowManagerImpl) OpenBasicCommissioningWindow() error {
 }
 
 func (m *CommissioningWindowManagerImpl) GetCommissioningMode() int {
-	return CommissioningModeDisabled
+	//TODO
+	return CommissioningModeEnableBasic
 }
 
 func (m *CommissioningWindowManagerImpl) OpenCommissioningWindow() error {

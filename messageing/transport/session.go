@@ -65,7 +65,7 @@ type SessionBaseImpl struct {
 
 func NewSessionBaseImpl() *SessionBaseImpl {
 	return &SessionBaseImpl{
-		mFabricIndex: lib.UndefinedFabricIndex,
+		mFabricIndex: lib.FabricIndexUndefined,
 		mHolders:     make([]SessionHolder, 0),
 	}
 }

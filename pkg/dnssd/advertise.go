@@ -63,7 +63,6 @@ func NewAdvertise() *AdvertiseImpl {
 
 func (d *AdvertiseImpl) Init() error {
 	d.mMdnsServer = NewMdnsServerImpl()
-	d.mMdnsServer.Shutdown()
 	if !d.mInitialized {
 		_ = d.UpdateCommissionableInstanceName()
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"github.com/galenliu/chip/protocols"
 	"github.com/galenliu/gateway/pkg/log"
 	rand "math/rand"
 )
@@ -96,17 +95,14 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 }
 
 func (s *CASESession) GetPeer() lib.ScopedNodeId {
-	return lib.ScopedNodeId{
-		NodeId:      s.mPeerNodeId,
-		FabricIndex: s.FabricIndex(),
-	}
+	return lib.NewScopedNodeId(
+		s.mPeerNodeId,
+		s.FabricIndex(),
+	)
 }
 
 func (s *CASESession) GetLocalScopedNodeId() lib.ScopedNodeId {
-	return lib.ScopedNodeId{
-		NodeId:      s.mLocalNodeId,
-		FabricIndex: s.FabricIndex(),
-	}
+	return lib.NewScopedNodeId(s.mLocalNodeId, s.FabricIndex())
 }
 
 func (s *CASESession) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
@@ -134,12 +130,12 @@ func (s *CASESession) OnSessionEstablished() {
 	panic("implement me")
 }
 
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler messageing.UnsolicitedMessageHandler) error {
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId *lib.Id, handler messageing.UnsolicitedMessageHandler) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId *lib.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -217,7 +213,6 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	s.mLocalMRPConfig = config
 
 	log.Infof("Allocated SecureSessionBase-waiting for Sigma1 msg")
-	s.mSecureSessionHolder.Get()
 
 	return nil
 }
@@ -406,7 +401,7 @@ func (s *CASESession) SendSigma2() error {
 	//记录下Hash值
 	s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(protocols.StandardSecureChannelProtocolId, messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
+	err = s.mExchangeCtxt.SendMessage(lib.StandardSecureChannelProtocolId, messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}

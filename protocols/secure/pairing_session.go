@@ -49,10 +49,10 @@ func (p PairingSessionImpl) PeerCATs() lib.CATValues {
 }
 
 func (p PairingSessionImpl) LocalSessionId() (uint16, error) {
-	ss := p.mSecureSessionHolder.AsSecureSession()
-	if ss != nil {
-		return ss.GetLocalSessionId(), nil
-	}
+	//ss := p.mSecureSessionHolder.SessionHandle()
+	//if ss != nil {
+	//	return ss.
+	//}
 	return 0, errors.New("secure session is not available")
 }
 

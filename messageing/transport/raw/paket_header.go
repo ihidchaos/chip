@@ -111,9 +111,9 @@ func NewPacketHeader() *PacketHeader {
 	return &PacketHeader{
 		mMessageFlags:       0,
 		mSecFlags:           0,
-		mSourceNodeId:       lib.KUndefinedNodeId,
-		mDestinationNodeId:  lib.KUndefinedNodeId,
-		mDestinationGroupId: lib.KUndefinedGroupId,
+		mSourceNodeId:       lib.UndefinedNodeId,
+		mDestinationNodeId:  lib.UndefinedNodeId,
+		mDestinationGroupId: lib.UndefinedGroupId,
 
 		mMessageCounter: 0,
 		mSessionType:    0,

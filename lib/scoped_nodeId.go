@@ -1,25 +1,30 @@
 package lib
 
 type ScopedNodeId struct {
-	NodeId      NodeId
-	FabricIndex FabricIndex
+	mNodeId      NodeId
+	mFabricIndex FabricIndex
 }
 
-func NewScopedNodeId() *ScopedNodeId {
-	return &ScopedNodeId{
-		NodeId:      KUndefinedNodeId,
-		FabricIndex: UndefinedFabricIndex,
+var UndefinedScopedNodeId = &ScopedNodeId{
+	mNodeId:      UndefinedNodeId,
+	mFabricIndex: FabricIndexUndefined,
+}
+
+func NewScopedNodeId(id NodeId, index FabricIndex) ScopedNodeId {
+	return ScopedNodeId{
+		mNodeId:      UndefinedNodeId,
+		mFabricIndex: FabricIndexUndefined,
 	}
 }
 
-func (s ScopedNodeId) GetNodeId() NodeId {
-	return s.NodeId
+func (s ScopedNodeId) NodeId() NodeId {
+	return s.mNodeId
 }
 
-func (s ScopedNodeId) GetFabricIndex() FabricIndex {
-	return s.FabricIndex
+func (s ScopedNodeId) FabricIndex() FabricIndex {
+	return s.mFabricIndex
 }
 
 func (s ScopedNodeId) IsOperational() bool {
-	return s.FabricIndex != UndefinedFabricIndex && s.NodeId.IsOperationalNodeId()
+	return s.mFabricIndex != FabricIndexUndefined && s.mNodeId.IsOperationalNodeId()
 }

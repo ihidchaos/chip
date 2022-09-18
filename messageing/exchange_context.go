@@ -5,7 +5,6 @@ import (
 	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"github.com/galenliu/chip/protocols"
 )
 
 type ExchangeSessionHolder interface {
@@ -110,14 +109,14 @@ func (c *ExchangeContext) ExchangeMgr() ExchangeManager {
 	return c.mExchangeMgr
 }
 
-func (c *ExchangeContext) SendMessage(protocolId protocols.Id, msgType MsgType, r2 []byte, response uint16) error {
+func (c *ExchangeContext) SendMessage(protocolId *lib.Id, msgType MsgType, r2 []byte, response uint16) error {
 
 	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
 
 	return nil
 }
 
-func (c *ExchangeContext) sendMessage(id protocols.Id) error {
+func (c *ExchangeContext) sendMessage(id lib.Id) error {
 
 	//c.mDispatch.SendMessage(c.ExchangeMgr().SessionManager(),c.mSession.)
 	return nil

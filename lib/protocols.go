@@ -1,6 +1,4 @@
-package protocols
-
-import "github.com/galenliu/chip/lib"
+package lib
 
 const (
 	SecureChannel             = 0x0000
@@ -11,38 +9,38 @@ const (
 )
 
 type Id struct {
-	vendorId   lib.VendorId
+	vendorId   VendorId
 	protocolId uint16
 }
 
-var StandardSecureChannelProtocolId = Id{
-	vendorId:   lib.VendorIdCommon,
+var StandardSecureChannelProtocolId = &Id{
+	vendorId:   VendorIdMatterStandard,
 	protocolId: 0x0000,
 }
 
-var NotSpecifiedProtocolId = Id{
-	vendorId:   lib.NotSpecified,
+var NotSpecifiedProtocolId = &Id{
+	vendorId:   VendorIdNotSpecified,
 	protocolId: 0xFFFF,
 }
 
-func NewProtocolId(vendorId lib.VendorId, protocolId uint16) Id {
+func NewProtocolId(vendorId VendorId, protocolId uint16) Id {
 	return Id{
 		vendorId:   vendorId,
 		protocolId: protocolId,
 	}
 }
 
-//var StandardSecureChannel = &Id{vendorId: lib.VendorIdCommon, protocolId: 0x0000}
+//var StandardSecureChannel = &Id{vendorId: lib.VendorIdMatterStandard, protocolId: 0x0000}
 
 func FromFullyQualifiedSpecForm(aSpecForm uint32) Id {
-	return Id{vendorId: lib.VendorId(aSpecForm >> 16), protocolId: uint16(aSpecForm&(1<<16) - 1)}
+	return Id{vendorId: VendorId(aSpecForm >> 16), protocolId: uint16(aSpecForm&(1<<16) - 1)}
 }
 
 func (id *Id) ToFullyQualifiedSpecForm() uint32 {
 	return id.toUint32()
 }
 
-func (id *Id) VendorId() lib.VendorId { return id.vendorId }
+func (id *Id) VendorId() VendorId { return id.vendorId }
 
 func (id *Id) toUint32() uint32 {
 	return (uint32(id.vendorId) << 16) | uint32(id.protocolId)

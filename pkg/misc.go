@@ -14,7 +14,7 @@ func btoh(i byte) byte {
 	return 0x30 + i
 }
 
-// randomHex returns a random hex string.
+// RandHex randomHex returns a random hex string.
 func RandHex() string {
 	var b [16]byte
 	// Read might block

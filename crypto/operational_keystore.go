@@ -33,51 +33,51 @@ func (p *OperationalKeystoreImpl) Init(persistentStorage storage.KvsPersistentSt
 	return nil
 }
 
-func (p OperationalKeystoreImpl) HasPendingOpKeypair() bool {
+func (p *OperationalKeystoreImpl) HasPendingOpKeypair() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) HasOpKeypairForFabric(fabricIndex lib.FabricIndex) bool {
+func (p *OperationalKeystoreImpl) HasOpKeypairForFabric(fabricIndex lib.FabricIndex) bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) NewOpKeypairForFabric(fabricIndex lib.FabricIndex) ([]byte, error) {
+func (p *OperationalKeystoreImpl) NewOpKeypairForFabric(fabricIndex lib.FabricIndex) ([]byte, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) ActivateOpKeypairForFabric(fabricIndex lib.FabricIndex, key crypto.PublicKey) error {
+func (p *OperationalKeystoreImpl) ActivateOpKeypairForFabric(fabricIndex lib.FabricIndex, key crypto.PublicKey) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) CommitOpKeypairForFabric(fabricIndex lib.FabricIndex) error {
+func (p *OperationalKeystoreImpl) CommitOpKeypairForFabric(fabricIndex lib.FabricIndex) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) RemoveOpKeypairForFabric(fabricIndex lib.FabricIndex) error {
+func (p *OperationalKeystoreImpl) RemoveOpKeypairForFabric(fabricIndex lib.FabricIndex) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) RevertPendingKeypair() {
+func (p *OperationalKeystoreImpl) RevertPendingKeypair() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) SignWithOpKeypair(fabricIndex lib.FabricIndex, message []byte) ([]byte, error) {
+func (p *OperationalKeystoreImpl) SignWithOpKeypair(fabricIndex lib.FabricIndex, message []byte) ([]byte, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p OperationalKeystoreImpl) AllocateEphemeralKeypairForCASE() *P256Keypair {
+func (p *OperationalKeystoreImpl) AllocateEphemeralKeypairForCASE() *P256Keypair {
 	return GenericP256Keypair()
 }
 
-func (p OperationalKeystoreImpl) ReleaseEphemeralKeypair(key *P256Keypair) {
+func (p *OperationalKeystoreImpl) ReleaseEphemeralKeypair(key *P256Keypair) {
 	//TODO implement me
 	panic("implement me")
 }

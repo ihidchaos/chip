@@ -28,10 +28,10 @@ func (c *MessageAuthenticationCode) Decode(header *PacketHeader, msg *buffer.Pac
 	if size < tagLen {
 		return lib.ChipErrorInvalidArgument
 	}
-	c.mTag = msg.GetData()[msg.TotLength()-int(tagLen) : msg.DataLength()]
+	c.mTag = msg.Bytes()[msg.TotLength()-int(tagLen) : msg.DataLength()]
 	return nil
 }
 
-func (c *MessageAuthenticationCode) GetTag() []byte {
+func (c *MessageAuthenticationCode) Tag() []byte {
 	return c.mTag
 }

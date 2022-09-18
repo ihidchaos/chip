@@ -18,7 +18,7 @@ type CryptoContext struct {
 }
 
 func (c CryptoContext) Decrypt(msg *buffer.PacketBuffer, nonce []byte, header *raw.PacketHeader, mac *raw.MessageAuthenticationCode) {
-	_ = mac.GetTag()
+	_ = mac.Tag()
 
 	//header.Ecode()
 

@@ -110,14 +110,14 @@ func NewFabricData(index lib.FabricIndex) *FabricData {
 
 func fabricData() *FabricData {
 	return &FabricData{
-		fabricIndex: lib.KUndefinedFabricIndex,
-		firstGroup:  lib.KUndefinedGroupId,
+		fabricIndex: lib.UndefinedFabricIndex,
+		firstGroup:  lib.UndefinedGroupId,
 		groupCount:  0,
 		firstMap:    0,
 		mapCount:    0,
-		firstKeyset: lib.KInvalidKeysetId,
+		firstKeyset: lib.InvalidKeysetId,
 		keysetCount: 0,
-		next:        lib.KUndefinedFabricIndex,
+		next:        lib.UndefinedFabricIndex,
 	}
 }
 

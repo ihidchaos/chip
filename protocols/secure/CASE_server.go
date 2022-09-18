@@ -7,7 +7,6 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -57,13 +56,13 @@ func (s *CASEServer) ListenForSessionEstablishment(
 	s.mExchangeManager = mgr
 	s.mGroupDataProvider = responderGroupDataProvider
 	s.GetSession().SetGroupDataProvider(s.mGroupDataProvider)
-	s.PrepareForSessionEstablishment(lib.NewScopedNodeId())
+	s.PrepareForSessionEstablishment(lib.UndefinedScopedNodeId)
 	return nil
 }
 
 func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *lib.ScopedNodeId) {
 	log.Printf("CASE Server enabling CASE session setups")
-	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(protocols.StandardSecureChannelProtocolId, uint8(messageing.CASESigma1), s)
+	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(lib.StandardSecureChannelProtocolId, uint8(messageing.CASESigma1), s)
 	if err != nil {
 		log.Printf(err.Error())
 	}

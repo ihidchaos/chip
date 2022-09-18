@@ -3,7 +3,6 @@ package core
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/gateway/pkg/log"
 )
 
@@ -22,7 +21,7 @@ func (g *GroupDataProviderListenerImpl) OnGroupAdded(fabricIndex lib.FabricIndex
 		log.Info("Group added to nonexistent fabric?")
 		return
 	}
-	if err := g.mServer.GetTransportManager().MulticastGroupJoinLeave(raw.Multicast(fabric.GetFabricId(), newGroup.Id), true); err != nil {
+	if err := g.mServer.GetTransportManager().MulticastGroupJoinLeave(lib.Multicast(fabric.GetFabricId(), newGroup.Id), true); err != nil {
 
 	}
 }
@@ -33,7 +32,7 @@ func (g *GroupDataProviderListenerImpl) OnGroupRemoved(fabricIndex lib.FabricInd
 		log.Info("Group added to nonexistent fabric?")
 		return
 	}
-	_ = g.mServer.GetTransportManager().MulticastGroupJoinLeave(raw.Multicast(fabric.GetFabricId(), newGroup.Id), false)
+	_ = g.mServer.GetTransportManager().MulticastGroupJoinLeave(lib.Multicast(fabric.GetFabricId(), newGroup.Id), false)
 }
 
 func (g *GroupDataProviderListenerImpl) Init(server *Server) error {

@@ -32,7 +32,7 @@ func (s *SessionHolderImpl) GrabPairingSession(session SessionHandleBase) bool {
 		return false
 	}
 
-	if session().IsEstablishing() {
+	if session.IsEstablishing() {
 		return false
 	}
 	s.GrabUnchecked(session)

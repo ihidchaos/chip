@@ -84,7 +84,7 @@ func (f *FabricTable) Init(params *FabricTableInitParams) error {
 	for _, f := range f.mStates {
 		f.Reset()
 	}
-	f.mNextAvailableFabricIndex = lib.KMinValidFabricIndex
+	f.mNextAvailableFabricIndex = lib.MinValidFabricIndex
 	return nil
 }
 

@@ -6,7 +6,6 @@ import (
 	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 )
@@ -20,10 +19,10 @@ const KAnyMessageType int16 = -1
 type UnsolicitedMessageHandlerSlot struct {
 	messageType int16
 	handler     UnsolicitedMessageHandler
-	protocolId  *protocols.Id
+	protocolId  *lib.Id
 }
 
-func (receiver *UnsolicitedMessageHandlerSlot) Matches(aProtocolId *protocols.Id, aMessageType int16) bool {
+func (receiver *UnsolicitedMessageHandlerSlot) Matches(aProtocolId *lib.Id, aMessageType int16) bool {
 	return aProtocolId == receiver.protocolId && aMessageType == receiver.messageType
 }
 
@@ -41,8 +40,8 @@ type ExchangeManager interface {
 	// SessionMessageDelegate the delegate for transport session manager
 	transport.SessionMessageDelegate
 	SessionManager() transport.SessionManager
-	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler UnsolicitedMessageHandler) error
-	RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler UnsolicitedMessageHandler) error
+	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *lib.Id, handler UnsolicitedMessageHandler) error
+	RegisterUnsolicitedMessageHandlerForType(protocolId *lib.Id, msgType uint8, handler UnsolicitedMessageHandler) error
 	UnregisterUnsolicitedMessageHandlerForType(msgType uint8) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
@@ -189,14 +188,14 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 }
 
 func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForProtocol(
-	protocolId *protocols.Id,
+	protocolId *lib.Id,
 	handler UnsolicitedMessageHandler,
 ) error {
 	return e.RegisterUMH(protocolId, KAnyMessageType, handler)
 }
 
 func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(
-	protocolId *protocols.Id,
+	protocolId *lib.Id,
 	msgType uint8,
 	handler UnsolicitedMessageHandler,
 ) error {
@@ -207,7 +206,7 @@ func (e *ExchangeManagerImpl) UnregisterUnsolicitedMessageHandlerForType(opcode 
 	return nil
 }
 
-func (e *ExchangeManagerImpl) RegisterUMH(id *protocols.Id, msgType int16, handle UnsolicitedMessageHandler) error {
+func (e *ExchangeManagerImpl) RegisterUMH(id *lib.Id, msgType int16, handle UnsolicitedMessageHandler) error {
 
 	var selected *UnsolicitedMessageHandlerSlot
 	for _, umh := range e.UMHandlerPool {
@@ -229,7 +228,7 @@ func (e *ExchangeManagerImpl) RegisterUMH(id *protocols.Id, msgType int16, handl
 	return nil
 }
 
-func (e *ExchangeManagerImpl) UnregisterUMH(id *protocols.Id, msgType int16) error {
+func (e *ExchangeManagerImpl) UnregisterUMH(id *lib.Id, msgType int16) error {
 	for _, umh := range e.UMHandlerPool {
 		if umh.IsInUse() && umh.Matches(id, msgType) {
 			umh.Reset()

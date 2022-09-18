@@ -37,7 +37,7 @@ type Server struct {
 	mOperationalServicePort        uint16
 	mUserDirectedCommissioningPort uint16
 	mInterfaceId                   net.Interface
-	mDnssd                         dnssd.DnssdServer
+	mDnssd                         dnssd.Base
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
 	mDeviceStorage                 storage.KvsPersistentStorageDelegate
@@ -252,7 +252,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	}
 	s.mCommissioningWindowManager.SetAppDelegate(initParams.AppDelegate)
 
-	dnssdServer := dnssd.NewDnssdInstance()
+	dnssdServer := dnssd.New()
 	dnssdServer.SetFabricTable(s.mFabrics)
 	dnssdServer.SetCommissioningModeProvider(s.mCommissioningWindowManager)
 
@@ -266,7 +266,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	//err = chip::app::InteractionModelEngine::GetInstance()->initCommissionableData(&mExchangeMgr, &GetFabricTable());
 	//SuccessOrExit(err);
 
-	//chip::Dnssd::Resolver::Instance().initCommissionableData(DeviceLayer::UDPEndPointManager());
+	//chip::Impl::Resolver::Instance().initCommissionableData(DeviceLayer::UDPEndPointManager());
 
 	//err = sGlobalEventIdCounter.initCommissionableData(mDeviceStorage, &DefaultStorageKeyAllocator::IMEventNumber,
 	//	CHIP_DEVICE_CONFIG_EVENT_ID_COUNTER_EPOCH);

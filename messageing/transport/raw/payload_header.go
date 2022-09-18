@@ -3,7 +3,6 @@ package raw
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/buffer"
-	"github.com/galenliu/chip/protocols"
 )
 
 const (
@@ -48,7 +47,7 @@ type PayloadHeader struct {
 	mExchangeFlags     uint8
 	mProtocolOpcode    uint8
 	mExchangeId        uint16
-	mProtocolId        protocols.Id
+	mProtocolId        lib.Id
 	mVendorId          lib.VendorId
 	mAckMessageCounter uint32
 }
@@ -82,7 +81,7 @@ func (header *PayloadHeader) DecodeAndConsume(data *buffer.PacketBuffer) error {
 	return header.Decode(data)
 }
 
-func (header *PayloadHeader) GetProtocolID() protocols.Id {
+func (header *PayloadHeader) GetProtocolID() lib.Id {
 	return header.mProtocolId
 }
 
@@ -94,7 +93,7 @@ func (header *PayloadHeader) GetExchangeID() uint16 {
 	return header.mExchangeId
 }
 
-func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
+func (header *PayloadHeader) HasProtocol(id *lib.Id) bool {
 	return header.mProtocolId.Equal(id)
 }
 
@@ -107,7 +106,7 @@ func (header *PayloadHeader) Decode(buf *buffer.PacketBuffer) error {
 	if err != nil {
 		return err
 	}
-	var vendorId = lib.VendorIdCommon
+	var vendorId = lib.VendorIdMatterStandard
 	if header.HaveVendorId() {
 		vid, err := buffer.LittleEndianRead16(buf)
 		if err != nil {
@@ -115,10 +114,7 @@ func (header *PayloadHeader) Decode(buf *buffer.PacketBuffer) error {
 		}
 		vendorId = lib.VendorId(vid)
 	}
-	header.mProtocolId = protocols.Id{
-		VendorId:   vendorId,
-		ProtocolId: protocolId,
-	}
+	header.mProtocolId = lib.NewProtocolId(vendorId, protocolId)
 	if header.IsAckMsg() {
 		ackCounter, err := buffer.LittleEndianRead32(buf)
 		if err != nil {

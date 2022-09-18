@@ -13,7 +13,7 @@ import (
 	"sync"
 )
 
-type DnssdServer interface {
+type Base interface {
 	SetFabricTable(fabrics *credentials.FabricTable)
 	SetCommissioningModeProvider(provider CommissioningModeProvider)
 	SetSecuredPort(port uint16)
@@ -22,7 +22,7 @@ type DnssdServer interface {
 	StartServer()
 }
 
-type Dnssd struct {
+type Impl struct {
 	mSecuredPort                 uint16
 	mUnsecuredPort               uint16
 	mInterfaceId                 net.Interface
@@ -34,13 +34,13 @@ type Dnssd struct {
 	mdnsAdvertiser               Advertiser
 }
 
-var _DnssdInstance *Dnssd
+var _DnssdInstance *Impl
 var _DnssdInstanceOnce sync.Once
 
-func GetInstance() *Dnssd {
+func Instance() *Impl {
 	_DnssdInstanceOnce.Do(func() {
 		if _DnssdInstance == nil {
-			_DnssdInstance = &Dnssd{
+			_DnssdInstance = &Impl{
 				mSecuredPort:                 0,
 				mUnsecuredPort:               0,
 				mInterfaceId:                 net.Interface{},
@@ -55,40 +55,39 @@ func GetInstance() *Dnssd {
 	})
 	return _DnssdInstance
 }
-
-func NewDnssdInstance() *Dnssd {
-	return GetInstance()
+func New() Base {
+	return Instance()
 }
 
-func (d *Dnssd) SetFabricTable(fabrics *credentials.FabricTable) {
+func (d *Impl) SetFabricTable(fabrics *credentials.FabricTable) {
 	d.mFabricTable = fabrics
 }
 
-func (d *Dnssd) SetCommissioningModeProvider(provider CommissioningModeProvider) {
+func (d *Impl) SetCommissioningModeProvider(provider CommissioningModeProvider) {
 	d.mCommissioningModeProvider = provider
 }
 
-func (d *Dnssd) SetSecuredPort(port uint16) {
+func (d *Impl) SetSecuredPort(port uint16) {
 	d.mSecuredPort = port
 }
 
-func (d *Dnssd) SetUnsecuredPort(port uint16) {
+func (d *Impl) SetUnsecuredPort(port uint16) {
 	d.mUnsecuredPort = port
 }
 
-func (d *Dnssd) SetInterfaceId(n net.Interface) {
+func (d *Impl) SetInterfaceId(n net.Interface) {
 	d.mInterfaceId = n
 }
 
-func (d *Dnssd) StartServer() {
+func (d *Impl) StartServer() {
 	mode := CommissioningModeDisabled
 	if d.mCommissioningModeProvider != nil {
 		mode = d.mCommissioningModeProvider.GetCommissioningMode()
 	}
-	d.startServer(mode)
+	d.start(mode)
 }
 
-func (d *Dnssd) AdvertiseOperational() error {
+func (d *Impl) AdvertiseOperational() error {
 	if d.mFabricTable == nil {
 		return lib.ChipErrorIncorrectState
 	}
@@ -116,14 +115,14 @@ func (d *Dnssd) AdvertiseOperational() error {
 	return nil
 }
 
-func (d *Dnssd) AdvertiseCommissioner() error {
+func (d *Impl) AdvertiseCommissioner() error {
 	return d.Advertise(false, CommissioningModeDisabled)
 }
 
-func (d *Dnssd) Advertise(commissionAbleNode bool, mode int) error {
+func (d *Impl) Advertise(commissionableNode bool, mode int) error {
 
 	advertiseParameters := NewCommissionAdvertisingParameters()
-	if commissionAbleNode {
+	if commissionableNode {
 		advertiseParameters.SetPort(d.mSecuredPort)
 		advertiseParameters.SetCommissionAdvertiseMode(AdvertiseModeCommissionableNode)
 	} else {
@@ -222,7 +221,7 @@ func (d *Dnssd) Advertise(commissionAbleNode bool, mode int) error {
 	return d.mdnsAdvertiser.AdvertiseCommission(advertiseParameters)
 }
 
-func (d *Dnssd) startServer(mode int) {
+func (d *Impl) start(mode int) {
 
 	log.Printf("updating services using commissioning mode %d", mode)
 	err := d.mdnsAdvertiser.Init()
@@ -238,7 +237,8 @@ func (d *Dnssd) startServer(mode int) {
 		log.Errorf("failed to advertise operational node: %s", err.Error())
 	}
 
-	if mode == CommissioningModeDisabled {
+	//如果Commission模式没有禁用，则广播Node
+	if mode != CommissioningModeDisabled {
 		err := d.AdvertiseCommissionableNode(mode)
 		if err != nil {
 			log.Error("failed to advertise commissionable node: %s", err.Error())
@@ -258,7 +258,7 @@ func (d *Dnssd) startServer(mode int) {
 	}
 }
 
-func (d *Dnssd) AdvertiseCommissionableNode(mode int) error {
+func (d *Impl) AdvertiseCommissionableNode(mode int) error {
 	if config.ChipDeviceConfigEnableExtendedDiscovery {
 		d.mCurrentCommissioningMode = mode
 	}
@@ -268,6 +268,6 @@ func (d *Dnssd) AdvertiseCommissionableNode(mode int) error {
 	return d.Advertise(true, mode)
 }
 
-func (d *Dnssd) haveOperationalCredentials() bool {
+func (d *Impl) haveOperationalCredentials() bool {
 	return d.mFabricTable != nil && d.mFabricTable.FabricCount() != 0
 }
