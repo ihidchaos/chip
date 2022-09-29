@@ -41,7 +41,7 @@ type FabricTableContainer interface {
 	FetchPendingNonFabricAssociatedRootCert() ([]byte, error)
 	FetchICACert(index lib.FabricIndex) ([]byte, error)
 	FetchNOCCert(index lib.FabricIndex) ([]byte, error)
-	FetchRootPubkey(index lib.FabricIndex) ([]byte, error)
+	FetchRootPublicKey(index lib.FabricIndex) ([]byte, error)
 	FetchCATs(index lib.FabricIndex) ([]byte, error)
 	SignWithOpKeypair(lib.FabricIndex) *crypto.P256ECDSASignature
 	FindFabricWithIndex(index lib.FabricIndex) *FabricInfo

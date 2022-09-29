@@ -46,10 +46,6 @@ func (d *AdvertiseImpl) AdvertiseOperational(params *OperationalAdvertisingParam
 	return d.advertiseOperational(params)
 }
 
-func (d *AdvertiseImpl) AdvertiseCommission(params *CommissionAdvertisingParameters) error {
-	return d.advertiseCommission(params)
-}
-
 func NewAdvertise() *AdvertiseImpl {
 	a := &AdvertiseImpl{}
 	a.mQueryResponderAllocatorCommissioner = NewQueryResponderAllocator()
@@ -87,7 +83,7 @@ func (d *AdvertiseImpl) UpdateCommissionableInstanceName() error {
 	return nil
 }
 
-func (a *AdvertiseImpl) advertiseCommission(params *CommissionAdvertisingParameters) error {
+func (a *AdvertiseImpl) AdvertiseCommission(params *CommissionAdvertisingParameters) error {
 
 	_ = a.AdvertiseRecords(AdvertiseTypeRemovingAll)
 	allocator := func() *QueryResponderAllocator {

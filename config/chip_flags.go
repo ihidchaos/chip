@@ -33,7 +33,7 @@ var (
 
 	ChipDeviceConfigDiscoveryNoTimeout      int8 = -1
 	ChipDeviceConfigDiscoveryNoTimeoutName       = "discover-no-timeout"
-	ChipDeviceConfigDiscoveryNoTimeoutUsage      = "Chip Device Config Discovery NoT imeout"
+	ChipDeviceConfigDiscoveryNoTimeoutUsage      = "Chip Device Config Discovery NoTimeout"
 
 	InetConfigEnableTcpEndpoint      int8 = 0
 	InetConfigEnableTcpEndpointName       = "enable-tcp"

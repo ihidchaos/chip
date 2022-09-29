@@ -6,7 +6,7 @@ const (
 
 	kSha256HashLength            = 32
 	kP256FELength                = 32
-	ChipCryptoGroupSizeBytes     = kP256FELength
+	MatterCryptoGroupSizeBytes   = kP256FELength
 	kP256PointLength             = 2*kP256FELength + 1
 	KSha256HashLength            = 32
 	ChipCryptoPublicKeySizeBytes = kP256PointLength
@@ -20,7 +20,7 @@ const (
 
 	KSpake2pVerifierSerializedLength = kP256FELength + kP256PointLength
 
-	ChipCryptoAEADMicLengthBytes uint16 = 16
+	MatterCryptoAEADMicLengthBytes uint16 = 16
 
 	SymmetricKeyLengthBytes = 16 //对称密钥长度
 )
