@@ -22,7 +22,7 @@ type Base interface {
 	StartServer()
 }
 
-type Impl struct {
+type Dnssd struct {
 	mSecuredPort                 uint16
 	mUnsecuredPort               uint16
 	mInterfaceId                 net.Interface
@@ -34,13 +34,13 @@ type Impl struct {
 	mdnsAdvertiser               Advertiser
 }
 
-var _DnssdInstance *Impl
+var _DnssdInstance *Dnssd
 var _DnssdInstanceOnce sync.Once
 
-func Instance() *Impl {
+func Instance() *Dnssd {
 	_DnssdInstanceOnce.Do(func() {
 		if _DnssdInstance == nil {
-			_DnssdInstance = &Impl{
+			_DnssdInstance = &Dnssd{
 				mSecuredPort:                 0,
 				mUnsecuredPort:               0,
 				mInterfaceId:                 net.Interface{},
@@ -59,27 +59,27 @@ func New() Base {
 	return Instance()
 }
 
-func (d *Impl) SetFabricTable(fabrics *credentials.FabricTable) {
+func (d *Dnssd) SetFabricTable(fabrics *credentials.FabricTable) {
 	d.mFabricTable = fabrics
 }
 
-func (d *Impl) SetCommissioningModeProvider(provider CommissioningModeProvider) {
+func (d *Dnssd) SetCommissioningModeProvider(provider CommissioningModeProvider) {
 	d.mCommissioningModeProvider = provider
 }
 
-func (d *Impl) SetSecuredPort(port uint16) {
+func (d *Dnssd) SetSecuredPort(port uint16) {
 	d.mSecuredPort = port
 }
 
-func (d *Impl) SetUnsecuredPort(port uint16) {
+func (d *Dnssd) SetUnsecuredPort(port uint16) {
 	d.mUnsecuredPort = port
 }
 
-func (d *Impl) SetInterfaceId(n net.Interface) {
+func (d *Dnssd) SetInterfaceId(n net.Interface) {
 	d.mInterfaceId = n
 }
 
-func (d *Impl) StartServer() {
+func (d *Dnssd) StartServer() {
 	mode := CommissioningModeDisabled
 	if d.mCommissioningModeProvider != nil {
 		mode = d.mCommissioningModeProvider.GetCommissioningMode()
@@ -87,7 +87,7 @@ func (d *Impl) StartServer() {
 	d.start(mode)
 }
 
-func (d *Impl) AdvertiseOperational() error {
+func (d *Dnssd) AdvertiseOperational() error {
 	if d.mFabricTable == nil {
 		return lib.ChipErrorIncorrectState
 	}
@@ -115,11 +115,11 @@ func (d *Impl) AdvertiseOperational() error {
 	return nil
 }
 
-func (d *Impl) AdvertiseCommissioner() error {
+func (d *Dnssd) AdvertiseCommissioner() error {
 	return d.Advertise(false, CommissioningModeDisabled)
 }
 
-func (d *Impl) Advertise(commissionableNode bool, mode int) error {
+func (d *Dnssd) Advertise(commissionableNode bool, mode int) error {
 
 	advertiseParameters := NewCommissionAdvertisingParameters()
 	if commissionableNode {
@@ -221,7 +221,7 @@ func (d *Impl) Advertise(commissionableNode bool, mode int) error {
 	return d.mdnsAdvertiser.AdvertiseCommission(advertiseParameters)
 }
 
-func (d *Impl) start(mode int) {
+func (d *Dnssd) start(mode int) {
 
 	log.Printf("updating services using commissioning mode %d", mode)
 	err := d.mdnsAdvertiser.Init()
@@ -258,7 +258,7 @@ func (d *Impl) start(mode int) {
 	}
 }
 
-func (d *Impl) AdvertiseCommissionableNode(mode int) error {
+func (d *Dnssd) AdvertiseCommissionableNode(mode int) error {
 	if config.ChipDeviceConfigEnableExtendedDiscovery {
 		d.mCurrentCommissioningMode = mode
 	}
@@ -268,6 +268,6 @@ func (d *Impl) AdvertiseCommissionableNode(mode int) error {
 	return d.Advertise(true, mode)
 }
 
-func (d *Impl) haveOperationalCredentials() bool {
+func (d *Dnssd) haveOperationalCredentials() bool {
 	return d.mFabricTable != nil && d.mFabricTable.FabricCount() != 0
 }

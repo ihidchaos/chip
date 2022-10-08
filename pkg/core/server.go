@@ -266,7 +266,7 @@ func (s *Server) Init(initParams *InitParams) (*Server, error) {
 	//err = chip::app::InteractionModelEngine::GetInstance()->initCommissionableData(&mExchangeMgr, &GetFabricTable());
 	//SuccessOrExit(err);
 
-	//chip::Impl::Resolver::Instance().initCommissionableData(DeviceLayer::UDPEndPointManager());
+	//chip::Dnssd::Resolver::Instance().initCommissionableData(DeviceLayer::UDPEndPointManager());
 
 	//err = sGlobalEventIdCounter.initCommissionableData(mDeviceStorage, &DefaultStorageKeyAllocator::IMEventNumber,
 	//	CHIP_DEVICE_CONFIG_EVENT_ID_COUNTER_EPOCH);
