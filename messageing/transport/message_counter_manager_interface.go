@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"net/netip"
 )
@@ -13,7 +12,7 @@ type MessageCounterManagerInterface interface {
 		handle SessionHandleBase,
 		state uint8,
 		peerAdders netip.AddrPort,
-		buf *buffer.PacketBuffer,
+		buf *raw.PacketBuffer,
 	) error
 }
 
@@ -33,7 +32,7 @@ func (g *GlobalUnencryptedMessageCounterImpl) StartSync(handle SessionHandleBase
 	panic("implement me")
 }
 
-func (g *GlobalUnencryptedMessageCounterImpl) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle SessionHandleBase, state uint8, peerAdders netip.AddrPort, buf *buffer.PacketBuffer) error {
+func (g *GlobalUnencryptedMessageCounterImpl) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle SessionHandleBase, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }

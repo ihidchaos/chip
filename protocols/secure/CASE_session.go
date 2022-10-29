@@ -8,11 +8,10 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/lib/buffer"
-	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	tlv2 "github.com/galenliu/chip/pkg/tlv"
 	"github.com/galenliu/gateway/pkg/log"
 	rand "math/rand"
 )
@@ -74,7 +73,7 @@ func NewCASESession() *CASESession {
 	}
 }
 
-func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *buffer.PacketBuffer) error {
+func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *raw.PacketBuffer) error {
 	msgType := messageing.MsgType(payloadHeader.GetMessageType())
 	sha256.New()
 
@@ -221,13 +220,13 @@ func (s *CASESession) CopySecureSession() transport.SessionHandleBase {
 	return nil
 }
 
-func (s *CASESession) HandleSigma1AndSendSigma2(buf *buffer.PacketBuffer) error {
+func (s *CASESession) HandleSigma1AndSendSigma2(buf *raw.PacketBuffer) error {
 	return s.HandleSigma1(buf)
 }
 
-func (s *CASESession) HandleSigma1(buf *buffer.PacketBuffer) error {
+func (s *CASESession) HandleSigma1(buf *raw.PacketBuffer) error {
 
-	tlvReader := tlv.NewReader(buf)
+	tlvReader := tlv2.NewReader(buf)
 	sigma1, err := ParseSigma1(tlvReader)
 	if err != nil {
 		return err
@@ -314,23 +313,23 @@ func (s *CASESession) SendSigma2() error {
 
 	tbsData2Signature := s.mFabricsTable.SignWithOpKeypair(s.mFabricIndex).Bytes()
 
-	tlvWriterMsg1 := tlv.NewWriter()
-	err = tlvWriterMsg1.StartContainer(tlv.AnonymousTag(), tlv.Type_Structure)
+	tlvWriterMsg1 := tlv2.NewWriter()
+	err = tlvWriterMsg1.StartContainer(tlv2.AnonymousTag(), tlv2.Type_Structure)
 	if err != nil {
 		return err
 	}
 
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderNOC), nocCert)
+	err = tlvWriterMsg1.PutBytes(tlv2.ContextTag(TagTBEDataSenderNOC), nocCert)
 	if err != nil {
 		return err
 	}
 	if len(icaCert) > 0 {
-		err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderICAC), icaCert)
+		err = tlvWriterMsg1.PutBytes(tlv2.ContextTag(TagTBEDataSenderICAC), icaCert)
 		if err != nil {
 			return err
 		}
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSignature), tbsData2Signature)
+	err = tlvWriterMsg1.PutBytes(tlv2.ContextTag(TagTBEDataSignature), tbsData2Signature)
 	if err != nil {
 		return err
 	}
@@ -340,12 +339,12 @@ func (s *CASESession) SendSigma2() error {
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataResumptionID), s.mNewResumptionId)
+	err = tlvWriterMsg1.PutBytes(tlv2.ContextTag(TagTBEDataResumptionID), s.mNewResumptionId)
 	if err != nil {
 		return err
 	}
 
-	err = tlvWriterMsg1.EndContainer(tlv.Type_Structure)
+	err = tlvWriterMsg1.EndContainer(tlv2.Type_Structure)
 	if err != nil {
 		return err
 	}
@@ -353,47 +352,47 @@ func (s *CASESession) SendSigma2() error {
 	// 使用对称密钥sr2k 对 Sigma2数量进行加密
 	msgR2Encrypted, err := crypto.AesCcmEncrypt(tlvWriterMsg1.Bytes(), sr2k, kTBEData2Nonce, crypto.AEADMicLengthBytes)
 
-	tlvWriterMsg2 := tlv.NewWriter()
-	err = tlvWriterMsg2.StartContainer(tlv.AnonymousTag(), tlv.Type_Structure)
+	tlvWriterMsg2 := tlv2.NewWriter()
+	err = tlvWriterMsg2.StartContainer(tlv2.AnonymousTag(), tlv2.Type_Structure)
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(1), msgRand)
+	err = tlvWriterMsg2.PutBytes(tlv2.ContextTag(1), msgRand)
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.Put(tlv.ContextTag(2), uint64(sessionId))
+	err = tlvWriterMsg2.Put(tlv2.ContextTag(2), uint64(sessionId))
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.PubBytes())
+	err = tlvWriterMsg2.PutBytes(tlv2.ContextTag(3), s.mEphemeralKey.PubBytes())
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(4), msgR2Encrypted)
+	err = tlvWriterMsg2.PutBytes(tlv2.ContextTag(4), msgR2Encrypted)
 	if err != nil {
 		return err
 	}
 
 	if s.mLocalMRPConfig != nil {
-		err = tlvWriterMsg2.StartContainer(tlv.ContextTag(5), tlv.Type_Structure)
+		err = tlvWriterMsg2.StartContainer(tlv2.ContextTag(5), tlv2.Type_Structure)
 		if err != nil {
 			return err
 		}
-		err = tlvWriterMsg2.Put(tlv.ContextTag(1), uint64(s.mLocalMRPConfig.IdleRetransTimeout.Milliseconds()))
+		err = tlvWriterMsg2.Put(tlv2.ContextTag(1), uint64(s.mLocalMRPConfig.IdleRetransTimeout.Milliseconds()))
 		if err != nil {
 			return err
 		}
-		err = tlvWriterMsg2.Put(tlv.ContextTag(2), uint64(s.mLocalMRPConfig.ActiveRetransTimeout.Milliseconds()))
+		err = tlvWriterMsg2.Put(tlv2.ContextTag(2), uint64(s.mLocalMRPConfig.ActiveRetransTimeout.Milliseconds()))
 		if err != nil {
 			return err
 		}
-		err = tlvWriterMsg2.EndContainer(tlv.Type_Structure)
+		err = tlvWriterMsg2.EndContainer(tlv2.Type_Structure)
 		if err != nil {
 			return err
 		}
 	}
-	err = tlvWriterMsg2.EndContainer(tlv.Type_Structure)
+	err = tlvWriterMsg2.EndContainer(tlv2.Type_Structure)
 	if err != nil {
 		return err
 	}

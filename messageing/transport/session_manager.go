@@ -3,7 +3,6 @@ package transport
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/storage"
 	log "github.com/sirupsen/logrus"
@@ -12,7 +11,7 @@ import (
 
 // SessionMessageDelegate 这里的delegate实例为ExchangeManager
 type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandleBase, duplicate uint8, buf *buffer.PacketBuffer)
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandleBase, duplicate uint8, buf *raw.PacketBuffer)
 }
 
 const (
@@ -32,11 +31,11 @@ type SessionManager interface {
 	credentials.FabricTableDelegate
 	ManagerDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
-	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer)
+	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 	// SecureUnicastMessageDispatch  handle the unsecure messages
-	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer)
+	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 	// UnauthenticatedMessageDispatch handle the unauthenticated(未经认证的) messages
-	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer)
+	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 
 	SetMessageDelegate(SessionMessageDelegate)
 }
@@ -91,29 +90,28 @@ func (s *SessionManagerImpl) Init(transportMgr ManagerBase, counter MessageCount
 	return err
 }
 
-func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, buf *buffer.PacketBuffer) {
-	packetHeader := raw.NewPacketHeader()
-	err := packetHeader.DecodeAndConsume(buf)
+func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, packet *raw.PacketBuffer) {
+	packetHeader, err := packet.PacketHeader()
 	if err != nil {
 		log.Printf("failed to decode packet header: %s", err.Error())
 		return
 	}
 	if packetHeader.IsEncrypted() {
 		if packetHeader.IsGroupSession() {
-			s.SecureGroupMessageDispatch(packetHeader, srcAddr, buf)
+			s.SecureGroupMessageDispatch(packetHeader, srcAddr, packet)
 		} else {
-			s.SecureUnicastMessageDispatch(packetHeader, srcAddr, buf)
+			s.SecureUnicastMessageDispatch(packetHeader, srcAddr, packet)
 		}
 	} else {
-		s.UnauthenticatedMessageDispatch(packetHeader, srcAddr, buf)
+		s.UnauthenticatedMessageDispatch(packetHeader, srcAddr, packet)
 	}
 }
 
 // UnauthenticatedMessageDispatch 处理没有加密码的消息
-func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *buffer.PacketBuffer) {
+func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
 
-	source := header.GetSourceNodeId()
-	destination := header.GetDestinationNodeId()
+	source := header.SourceNodeId
+	destination := header.DestinationNodeId
 
 	if (source.HasValue() && destination.HasValue()) || (!source.HasValue() && !destination.HasValue()) {
 		log.Infof("received malformed unsecure packet with source %d destination %d", source, destination)
@@ -152,14 +150,14 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 		return
 	}
 
-	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.GetMessageCounter())
+	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.MessageCounter)
 	if err != nil && err == lib.ChipErrorDuplicateMessageReceived {
 		isDuplicate = KDuplicateMessageYes
 		log.Infof(
 			"Received a duplicate message with MessageCounter: %v on exchange %v",
-			header.GetMessageCounter(), payloadHeader)
+			header.MessageCounter, payloadHeader)
 	} else {
-		unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.GetMessageCounter())
+		unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.MessageCounter)
 	}
 	if s.mCB != nil {
 		s.mCB.OnMessageReceived(header, payloadHeader, NewSessionHandle(unsecuredSession), isDuplicate, buf)
@@ -187,20 +185,20 @@ func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, inde
 }
 
 // SecureGroupMessageDispatch 处理加密的组播消息
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *buffer.PacketBuffer) {
+func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
 
 }
 
 // SecureUnicastMessageDispatch 处理分支，加密的单播消息
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *buffer.PacketBuffer) {
-	secureSession := s.mSecureSessions.FindSecureSessionByLocalKey(header.GetSessionId())
+func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
+	secureSession := s.mSecureSessions.FindSecureSessionByLocalKey(header.SessionId)
 	_ = KDuplicateMessageNo
 	if msg.IsNull() {
 		log.Infof("Secure transport received Unicast NULL packet, discarding")
 		return
 	}
 	if secureSession == nil {
-		log.Infof("Data received on an unknown session (LSID=%d). Dropping it!", header.GetSessionId())
+		log.Infof("Data received on an unknown session (LSID=%d). Dropping it!", header.SessionId)
 		return
 	}
 
@@ -212,6 +210,6 @@ func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHead
 	if secureSession.GetSecureSessionType() == CASE {
 		nodeId = secureSession.GetPeerNodeId()
 	}
-	nonce, _ := BuildNonce(header.GetSecurityFlags(), header.GetMessageCounter(), nodeId)
+	nonce, _ := BuildNonce(header.SecFlags, header.MessageCounter, nodeId)
 	_ = Decrypt(secureSession.GetCryptoContext(), nonce, header, msg)
 }

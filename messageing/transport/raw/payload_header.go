@@ -2,7 +2,7 @@ package raw
 
 import (
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/lib/buffer"
+	"github.com/galenliu/chip/pkg/tlv/buffer"
 )
 
 const (
@@ -77,7 +77,7 @@ func (header *PayloadHeader) HaveVendorId() bool {
 	return lib.HasFlags(header.mExchangeFlags, FVendorIdPresent)
 }
 
-func (header *PayloadHeader) DecodeAndConsume(data *buffer.PacketBuffer) error {
+func (header *PayloadHeader) DecodeAndConsume(data *PacketBuffer) error {
 	return header.Decode(data)
 }
 
@@ -97,7 +97,7 @@ func (header *PayloadHeader) HasProtocol(id *lib.Id) bool {
 	return header.mProtocolId.Equal(id)
 }
 
-func (header *PayloadHeader) Decode(buf *buffer.PacketBuffer) error {
+func (header *PayloadHeader) Decode(buf *PacketBuffer) error {
 	var err error
 	header.mExchangeFlags, err = buffer.Read8(buf)
 	header.mProtocolOpcode, err = buffer.Read8(buf)

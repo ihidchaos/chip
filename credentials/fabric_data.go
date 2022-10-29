@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/tlv"
 )
 
 var (

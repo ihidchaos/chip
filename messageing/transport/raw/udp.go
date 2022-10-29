@@ -1,7 +1,6 @@
 package raw
 
 import (
-	"github.com/galenliu/chip/lib/buffer"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net"
@@ -16,6 +15,7 @@ const (
 // UDPTransport Must impl TransportBase
 type UDPTransport interface {
 	TransportBase
+	BoundPort() uint16
 	Init(parameters *UdpListenParameters) error
 }
 
@@ -88,17 +88,17 @@ func (u *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
 	if data == nil {
 		return
 	}
-	packetBuffer := buffer.NewPacketBuffer(data)
+	packetBuffer := NewPacketBuffer(data)
 	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
 	srcAddrPort := netip.AddrPortFrom(srcAddr, port)
 	u.OnUdpReceive(srcAddrPort, packetBuffer)
 }
 
-func (u *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *buffer.PacketBuffer) {
+func (u *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *PacketBuffer) {
 	u.mDelegate.HandleMessageReceived(srcAddr, data)
 }
 
-func (u *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *buffer.PacketBuffer) {
+func (u *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *PacketBuffer) {
 	u.mDelegate.HandleMessageReceived(addrPort, data)
 }
 

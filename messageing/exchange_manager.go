@@ -3,7 +3,6 @@ package messageing
 import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	log "github.com/sirupsen/logrus"
@@ -110,13 +109,13 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 	payloadHeader *raw.PayloadHeader,
 	session transport.SessionHandleBase,
 	isDuplicate uint8,
-	buf *buffer.PacketBuffer,
+	buf *raw.PacketBuffer,
 ) {
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 	log.Infof("Received message of type %d with protocolId %d"+
 		"and MessageCounter: %d",
 		payloadHeader.GetMessageType(), payloadHeader.GetProtocolID(),
-		packetHeader.GetMessageCounter())
+		packetHeader.MessageCounter)
 
 	var msgFlags uint32 = 0
 	msgFlags = lib.SetFlag(isDuplicate == transport.KDuplicateMessageYes, msgFlags, transport.FDuplicateMessage)
@@ -126,11 +125,11 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 		if ec != nil {
 			log.Infof("Found matching exchange: %d Delegate: %p",
 				ec.mExchangeId, ec.GetDelegate())
-			_ = ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlags, buf)
+			_ = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags, buf)
 			return
 		}
 	}
-	log.Infof("Received Groupcast Message with GroupId of %d", packetHeader.GetDestinationGroupId())
+	log.Infof("Received Groupcast Message with GroupId of %d", packetHeader.DestinationGroupId)
 
 	if !session.IsActiveSession() {
 		log.Infof("Dropping message on inactive session that does not match an existing exchange")
@@ -178,7 +177,7 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 			e.SendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags, buf)
 		}
 
-		err = ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlags, buf)
+		err = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags, buf)
 		if err != nil {
 			log.Infof("OnMessageReceived failed,err : %s", err.Error())
 		}
@@ -243,7 +242,7 @@ func (e *ExchangeManagerImpl) SendStandaloneAckIfNeeded(
 	payloadHeader *raw.PayloadHeader,
 	session transport.SessionHandleBase,
 	msgFlag uint32,
-	buf *buffer.PacketBuffer,
+	buf *raw.PacketBuffer,
 ) {
 
 }

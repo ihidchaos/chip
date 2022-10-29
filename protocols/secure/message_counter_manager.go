@@ -1,7 +1,6 @@
 package secure
 
 import (
-	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
@@ -16,7 +15,7 @@ func (m MessageCounterManager) StartSync(handle transport.SessionHandleBase, ses
 	panic("implement me")
 }
 
-func (m MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle transport.SessionHandleBase, state uint8, peerAdders netip.AddrPort, buf *buffer.PacketBuffer) error {
+func (m MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle transport.SessionHandleBase, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }

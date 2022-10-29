@@ -3,9 +3,9 @@ package secure
 import (
 	"errors"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
+	tlv2 "github.com/galenliu/chip/pkg/tlv"
 )
 
 type PairingSession interface {
@@ -23,7 +23,7 @@ type PairingSession interface {
 	DeriveSecureSession(ctx transport.CryptoContext) error
 	GetRemoteMRPConfig() *transport.ReliableMessageProtocolConfig
 	SetRemoteMRPConfig(mrpLocalConfig *transport.ReliableMessageProtocolConfig)
-	EncodeMRPParameters(tag tlv.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig)
+	EncodeMRPParameters(tag tlv2.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig)
 }
 
 type PairingSessionImpl struct {
@@ -90,12 +90,12 @@ func (p PairingSessionImpl) SetRemoteMRPConfig(mrpLocalConfig *transport.Reliabl
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) EncodeMRPParameters(tag tlv.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
+func (p PairingSessionImpl) EncodeMRPParameters(tag tlv2.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) DecodeMRPParametersIfPresent(tag tlv.Tag, reader *tlv.ReaderImpl) error {
+func (p PairingSessionImpl) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *tlv2.ReaderImpl) error {
 	if reader.GetTag() != tag {
 		return nil
 	}

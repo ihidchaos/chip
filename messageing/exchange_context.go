@@ -2,7 +2,6 @@ package messageing
 
 import (
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/lib/buffer"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 )
@@ -64,7 +63,7 @@ func (c *ExchangeContext) MatchExchange(session transport.SessionHandleBase, pac
 		(payloadHeader.IsInitiator() != c.IsInitiator())
 }
 
-func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *buffer.PacketBuffer) error {
+func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *raw.PacketBuffer) error {
 
 	//isStandaloneAck := payloadHeader.HasMessageType(uint8(StandaloneAck))
 	//isDuplicate := lib.HasFlags(flags, transport.FDuplicateMessage)
