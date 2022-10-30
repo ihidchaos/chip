@@ -4,6 +4,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/protocols"
 )
 
 type ExchangeSessionHolder interface {
@@ -13,6 +14,11 @@ type ExchangeSessionHolder interface {
 
 type ExchangeSessionHolderImpl struct {
 	*transport.SessionHolderWithDelegateImpl
+	mSession *transport.SessionHandle
+}
+
+func (i *ExchangeSessionHolderImpl) Get() *transport.SessionHandle {
+	return i.mSession
 }
 
 func NewExchangeSessionHolderImpl(delegate *ExchangeContext) *ExchangeSessionHolderImpl {
@@ -52,7 +58,6 @@ func NewExchangeContext(
 	}
 	ec.mSession = NewExchangeSessionHolderImpl(ec)
 	ec.mSession.SessionHolderWithDelegateImpl.Grad(session)
-
 	return ec
 }
 
@@ -108,15 +113,28 @@ func (c *ExchangeContext) ExchangeMgr() ExchangeManager {
 	return c.mExchangeMgr
 }
 
-func (c *ExchangeContext) SendMessage(protocolId *lib.Id, msgType MsgType, r2 []byte, response uint16) error {
+func (c *ExchangeContext) OnSessionReleased() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *ExchangeContext) SendMessage(protocolId *protocols.Id, msgType MsgType, r2 []byte, response uint16) error {
 
 	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
 
 	return nil
 }
 
-func (c *ExchangeContext) sendMessage(id lib.Id) error {
+func (c *ExchangeContext) sendMessage(id protocols.Id) error {
 
 	//c.mDispatch.SendMessage(c.ExchangeMgr().SessionManager(),c.mSession.)
 	return nil
+}
+
+func (c *ExchangeContext) HasSessionHandle() bool {
+	return c.mSession != nil
+}
+
+func (c *ExchangeContext) GetSessionHandle() *transport.SessionHandle {
+	return c.mSession.Get()
 }

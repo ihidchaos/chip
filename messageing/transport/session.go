@@ -13,6 +13,7 @@ const (
 )
 
 type SessionDelegate interface {
+	OnSessionReleased()
 }
 
 type SessionBase interface {

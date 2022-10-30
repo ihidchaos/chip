@@ -68,7 +68,7 @@ func (b *BaseAdvertisingParams) EnableIpV4(enable bool) {
 
 func (b *BaseAdvertisingParams) GetTcpSupported() (bool, error) {
 	if b.mTcpSupported == nil {
-		return false, lib.ChipErrorIncorrectState
+		return false, lib.MatterErrorIncorrectState
 	}
 	return *b.mTcpSupported, nil
 }

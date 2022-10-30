@@ -38,7 +38,7 @@ func (c *PeerMessageCounter) VerifyUnencrypted(counter uint32) error {
 		c.SetCounter(counter)
 		return nil
 	default:
-		return lib.ChipErrorInternal
+		return lib.MatterErrorInternal
 	}
 }
 

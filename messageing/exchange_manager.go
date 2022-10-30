@@ -5,6 +5,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 )
@@ -18,19 +19,19 @@ const KAnyMessageType int16 = -1
 type UnsolicitedMessageHandlerSlot struct {
 	messageType int16
 	handler     UnsolicitedMessageHandler
-	protocolId  *lib.Id
+	protocolId  *protocols.Id
 }
 
-func (receiver *UnsolicitedMessageHandlerSlot) Matches(aProtocolId *lib.Id, aMessageType int16) bool {
-	return aProtocolId == receiver.protocolId && aMessageType == receiver.messageType
+func (slot *UnsolicitedMessageHandlerSlot) Matches(aProtocolId *protocols.Id, aMessageType int16) bool {
+	return aProtocolId == slot.protocolId && aMessageType == slot.messageType
 }
 
-func (receiver *UnsolicitedMessageHandlerSlot) Reset() {
-	receiver.handler = nil
+func (slot *UnsolicitedMessageHandlerSlot) Reset() {
+	slot.handler = nil
 }
 
-func (receiver *UnsolicitedMessageHandlerSlot) IsInUse() bool {
-	return receiver.handler != nil
+func (slot *UnsolicitedMessageHandlerSlot) IsInUse() bool {
+	return slot.handler != nil
 }
 
 // ExchangeManager
@@ -39,12 +40,14 @@ type ExchangeManager interface {
 	// SessionMessageDelegate the delegate for transport session manager
 	transport.SessionMessageDelegate
 	SessionManager() transport.SessionManager
-	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *lib.Id, handler UnsolicitedMessageHandler) error
-	RegisterUnsolicitedMessageHandlerForType(protocolId *lib.Id, msgType uint8, handler UnsolicitedMessageHandler) error
-	UnregisterUnsolicitedMessageHandlerForType(msgType uint8) error
+	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler UnsolicitedMessageHandler) error
+	RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler UnsolicitedMessageHandler) error
+	UnregisterUnsolicitedMessageHandlerForType(id *protocols.Id, messageType uint8) error
+	UnregisterUnsolicitedMessageHandlerForProtocol(id *protocols.Id) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
 	GetMessageDispatch() ExchangeMessageDispatch
+	Shutdown()
 }
 
 // ExchangeManagerImpl ExchangeManager
@@ -67,7 +70,7 @@ func NewExchangeManagerImpl() *ExchangeManagerImpl {
 
 func (e *ExchangeManagerImpl) Init(sessionManager transport.SessionManager) error {
 	if e.mInitialized {
-		return lib.ChipErrorIncorrectState
+		return lib.MatterErrorIncorrectState
 	}
 	e.mSessionManager = sessionManager
 	e.mNextExchangeId = uint16(rand.Uint32())
@@ -187,31 +190,36 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 }
 
 func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForProtocol(
-	protocolId *lib.Id,
+	protocolId *protocols.Id,
 	handler UnsolicitedMessageHandler,
 ) error {
-	return e.RegisterUMH(protocolId, KAnyMessageType, handler)
+	return e.registerUMH(protocolId, KAnyMessageType, handler)
 }
 
 func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(
-	protocolId *lib.Id,
+	protocolId *protocols.Id,
 	msgType uint8,
 	handler UnsolicitedMessageHandler,
 ) error {
-	return e.RegisterUMH(protocolId, int16(msgType), handler)
+	return e.registerUMH(protocolId, int16(msgType), handler)
 }
 
-func (e *ExchangeManagerImpl) UnregisterUnsolicitedMessageHandlerForType(opcode uint8) error {
-	return nil
+func (e *ExchangeManagerImpl) UnregisterUnsolicitedMessageHandlerForType(id *protocols.Id, messageType uint8) error {
+	return e.unregisterUMH(id, int16(messageType))
 }
 
-func (e *ExchangeManagerImpl) RegisterUMH(id *lib.Id, msgType int16, handle UnsolicitedMessageHandler) error {
+func (e *ExchangeManagerImpl) UnregisterUnsolicitedMessageHandlerForProtocol(id *protocols.Id) error {
+	return e.unregisterUMH(id, KAnyMessageType)
+}
+
+func (e *ExchangeManagerImpl) registerUMH(id *protocols.Id, msgType int16, handle UnsolicitedMessageHandler) error {
 
 	var selected *UnsolicitedMessageHandlerSlot
 	for _, umh := range e.UMHandlerPool {
 		if !umh.IsInUse() {
 			if selected == nil {
 				selected = &umh
+				break
 			}
 		} else if umh.Matches(id, msgType) {
 			umh.handler = handle
@@ -219,7 +227,7 @@ func (e *ExchangeManagerImpl) RegisterUMH(id *lib.Id, msgType int16, handle Unso
 		}
 	}
 	if selected == nil {
-		return lib.ChipErrorTooManyUnsolicitedMessageHandlers
+		return lib.MatterErrorTooManyUnsolicitedMessageHandlers
 	}
 	selected.handler = handle
 	selected.protocolId = id
@@ -227,14 +235,14 @@ func (e *ExchangeManagerImpl) RegisterUMH(id *lib.Id, msgType int16, handle Unso
 	return nil
 }
 
-func (e *ExchangeManagerImpl) UnregisterUMH(id *lib.Id, msgType int16) error {
+func (e *ExchangeManagerImpl) unregisterUMH(id *protocols.Id, msgType int16) error {
 	for _, umh := range e.UMHandlerPool {
 		if umh.IsInUse() && umh.Matches(id, msgType) {
 			umh.Reset()
 			return nil
 		}
 	}
-	return lib.ChipErrorNoUnsolicitedMessageHandler
+	return lib.MatterErrorNoUnsolicitedMessageHandler
 }
 
 func (e *ExchangeManagerImpl) SendStandaloneAckIfNeeded(
@@ -244,5 +252,7 @@ func (e *ExchangeManagerImpl) SendStandaloneAckIfNeeded(
 	msgFlag uint32,
 	buf *raw.PacketBuffer,
 ) {
+}
 
+func (e *ExchangeManagerImpl) Shutdown() {
 }

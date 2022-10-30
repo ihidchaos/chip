@@ -1,5 +1,7 @@
 package lib
 
+type NodeId uint64
+
 const (
 	UndefinedNodeId NodeId = 0x0
 

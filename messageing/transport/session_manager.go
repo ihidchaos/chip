@@ -48,7 +48,7 @@ type SessionManagerImpl struct {
 	mTransportMgr                    ManagerBase
 	mGroupClientCounter              *GroupOutgoingCounters
 	mCB                              SessionMessageDelegate
-	mMessageCounterManager           MessageCounterManagerInterface
+	mMessageCounterManager           MessageCounterManager
 	mGlobalUnencryptedMessageCounter *GlobalUnencryptedMessageCounterImpl
 }
 
@@ -68,7 +68,7 @@ func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate)
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transportMgr ManagerBase, counter MessageCounterManagerInterface, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManagerImpl) Init(transportMgr ManagerBase, counter MessageCounterManager, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
 
 	err := s.mFabricTable.AddFabricDelegate(s)
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 	}
 
 	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.MessageCounter)
-	if err != nil && err == lib.ChipErrorDuplicateMessageReceived {
+	if err != nil && err == lib.MatterErrorDuplicateMessageReceived {
 		isDuplicate = KDuplicateMessageYes
 		log.Infof(
 			"Received a duplicate message with MessageCounter: %v on exchange %v",

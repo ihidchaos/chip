@@ -1,6 +1,7 @@
 package lib
 
 const (
+	VendorIdCommon         VendorId = 0x0000
 	VendorIdMatterStandard VendorId = 0x0000
 	VendorIdUnspecified    VendorId = 0x0000
 	VendorIdApple          VendorId = 0x1349

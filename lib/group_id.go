@@ -1,5 +1,21 @@
 package lib
 
+type GroupId uint16
+
+// 0xFF00-0xFFFC Reserved for future use
+const (
+	UndefinedGroupId    GroupId = 0x0000
+	AllNodesGroupId     GroupId = 0xFFFF
+	AllNonSleepyGroupId GroupId = 0xFFFE
+	AllProxiesGroupId   GroupId = 0xFFFD
+
+	kMinUniversalGroupId GroupId = 0xFF00
+	kMaxUniversalGroupId GroupId = 0xFFFF
+
+	kMinFabricGroupId GroupId = 0x0001
+	kMaxFabricGroupId GroupId = 0x7FFF
+)
+
 func (i GroupId) Bytes() [4]byte {
 	return [4]byte{
 		byte(0x00),

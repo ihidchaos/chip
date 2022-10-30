@@ -57,7 +57,7 @@ func (w *WriterImpl) WriteElement(elemType ElementType, tag Tag, lengthOrValue u
 	if tag.IsSpecialTag() {
 		if tagNum <= 0xFF {
 			if w.mContainerType != Type_Structure && w.mContainerType != Type_List {
-				return lib.ChipErrorInvalidTlvTag
+				return lib.MatterErrorInvalidTlvTag
 			}
 			w.Buffer.WriteByte(controlByte(ContextSpecific, elemType))
 			w.Buffer.WriteByte(byte(tagNum))
@@ -66,7 +66,7 @@ func (w *WriterImpl) WriteElement(elemType ElementType, tag Tag, lengthOrValue u
 				w.mContainerType != Type_NotSpecified &&
 				w.mContainerType != Type_Array &&
 				w.mContainerType != Type_List {
-				return lib.ChipErrorInvalidTlvTag
+				return lib.MatterErrorInvalidTlvTag
 			}
 			w.Buffer.WriteByte(controlByte(Anonymous, elemType))
 		}

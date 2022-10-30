@@ -55,11 +55,11 @@ func NewReader(reader io.Reader) *ReaderImpl {
 func (r *ReaderImpl) NextE(tag Tag, tlvTyp ...TLVType) error {
 	r.Next()
 	if r.mElemTag != tag {
-		return lib.ChipErrorUnexpectedTlvElement
+		return lib.MatterErrorUnexpectedTlvElement
 	}
 	if len(tlvTyp) > 0 {
 		if r.GetType() != tlvTyp[0] {
-			return lib.ChipErrorWrongTlvType
+			return lib.MatterErrorWrongTlvType
 		}
 	}
 	log.Infof("Elem tag:%X", r.mElemTag)
@@ -144,7 +144,7 @@ func (r *ReaderImpl) GetBytes(io io.Reader) ([]byte, error) {
 
 	var data = make([]byte, r.mElemLenOrVal)
 	if r.TLVTypeIsContainer() {
-		return nil, lib.ChipErrorWrongTlvType
+		return nil, lib.MatterErrorWrongTlvType
 	}
 	return data, nil
 }
@@ -155,7 +155,7 @@ func (r *ReaderImpl) GetBytesView() ([]byte, error) {
 		_, err := r.mBuffer.Read(data)
 		return data, err
 	}
-	return nil, lib.ChipErrorWrongTlvType
+	return nil, lib.MatterErrorWrongTlvType
 }
 
 func (r *ReaderImpl) ReadTag(tagControl TagControl) Tag {
@@ -239,7 +239,7 @@ func (r *ReaderImpl) GetUint64() (uint64, error) {
 	case UInt8, UInt16, UInt32, UInt64:
 		return r.mElemLenOrVal, nil
 	default:
-		return 0, lib.ChipErrorWrongTlvType
+		return 0, lib.MatterErrorWrongTlvType
 	}
 }
 
@@ -256,7 +256,7 @@ func (r *ReaderImpl) EnterContainer() (TLVType, error) {
 	if t == Type_Structure || t == Type_List || t == Type_Array {
 		return t, nil
 	}
-	return t, lib.ChipErrorWrongTlvType
+	return t, lib.MatterErrorWrongTlvType
 }
 
 func (r *ReaderImpl) ExitContainer(containerType TLVType) error {

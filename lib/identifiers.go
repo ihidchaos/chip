@@ -2,35 +2,13 @@ package lib
 
 type VendorId uint16
 type ProductId uint16
-type GroupId uint16
-type NodeId uint64
-type FabricId uint64
-type FabricIndex uint8
-type CompressedFabricId uint64
-type KeysetId uint16
 
-const InvalidKeysetId KeysetId = 0xFFFF
-const FabricIndexUndefined FabricIndex = 0
 const ProductIdAnonymous ProductId = 0x0000
 
 const (
 	UndefinedFabricIndex FabricIndex = 0x0
 	MinValidFabricIndex  FabricIndex = 0x1
 	kMaxValidFabricIndex FabricIndex = 0xFE
-)
-
-// 0xFF00-0xFFFC Reserved for future use
-const (
-	UndefinedGroupId    GroupId = 0x0000
-	AllNodesGroupId     GroupId = 0xFFFF
-	AllNonSleepyGroupId GroupId = 0xFFFE
-	AllProxiesGroupId   GroupId = 0xFFFD
-
-	kMinUniversalGroupId GroupId = 0xFF00
-	kMaxUniversalGroupId GroupId = 0xFFFF
-
-	kMinFabricGroupId GroupId = 0x0001
-	kMaxFabricGroupId GroupId = 0x7FFF
 )
 
 //Range Type

@@ -1,4 +1,4 @@
-package secure
+package secure_channel
 
 import (
 	"errors"

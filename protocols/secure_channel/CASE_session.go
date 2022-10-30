@@ -1,4 +1,4 @@
-package secure
+package secure_channel
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	tlv2 "github.com/galenliu/chip/pkg/tlv"
+	"github.com/galenliu/chip/protocols"
 	"github.com/galenliu/gateway/pkg/log"
 	rand "math/rand"
 )
@@ -88,7 +89,7 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 	case StateSentSigma3:
 	case StateSentSigma2Resume:
 	default:
-		return lib.ChipErrorInvalidMessageType
+		return lib.MatterErrorInvalidMessageType
 	}
 	return nil
 }
@@ -129,12 +130,12 @@ func (s *CASESession) OnSessionEstablished() {
 	panic("implement me")
 }
 
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId *lib.Id, handler messageing.UnsolicitedMessageHandler) error {
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler messageing.UnsolicitedMessageHandler) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId *lib.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -236,7 +237,7 @@ func (s *CASESession) HandleSigma1(buf *raw.PacketBuffer) error {
 	s.mPeerSessionId = sigma1.initiatorSessionId
 
 	if s.mFabricsTable == nil {
-		return lib.ChipErrorIncorrectState
+		return lib.MatterErrorIncorrectState
 	}
 
 	if sigma1.sessionResumptionRequested && len(sigma1.resumptionId) == 16 {
@@ -400,7 +401,7 @@ func (s *CASESession) SendSigma2() error {
 	//记录下Hash值
 	s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(lib.StandardSecureChannelProtocolId, messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
+	err = s.mExchangeCtxt.SendMessage(protocols.SecureChannelId, messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package secure
+package secure_channel
 
 import (
 	"github.com/galenliu/chip/credentials"
@@ -6,6 +6,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -61,7 +62,7 @@ func (s *CASEServer) ListenForSessionEstablishment(
 
 func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *lib.ScopedNodeId) {
 	log.Printf("CASE Server enabling CASE session setups")
-	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(lib.StandardSecureChannelProtocolId, uint8(messageing.CASESigma1), s)
+	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(protocols.SecureChannelId, uint8(messageing.CASESigma1), s)
 	if err != nil {
 		log.Printf(err.Error())
 	}
@@ -94,7 +95,7 @@ func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, del
 }
 
 func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *raw.PacketBuffer) error {
-	err := s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(uint8(messageing.CASESigma1))
+	err := s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(protocols.NotSpecifiedProtocolId, uint8(messageing.CASESigma1))
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,7 @@ import (
 	"net/netip"
 )
 
-type MessageCounterManagerInterface interface {
+type MessageCounterManager interface {
 	StartSync(handle SessionHandleBase, session SecureSessionBase) error
 	QueueReceivedMessageAndStartSync(
 		header *raw.PacketHeader,
