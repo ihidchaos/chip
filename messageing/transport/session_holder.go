@@ -1,118 +1,91 @@
 package transport
 
-type SessionHolder interface {
-	SessionReleased()
-	ShiftToSession(session SessionHandleBase)
-	GrabUnchecked(session SessionHandleBase)
-	GrabPairingSession(session SessionHandleBase) bool
-	Release()
-	DispatchSessionEvent(delegate SessionDelegate)
-	Contains(session SessionHandleBase) bool
-	SessionDelegate
-	SessionHandle() SessionHandleBase
-}
-
-type SessionHolderImpl struct {
-	mSession          Session
+type SessionHolder struct {
+	Session           *Session
 	mReferenceCounted int
 }
 
-func (s *SessionHolderImpl) SessionReleased() {
+func (s *SessionHolder) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderImpl) ShiftToSession(session SessionHandleBase) {
+func (s *SessionHolder) ShiftToSession(session SessionHandleBase) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderImpl) GrabPairingSession(session SessionHandleBase) bool {
-	if !session.IsSecureSession() {
-		return false
-	}
+//func (s *SessionHolderImpl) GrabPairingSession(session SessionHandleBase) bool {
+//	if !session.IsSecureSession() {
+//		return false
+//	}
+//
+//	if session.IsEstablishing() {
+//		return false
+//	}
+//	s.GrabUnchecked(session)
+//	return true
+//}
 
-	if session.IsEstablishing() {
-		return false
-	}
-	s.GrabUnchecked(session)
-	return true
-}
-
-func (s *SessionHolderImpl) Release() {
+func (s *SessionHolder) Release() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderImpl) DispatchSessionEvent(delegate SessionDelegate) {
+func (s *SessionHolder) DispatchSessionEvent(delegate SessionDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderImpl) SessionHandle() SessionHandleBase {
-	if s.mSession == nil {
-		return nil
-	}
-	return NewSessionHandle(s.mSession)
-}
+//func (s *SessionHolderImpl) Grad(session SessionHandleBase) bool {
+//	if !session.IsActiveSession() {
+//		return false
+//	}
+//	s.GrabUnchecked(session)
+//	return true
+//}
+//
+//func (s *SessionHolderImpl) GrabUnchecked(handle SessionHandleBase) {
+//	handle.AddHolder(s)
+//}
 
-func NewSessionHolderImpl() *SessionHolderImpl {
-	return &SessionHolderImpl{}
-}
-
-func (s *SessionHolderImpl) Grad(session SessionHandleBase) bool {
-	if !session.IsActiveSession() {
-		return false
-	}
-	s.GrabUnchecked(session)
-	return true
-}
-
-func (s *SessionHolderImpl) GrabUnchecked(handle SessionHandleBase) {
-	handle.AddHolder(s)
-}
-
-type SessionHolderWithDelegate interface {
-	SessionHolder
-}
-
-type SessionHolderWithDelegateImpl struct {
-	*SessionHolderImpl
+type SessionHolderWithDelegate struct {
+	*SessionHolder
 	mDelegate SessionDelegate
 }
 
-func NewSessionHolderWithDelegateImpl(delegate SessionDelegate) *SessionHolderWithDelegateImpl {
-	return &SessionHolderWithDelegateImpl{
-		SessionHolderImpl: NewSessionHolderImpl(),
-		mDelegate:         delegate,
+func NewSessionHolderWithDelegateImpl(delegate SessionDelegate) *SessionHolderWithDelegate {
+	return &SessionHolderWithDelegate{
+		SessionHolder: &SessionHolder{},
+		mDelegate:     delegate,
 	}
 }
 
-func (s *SessionHolderWithDelegateImpl) SessionReleased() {
+func (s *SessionHolderWithDelegate) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegateImpl) ShiftToSession(session SessionHandleBase) {
+func (s *SessionHolderWithDelegate) ShiftToSession(session SessionHandleBase) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegateImpl) GrabPairingSession(session SessionHandleBase) {
+func (s *SessionHolderWithDelegate) GrabPairingSession(session SessionHandleBase) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegateImpl) Release() {
+func (s *SessionHolderWithDelegate) Release() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegateImpl) DispatchSessionEvent(delegate SessionDelegate) {
+func (s *SessionHolderWithDelegate) DispatchSessionEvent(delegate SessionDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderImpl) Contains(session SessionHandleBase) bool {
-	return s.mSession != nil && session == s.mSession
-}
+//func (s *SessionHolder) Contains(session SessionHandleBase) bool {
+//	return s.Session != nil && session == s.Session
+//}

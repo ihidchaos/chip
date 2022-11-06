@@ -7,23 +7,18 @@ import (
 	"github.com/galenliu/chip/protocols"
 )
 
-type ExchangeSessionHolder interface {
-	transport.SessionHolderWithDelegate
-	transport.SessionHolder
-}
-
-type ExchangeSessionHolderImpl struct {
-	*transport.SessionHolderWithDelegateImpl
+type ExchangeSessionHolder struct {
+	*transport.SessionHolderWithDelegate
 	mSession *transport.SessionHandle
 }
 
-func (i *ExchangeSessionHolderImpl) Get() *transport.SessionHandle {
+func (i *ExchangeSessionHolder) Get() *transport.SessionHandle {
 	return i.mSession
 }
 
-func NewExchangeSessionHolderImpl(delegate *ExchangeContext) *ExchangeSessionHolderImpl {
-	return &ExchangeSessionHolderImpl{
-		SessionHolderWithDelegateImpl: transport.NewSessionHolderWithDelegateImpl(delegate),
+func NewExchangeSessionHolderImpl(delegate *ExchangeContext) *ExchangeSessionHolder {
+	return &ExchangeSessionHolder{
+		SessionHolderWithDelegate: transport.NewSessionHolderWithDelegateImpl(delegate),
 	}
 }
 
@@ -32,7 +27,7 @@ type ExchangeContext struct {
 	mExchangeId  uint16
 	mExchangeMgr ExchangeManager
 	mDispatch    ExchangeMessageDispatch
-	mSession     *ExchangeSessionHolderImpl
+	mSession     *ExchangeSessionHolder
 	mDelegate    ExchangeDelegate
 	mFlags       uint16
 }
@@ -57,8 +52,20 @@ func NewExchangeContext(
 		mFlags:                 flags,
 	}
 	ec.mSession = NewExchangeSessionHolderImpl(ec)
-	ec.mSession.SessionHolderWithDelegateImpl.Grad(session)
+	ec.mSession.SessionHolderWithDelegate.Grad(session)
 	return ec
+}
+
+func (c *ExchangeContext) IsInitiator() bool {
+	return c.mFlags&kFlagInitiator != 0
+}
+
+func (c *ExchangeContext) IsEncryptionRequired() bool {
+	return c.mDispatch.IsEncryptionRequired()
+}
+
+func (c *ExchangeContext) IsGroupExchangeContext() bool {
+	return c.mSession.IsGroupSession()
 }
 
 func (c *ExchangeContext) MatchExchange(session transport.SessionHandleBase, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
@@ -82,10 +89,6 @@ func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.Paylo
 	return nil
 }
 
-func (c *ExchangeContext) IsEncryptionRequired() bool {
-	return c.mDispatch.IsEncryptionRequired()
-}
-
 func (c *ExchangeContext) SetDelegate(delegate ExchangeDelegate) {
 
 }
@@ -95,10 +98,6 @@ func GetMessageDispatch(isEphemeralExchange bool, delegate ExchangeDelegate) Exc
 		return EphemeralExchangeDispatchImpl{delegate: delegate}
 	}
 	return ExchangeMessageDispatchImpl{delegate: delegate}
-}
-
-func (c *ExchangeContext) IsInitiator() bool {
-	return c.mFlags&kFlagInitiator != 0
 }
 
 func (c *ExchangeContext) GetDelegate() ExchangeDelegate {
