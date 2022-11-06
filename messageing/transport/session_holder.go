@@ -1,7 +1,7 @@
 package transport
 
 type SessionHolder struct {
-	Session           *Session
+	Session
 	mReferenceCounted int
 }
 

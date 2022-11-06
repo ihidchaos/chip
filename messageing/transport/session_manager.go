@@ -45,7 +45,7 @@ type SessionManagerImpl struct {
 	mSecureSessions                  *SecureSessionTable
 	mFabricTable                     *credentials.FabricTable
 	mState                           uint8
-	mTransportMgr                    ManagerBase
+	mTransportMgr                    BaseManager
 	mGroupClientCounter              *GroupOutgoingCounters
 	mCB                              SessionMessageDelegate
 	mMessageCounterManager           MessageCounterManager
@@ -68,7 +68,7 @@ func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate)
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transportMgr ManagerBase, counter MessageCounterManager, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManagerImpl) Init(transportMgr BaseManager, counter MessageCounterManager, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
 
 	err := s.mFabricTable.AddFabricDelegate(s)
 	if err != nil {

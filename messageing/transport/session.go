@@ -31,8 +31,6 @@ type Session interface {
 	SessionTypeString() string
 	AddHolder(s SessionHolder)
 
-	//NotifySessionReleased()
-
 	Retain()
 	Release()
 	IsActiveSession() bool
