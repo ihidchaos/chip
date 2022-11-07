@@ -1,7 +1,7 @@
 package transport
 
 type SessionHolder struct {
-	Session           *Session
+	Session
 	mReferenceCounted int
 }
 
@@ -10,9 +10,13 @@ func (s *SessionHolder) SessionReleased() {
 	panic("implement me")
 }
 
-func (s *SessionHolder) ShiftToSession(session SessionHandleBase) {
+func (s *SessionHolder) ShiftToSession(session *SessionHandle) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *SessionHolder) Contains(session *SessionHandle) bool {
+	return s.Session != nil && s.Session == session.Session
 }
 
 //func (s *SessionHolderImpl) GrabPairingSession(session SessionHandleBase) bool {

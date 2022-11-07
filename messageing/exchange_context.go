@@ -9,14 +9,9 @@ import (
 
 type ExchangeSessionHolder struct {
 	*transport.SessionHolderWithDelegate
-	mSession *transport.SessionHandle
 }
 
-func (i *ExchangeSessionHolder) Get() *transport.SessionHandle {
-	return i.mSession
-}
-
-func NewExchangeSessionHolderImpl(delegate *ExchangeContext) *ExchangeSessionHolder {
+func NewExchangeSessionHolder(delegate *ExchangeContext) *ExchangeSessionHolder {
 	return &ExchangeSessionHolder{
 		SessionHolderWithDelegate: transport.NewSessionHolderWithDelegateImpl(delegate),
 	}
@@ -35,7 +30,7 @@ type ExchangeContext struct {
 func NewExchangeContext(
 	em ExchangeManager,
 	exchangeId uint16,
-	session transport.SessionHandleBase,
+	session *transport.SessionHandle,
 	initiator bool,
 	delegate ExchangeDelegate,
 	isEphemeralExchange bool,
@@ -51,8 +46,8 @@ func NewExchangeContext(
 		mDelegate:              delegate,
 		mFlags:                 flags,
 	}
-	ec.mSession = NewExchangeSessionHolderImpl(ec)
-	ec.mSession.SessionHolderWithDelegate.Grad(session)
+	ec.mSession = NewExchangeSessionHolder(ec)
+	//ec.mSession.SessionHolderWithDelegate.Grad(session)
 	return ec
 }
 
@@ -68,7 +63,7 @@ func (c *ExchangeContext) IsGroupExchangeContext() bool {
 	return c.mSession.IsGroupSession()
 }
 
-func (c *ExchangeContext) MatchExchange(session transport.SessionHandleBase, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
+func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
 	return (c.mExchangeId == payloadHeader.GetExchangeID()) &&
 		(c.mSession.Contains(session)) &&
 		(c.IsEncryptionRequired() == packetHeader.IsEncrypted()) &&
@@ -135,5 +130,5 @@ func (c *ExchangeContext) HasSessionHandle() bool {
 }
 
 func (c *ExchangeContext) GetSessionHandle() *transport.SessionHandle {
-	return c.mSession.Get()
+	return nil
 }

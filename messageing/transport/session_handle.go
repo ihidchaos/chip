@@ -1,10 +1,5 @@
 package transport
 
-type SessionHandleBase interface {
-	Session
-	IsActiveSession() bool
-}
-
 type SessionHandle struct {
 	Session
 	mReferenceCounted int

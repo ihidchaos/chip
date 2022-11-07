@@ -110,7 +110,7 @@ func (e *ExchangeManagerImpl) SessionManager() transport.SessionManager {
 func (e *ExchangeManagerImpl) OnMessageReceived(
 	packetHeader *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader,
-	session transport.SessionHandleBase,
+	session *transport.SessionHandle,
 	isDuplicate uint8,
 	buf *raw.PacketBuffer,
 ) {
@@ -248,7 +248,7 @@ func (e *ExchangeManagerImpl) unregisterUMH(id *protocols.Id, msgType int16) err
 func (e *ExchangeManagerImpl) SendStandaloneAckIfNeeded(
 	header *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader,
-	session transport.SessionHandleBase,
+	session *transport.SessionHandle,
 	msgFlag uint32,
 	buf *raw.PacketBuffer,
 ) {

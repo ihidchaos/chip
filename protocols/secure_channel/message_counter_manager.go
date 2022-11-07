@@ -47,12 +47,12 @@ func (m *MessageCounterManagerImpl) OnExchangeCreationFailed(delegate messageing
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) StartSync(handle transport.SessionHandleBase, session transport.SecureSessionBase) error {
+func (m *MessageCounterManagerImpl) StartSync(handle transport.SessionHandle, session *transport.SecureSessionBase) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle transport.SessionHandleBase, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
+func (m *MessageCounterManagerImpl) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *transport.SessionHandle, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }
