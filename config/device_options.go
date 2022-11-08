@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/platform"
+	"github.com/galenliu/chip/system/platform"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

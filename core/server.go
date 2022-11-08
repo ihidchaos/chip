@@ -13,6 +13,7 @@ import (
 	"github.com/galenliu/chip/pkg/dnssd"
 	"github.com/galenliu/chip/pkg/storage"
 	sc "github.com/galenliu/chip/protocols/secure_channel"
+	DeviceLayer "github.com/galenliu/chip/system/device_layer"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"net/netip"
@@ -22,7 +23,7 @@ import (
 var sDeviceTypeResolver = access.DeviceTypeResolver{}
 
 type TransportManager interface {
-	transport.BaseManager
+	transport.MgrBase
 	GetImplAtIndex(index int) raw.TransportBase
 	GetUpdImpl() raw.UDPTransport
 }
@@ -35,7 +36,7 @@ type AppDelegate interface {
 }
 
 type Server struct {
-	TransportManager TransportManager
+	TransportManager transport.MgrBase
 
 	mOperationalServicePort        uint16
 	mUserDirectedCommissioningPort uint16
@@ -62,7 +63,7 @@ type Server struct {
 	mCASESessionManager *CASESessionManager
 	mDevicePool         OperationalDeviceProxyPool
 	mAclStorage         AclStorage
-	mExchangeMgr        messageing.ExchangeManager
+	mExchangeMgr        messageing.ExchangeManagerBase
 	mSessions           transport.SessionManager
 	mListener           GroupDataProviderListener
 	mInitialized        bool
@@ -204,7 +205,7 @@ func (s *Server) Init(initParams *InitParams) error {
 
 	{
 		session := transport.NewSessionManagerImpl()
-		err = session.Init(s.TransportManager, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
+		err = session.Init(DeviceLayer.SystemLayer(), s.TransportManager, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
 		if err != nil {
 			return err
 		}
@@ -222,7 +223,7 @@ func (s *Server) Init(initParams *InitParams) error {
 	}
 
 	{
-		exchangeMgr := messageing.NewExchangeManagerImpl()
+		exchangeMgr := messageing.NewExchangeManager()
 		err = exchangeMgr.Init(s.mSessions)
 		if err != nil {
 			log.Panic(err.Error())

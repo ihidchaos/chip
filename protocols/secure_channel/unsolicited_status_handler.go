@@ -8,7 +8,7 @@ import (
 type UnsolicitedStatusHandler interface {
 	messageing.ExchangeDelegate
 	messageing.UnsolicitedMessageHandler
-	Init(mgr messageing.ExchangeManager) error
+	Init(mgr messageing.ExchangeManagerBase) error
 }
 
 func NewUnsolicitedStatusHandler() *UnsolicitedStatusHandlerImpl {
@@ -16,7 +16,7 @@ func NewUnsolicitedStatusHandler() *UnsolicitedStatusHandlerImpl {
 }
 
 type UnsolicitedStatusHandlerImpl struct {
-	mExchangeManager messageing.ExchangeManager
+	mExchangeManager messageing.ExchangeManagerBase
 }
 
 func (h UnsolicitedStatusHandlerImpl) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data *raw.PacketBuffer) error {
@@ -44,7 +44,7 @@ func (h UnsolicitedStatusHandlerImpl) OnExchangeCreationFailed(delegate messagei
 	panic("implement me")
 }
 
-func (h UnsolicitedStatusHandlerImpl) Init(mgr messageing.ExchangeManager) error {
+func (h UnsolicitedStatusHandlerImpl) Init(mgr messageing.ExchangeManagerBase) error {
 	h.mExchangeManager = mgr
 	return nil
 }

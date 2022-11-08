@@ -1,10 +1,12 @@
 package messageing
 
 import (
+	"encoding/json"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/protocols"
+	"github.com/galenliu/chip/system/platform"
 )
 
 type ExchangeSessionHolder struct {
@@ -20,15 +22,17 @@ func NewExchangeSessionHolder(delegate *ExchangeContext) *ExchangeSessionHolder 
 type ExchangeContext struct {
 	ReliableMessageContext
 	mExchangeId  uint16
-	mExchangeMgr ExchangeManager
+	mExchangeMgr *ExchangeManager
 	mDispatch    ExchangeMessageDispatch
 	mSession     *ExchangeSessionHolder
 	mDelegate    ExchangeDelegate
 	mFlags       uint16
+
+	*lib.ReferenceCounted
 }
 
 func NewExchangeContext(
-	em ExchangeManager,
+	em *ExchangeManager,
 	exchangeId uint16,
 	session *transport.SessionHandle,
 	initiator bool,
@@ -39,7 +43,7 @@ func NewExchangeContext(
 	flags = lib.SetFlag(initiator, flags, kFlagInitiator)
 	flags = lib.SetFlag(isEphemeralExchange, flags, kFlagEphemeralExchange)
 	ec := &ExchangeContext{
-		ReliableMessageContext: ReliableMessageContext{},
+		ReliableMessageContext: nil,
 		mExchangeId:            exchangeId,
 		mExchangeMgr:           em,
 		mDispatch:              GetMessageDispatch(isEphemeralExchange, delegate),
@@ -47,10 +51,12 @@ func NewExchangeContext(
 		mFlags:                 flags,
 	}
 	ec.mSession = NewExchangeSessionHolder(ec)
+	ec.ReferenceCounted = lib.NewReferenceCounted(1, ec)
 	//ec.mSession.SessionHolderWithDelegate.Grad(session)
 	return ec
 }
 
+// IsInitiator 是否是通信的发起方
 func (c *ExchangeContext) IsInitiator() bool {
 	return c.mFlags&kFlagInitiator != 0
 }
@@ -61,6 +67,13 @@ func (c *ExchangeContext) IsEncryptionRequired() bool {
 
 func (c *ExchangeContext) IsGroupExchangeContext() bool {
 	return c.mSession.IsGroupSession()
+}
+
+func (c *ExchangeContext) SendMessage(protocolId *protocols.Id, msgType MsgType, r2 []byte, response uint16) error {
+
+	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
+
+	return nil
 }
 
 func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
@@ -99,24 +112,40 @@ func (c *ExchangeContext) GetDelegate() ExchangeDelegate {
 	return c.mDelegate
 }
 
-func (c *ExchangeContext) Close() {
-
+func (c *ExchangeContext) DoRelease() {
+	c.mExchangeMgr.ReleaseContext(c)
 }
 
-func (c *ExchangeContext) ExchangeMgr() ExchangeManager {
+func (c *ExchangeContext) DoClose(clearRetransTable bool) {
+	if lib.HasFlags(c.mFlags, kFlagClosed) {
+		return
+	}
+	c.mFlags = lib.SetFlags(c.mFlags, kFlagClosed)
+
+	if c.mDelegate != nil {
+		c.mDelegate.OnExchangeClosing(c)
+	}
+	c.mDelegate = nil
+	c.FlushAcks()
+
+	if clearRetransTable {
+		c.mExchangeMgr.GetReliableMessageMgr().ClearRetransTable(c)
+	}
+	c.CancelResponseTimer()
+}
+
+func (c *ExchangeContext) Close() {
+	c.DoClose(false)
+	c.Release()
+}
+
+func (c *ExchangeContext) ExchangeMgr() ExchangeManagerBase {
 	return c.mExchangeMgr
 }
 
 func (c *ExchangeContext) OnSessionReleased() {
 	//TODO implement me
 	panic("implement me")
-}
-
-func (c *ExchangeContext) SendMessage(protocolId *protocols.Id, msgType MsgType, r2 []byte, response uint16) error {
-
-	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
-
-	return nil
 }
 
 func (c *ExchangeContext) sendMessage(id protocols.Id) error {
@@ -130,5 +159,40 @@ func (c *ExchangeContext) HasSessionHandle() bool {
 }
 
 func (c *ExchangeContext) GetSessionHandle() *transport.SessionHandle {
-	return nil
+	return c.mSession.Get()
+}
+
+func (c *ExchangeContext) Marshall() string {
+	data, _ := json.MarshalIndent(struct {
+		ExchangeId uint16
+		Flags      uint16
+	}{
+		ExchangeId: c.mExchangeId,
+		Flags:      c.mFlags,
+	}, "", "   ")
+	return string(data)
+}
+
+func (c *ExchangeContext) FlushAcks() {
+
+}
+
+func (c *ExchangeContext) CancelResponseTimer() {
+	systemLayer := c.mExchangeMgr.GetSessionManager().SystemLayer()
+	if systemLayer == nil {
+		return
+	}
+	systemLayer.CancelTimer(c.HandleResponseTimeout, c)
+}
+
+func (c *ExchangeContext) HandleResponseTimeout(layer platform.SystemLayer, aAppState any) {
+	ec, ok := aAppState.(*ExchangeContext)
+	if !ok {
+		return
+	}
+	ec.NotifyResponseTimeout(true)
+}
+
+func (c *ExchangeContext) NotifyResponseTimeout(b bool) {
+
 }

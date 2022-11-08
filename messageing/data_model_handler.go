@@ -1,5 +1,5 @@
 package messageing
 
-func InitDataModelHandler(mgr ExchangeManager) {
+func InitDataModelHandler(mgr ExchangeManagerBase) {
 	return
 }

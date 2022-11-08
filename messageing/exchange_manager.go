@@ -34,9 +34,9 @@ func (slot *UnsolicitedMessageHandlerSlot) IsInUse() bool {
 	return slot.handler != nil
 }
 
-// ExchangeManager
+// ExchangeManagerBase
 // impl transport.SessionMessageDelegate
-type ExchangeManager interface {
+type ExchangeManagerBase interface {
 	// SessionMessageDelegate the delegate for transport session manager
 	transport.SessionMessageDelegate
 	SessionManager() transport.SessionManager
@@ -47,28 +47,29 @@ type ExchangeManager interface {
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
 	GetMessageDispatch() ExchangeMessageDispatch
+	ReleaseContext(ctx *ExchangeContext)
 	Shutdown()
 }
 
-// ExchangeManagerImpl ExchangeManager
-type ExchangeManagerImpl struct {
+// ExchangeManager ExchangeManager
+type ExchangeManager struct {
 	UMHandlerPool       [config.ChipConfigMaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot
 	mContextPool        *ExchangeContextPool
 	mSessionManager     transport.SessionManager
 	mNextExchangeId     uint16
 	mNextKeyId          uint16
-	mReliableMessageMgr any //TODO
+	mReliableMessageMgr *ReliableMessageMgr
 	mInitialized        bool
 }
 
-func NewExchangeManagerImpl() *ExchangeManagerImpl {
-	impl := &ExchangeManagerImpl{}
+func NewExchangeManager() *ExchangeManager {
+	impl := &ExchangeManager{}
 	impl.UMHandlerPool = [config.ChipConfigMaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot{}
 	impl.mContextPool = NewExchangeContextContainer()
 	return impl
 }
 
-func (e *ExchangeManagerImpl) Init(sessionManager transport.SessionManager) error {
+func (e *ExchangeManager) Init(sessionManager transport.SessionManager) error {
 	if e.mInitialized {
 		return lib.MatterErrorIncorrectState
 	}
@@ -88,26 +89,26 @@ func (e *ExchangeManagerImpl) Init(sessionManager transport.SessionManager) erro
 	return nil
 }
 
-func (e *ExchangeManagerImpl) OnResponseTimeout(ec *ExchangeContext) {
+func (e *ExchangeManager) OnResponseTimeout(ec *ExchangeContext) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (e *ExchangeManagerImpl) OnExchangeClosing(ec *ExchangeContext) {
+func (e *ExchangeManager) OnExchangeClosing(ec *ExchangeContext) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (e *ExchangeManagerImpl) GetMessageDispatch() ExchangeMessageDispatch {
+func (e *ExchangeManager) GetMessageDispatch() ExchangeMessageDispatch {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (e *ExchangeManagerImpl) SessionManager() transport.SessionManager {
+func (e *ExchangeManager) SessionManager() transport.SessionManager {
 	return e.mSessionManager
 }
 
-func (e *ExchangeManagerImpl) OnMessageReceived(
+func (e *ExchangeManager) OnMessageReceived(
 	packetHeader *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader,
 	session *transport.SessionHandle,
@@ -189,14 +190,14 @@ func (e *ExchangeManagerImpl) OnMessageReceived(
 	e.SendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags, buf)
 }
 
-func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForProtocol(
+func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForProtocol(
 	protocolId *protocols.Id,
 	handler UnsolicitedMessageHandler,
 ) error {
 	return e.registerUMH(protocolId, KAnyMessageType, handler)
 }
 
-func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(
+func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForType(
 	protocolId *protocols.Id,
 	msgType uint8,
 	handler UnsolicitedMessageHandler,
@@ -204,15 +205,15 @@ func (e *ExchangeManagerImpl) RegisterUnsolicitedMessageHandlerForType(
 	return e.registerUMH(protocolId, int16(msgType), handler)
 }
 
-func (e *ExchangeManagerImpl) UnregisterUnsolicitedMessageHandlerForType(id *protocols.Id, messageType uint8) error {
+func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForType(id *protocols.Id, messageType uint8) error {
 	return e.unregisterUMH(id, int16(messageType))
 }
 
-func (e *ExchangeManagerImpl) UnregisterUnsolicitedMessageHandlerForProtocol(id *protocols.Id) error {
+func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForProtocol(id *protocols.Id) error {
 	return e.unregisterUMH(id, KAnyMessageType)
 }
 
-func (e *ExchangeManagerImpl) registerUMH(id *protocols.Id, msgType int16, handle UnsolicitedMessageHandler) error {
+func (e *ExchangeManager) registerUMH(id *protocols.Id, msgType int16, handle UnsolicitedMessageHandler) error {
 
 	var selected *UnsolicitedMessageHandlerSlot
 	for _, umh := range e.UMHandlerPool {
@@ -235,7 +236,7 @@ func (e *ExchangeManagerImpl) registerUMH(id *protocols.Id, msgType int16, handl
 	return nil
 }
 
-func (e *ExchangeManagerImpl) unregisterUMH(id *protocols.Id, msgType int16) error {
+func (e *ExchangeManager) unregisterUMH(id *protocols.Id, msgType int16) error {
 	for _, umh := range e.UMHandlerPool {
 		if umh.IsInUse() && umh.Matches(id, msgType) {
 			umh.Reset()
@@ -245,14 +246,52 @@ func (e *ExchangeManagerImpl) unregisterUMH(id *protocols.Id, msgType int16) err
 	return lib.MatterErrorNoUnsolicitedMessageHandler
 }
 
-func (e *ExchangeManagerImpl) SendStandaloneAckIfNeeded(
-	header *raw.PacketHeader,
+func (e *ExchangeManager) SendStandaloneAckIfNeeded(
+	packetHeader *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader,
 	session *transport.SessionHandle,
 	msgFlag uint32,
 	buf *raw.PacketBuffer,
 ) {
+	if !payloadHeader.NeedsAck() {
+		return
+	}
+	ec := e.mContextPool.Create(e, payloadHeader.GetExchangeID(), session, !payloadHeader.IsInitiator(), nil, true)
+	if ec == nil {
+		log.Errorf("ExchangeManager OnMessageReceived faild,error= %s", "no memory")
+		return
+	}
+	log.Infof("ExchangeManager Generating StandaloneAck via exchange: %s", ec.Marshall())
+	err := ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlag, buf)
+	if err != nil {
+		log.Errorf("ExchangeManager OnMessageReceived faild,error= %s", err.Error())
+	}
 }
 
-func (e *ExchangeManagerImpl) Shutdown() {
+func (e *ExchangeManager) CloseAllContextForDelegate(delegate ExchangeDelegate) {
+	e.mContextPool.CloseContextForDelegate(delegate)
+}
+
+func (e *ExchangeManager) GetNumActiveExchanges() int {
+	return e.mContextPool.Allocated()
+}
+
+func (e *ExchangeManager) NewContext(session *transport.SessionHandle, delegate ExchangeDelegate, isInitiator bool) *ExchangeContext {
+	e.mNextExchangeId = e.mNextExchangeId + 1
+	return e.mContextPool.Create(e, e.mNextExchangeId, session, isInitiator, delegate, false)
+}
+
+func (e *ExchangeManager) ReleaseContext(ctx *ExchangeContext) {
+	e.mContextPool.Release(ctx)
+}
+
+func (e *ExchangeManager) Shutdown() {
+}
+
+func (e *ExchangeManager) GetReliableMessageMgr() *ReliableMessageMgr {
+	return e.mReliableMessageMgr
+}
+
+func (e *ExchangeManager) GetSessionManager() transport.SessionManager {
+	return e.mSessionManager
 }

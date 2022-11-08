@@ -14,6 +14,5 @@ const (
 	kFlagIgnoreSessionRelease     uint16 = 1 << 10
 )
 
-type ReliableMessageContext struct {
-	mFlags uint16
+type ReliableMessageContext interface {
 }

@@ -11,7 +11,7 @@ type DeviceProxyInitParams struct {
 	SessionManager            transport2.SessionManager
 	SessionResumptionStorage  secure_channel.SessionResumptionStorage
 	CertificateValidityPolicy credentials.CertificateValidityPolicy
-	ExchangeMgr               messageing.ExchangeManager
+	ExchangeMgr               messageing.ExchangeManagerBase
 	FabricTable               *credentials.FabricTable
 	ClientPool                CASEClientPoolDelegate
 	GroupDataProvider         credentials.GroupDataProvider

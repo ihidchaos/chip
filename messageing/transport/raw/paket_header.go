@@ -199,3 +199,7 @@ func (header *PacketHeader) Encode() (*bytes.Buffer, error) {
 	}
 	return buf, nil
 }
+
+func (header *PacketHeader) GetMessageCounter() uint32 {
+	return header.MessageCounter
+}

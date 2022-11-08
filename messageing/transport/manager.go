@@ -10,8 +10,8 @@ type ManagerDelegate interface {
 	OnMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer)
 }
 
-// BaseManager this is the delegate for TransportBase,
-type BaseManager interface {
+// MgrBase  this is the delegate for TransportBase,
+type MgrBase interface {
 	raw.TransportDelegate
 	SetSessionManager(sessionManager ManagerDelegate)
 	SendMessage(port netip.AddrPort, msg []byte) error

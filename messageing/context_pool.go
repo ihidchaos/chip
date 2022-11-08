@@ -1,42 +1,39 @@
 package messageing
 
 import (
+	"fmt"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"sync"
 )
 
 type ExchangeContextPool struct {
-	Container sync.Map
+	container sync.Map
 }
 
 func NewExchangeContextContainer() *ExchangeContextPool {
 	return &ExchangeContextPool{
-		Container: sync.Map{},
+		container: sync.Map{},
 	}
 }
 
-func (c *ExchangeContextPool) Add(context *ExchangeContext) {
-	c.Container.Store(context.mExchangeId, context)
+func (c *ExchangeContextPool) add(context *ExchangeContext) {
+	c.container.Store(context.mExchangeId, context)
 }
 
-func (c *ExchangeContextPool) Create(ec ExchangeManager,
+func (c *ExchangeContextPool) Create(ec *ExchangeManager,
 	exchangeId uint16,
 	session *transport.SessionHandle,
 	initiator bool,
 	delegate ExchangeDelegate,
 	isEphemeralExchange bool) *ExchangeContext {
 	context := NewExchangeContext(ec, exchangeId, session, initiator, delegate, isEphemeralExchange)
-	c.Add(context)
+	c.add(context)
 	return context
 }
 
-func (c *ExchangeContextPool) Delete(id uint16) {
-	c.Container.Delete(id)
-}
-
 func (c *ExchangeContextPool) Get(id uint16) *ExchangeContext {
-	a, ok := c.Container.Load(id)
+	a, ok := c.container.Load(id)
 	if ok {
 		context, ok := a.(*ExchangeContext)
 		if ok {
@@ -52,8 +49,37 @@ func (c *ExchangeContextPool) MatchExchange(
 	payloadHeader *raw.PayloadHeader,
 ) *ExchangeContext {
 	ec := c.Get(payloadHeader.GetExchangeID())
-	if !ec.MatchExchange(session, packetHeader, payloadHeader) {
-		ec = nil
+	if ec != nil {
+		if !ec.MatchExchange(session, packetHeader, payloadHeader) {
+			ec = nil
+		}
 	}
 	return ec
+}
+
+func (c *ExchangeContextPool) Allocated() int {
+	l := 0
+	c.container.Range(func(k, v interface{}) bool {
+		l++
+		fmt.Println(k, v)
+		return true
+	})
+	return l
+}
+
+func (c *ExchangeContextPool) Release(ctx *ExchangeContext) {
+	c.container.Delete(ctx.mExchangeId)
+}
+
+func (c *ExchangeContextPool) CloseContextForDelegate(delegate ExchangeDelegate) {
+	c.container.Range(func(key, value any) bool {
+		ec, ok := value.(*ExchangeContext)
+		if ok {
+			if ec.mDelegate == delegate {
+				ec.SetDelegate(nil)
+				ec.Close()
+			}
+		}
+		return false
+	})
 }

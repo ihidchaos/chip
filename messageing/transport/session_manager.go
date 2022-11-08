@@ -5,13 +5,14 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/system"
 	log "github.com/sirupsen/logrus"
 	"net/netip"
 )
 
 // SessionMessageDelegate 这里的delegate实例为ExchangeManager
 type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session SessionHandleBase, duplicate uint8, buf *raw.PacketBuffer)
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session *SessionHandle, duplicate uint8, buf *raw.PacketBuffer)
 }
 
 const (
@@ -38,6 +39,7 @@ type SessionManager interface {
 	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer)
 
 	SetMessageDelegate(SessionMessageDelegate)
+	SystemLayer() system.Layer
 }
 
 type SessionManagerImpl struct {
@@ -45,11 +47,12 @@ type SessionManagerImpl struct {
 	mSecureSessions                  *SecureSessionTable
 	mFabricTable                     *credentials.FabricTable
 	mState                           uint8
-	mTransportMgr                    ManagerBase
+	mTransportMgr                    MgrBase
 	mGroupClientCounter              *GroupOutgoingCounters
 	mCB                              SessionMessageDelegate
 	mMessageCounterManager           MessageCounterManager
 	mGlobalUnencryptedMessageCounter *GlobalUnencryptedMessageCounterImpl
+	mSystemLayer                     system.Layer
 }
 
 func NewSessionManagerImpl() *SessionManagerImpl {
@@ -68,14 +71,15 @@ func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate)
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(transportMgr ManagerBase, counter MessageCounterManager, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManagerImpl) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManager, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+
+	s.mState = kInitialized
+	s.mSystemLayer = systemLay
 
 	err := s.mFabricTable.AddFabricDelegate(s)
 	if err != nil {
 		return err
 	}
-
-	s.mState = kInitialized
 
 	s.mFabricTable = table
 
@@ -172,6 +176,10 @@ func (s *SessionManagerImpl) FabricWillBeRemoved(table credentials.FabricTable, 
 func (s *SessionManagerImpl) OnFabricRemoved(table credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *SessionManagerImpl) SystemLayer() system.Layer {
+	return s.mSystemLayer
 }
 
 func (s *SessionManagerImpl) OnFabricCommitted(table credentials.FabricTable, index lib.FabricIndex) {

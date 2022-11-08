@@ -7,16 +7,16 @@ import (
 	"net/netip"
 )
 
-type MessageCounterManager interface {
+type MessageCounterManagerBase interface {
 	messageing.UnsolicitedMessageHandler
 	messageing.ExchangeDelegate
 	transport.MessageCounterManager
 }
 
-type MessageCounterManagerImpl struct {
+type MessageCounterManager struct {
 }
 
-func (m *MessageCounterManagerImpl) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data *raw.PacketBuffer) error {
+func (m *MessageCounterManager) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data *raw.PacketBuffer) error {
 	if header.HasMessageType(uint8(MsgCounterSyncReq)) {
 		return m.handleMsgCounterSyncReq(context, header)
 	}
@@ -26,51 +26,51 @@ func (m *MessageCounterManagerImpl) OnMessageReceived(context *messageing.Exchan
 	return nil
 }
 
-func (m *MessageCounterManagerImpl) OnResponseTimeout(ec *messageing.ExchangeContext) {
+func (m *MessageCounterManager) OnResponseTimeout(ec *messageing.ExchangeContext) {
 	if ec.HasSessionHandle() {
 		ec.GetSessionHandle()
 	}
 }
 
-func (m *MessageCounterManagerImpl) OnExchangeClosing(ec *messageing.ExchangeContext) {
+func (m *MessageCounterManager) OnExchangeClosing(ec *messageing.ExchangeContext) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+func (m *MessageCounterManager) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) OnExchangeCreationFailed(delegate messageing.ExchangeDelegate) {
+func (m *MessageCounterManager) OnExchangeCreationFailed(delegate messageing.ExchangeDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) StartSync(handle transport.SessionHandle, session *transport.SecureSessionBase) error {
+func (m *MessageCounterManager) StartSync(handle transport.SessionHandle, session *transport.SecureSessionBase) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *transport.SessionHandle, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
+func (m *MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *transport.SessionHandle, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) Init(mgr messageing.ExchangeManager) error {
+func (m *MessageCounterManager) Init(mgr messageing.ExchangeManagerBase) error {
 	return nil
 }
 
-func (m *MessageCounterManagerImpl) handleMsgCounterSyncReq(context *messageing.ExchangeContext, header *raw.PayloadHeader) error {
+func (m *MessageCounterManager) handleMsgCounterSyncReq(context *messageing.ExchangeContext, header *raw.PayloadHeader) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManagerImpl) handleMsgCounterSyncResp(context *messageing.ExchangeContext, header *raw.PayloadHeader) error {
+func (m *MessageCounterManager) handleMsgCounterSyncResp(context *messageing.ExchangeContext, header *raw.PayloadHeader) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func NewMessageCounterManager() *MessageCounterManagerImpl {
-	return &MessageCounterManagerImpl{}
+func NewMessageCounterManager() *MessageCounterManager {
+	return &MessageCounterManager{}
 }

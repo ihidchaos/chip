@@ -5,11 +5,11 @@ import (
 	"net/netip"
 )
 
-type MessageCounterManager interface {
-	StartSync(handle SessionHandleBase, session SecureSessionBase) error
+type MessageCounterManagerBase interface {
+	StartSync(handle *SessionHandle, session SecureSessionBase) error
 	QueueReceivedMessageAndStartSync(
 		header *raw.PacketHeader,
-		handle SessionHandleBase,
+		handle SessionHandle,
 		state uint8,
 		peerAdders netip.AddrPort,
 		buf *raw.PacketBuffer,
@@ -27,7 +27,7 @@ func (g *GlobalUnencryptedMessageCounterImpl) Init() {
 
 }
 
-func (g *GlobalUnencryptedMessageCounterImpl) StartSync(handle SessionHandleBase, session SecureSessionBase) error {
+func (g *GlobalUnencryptedMessageCounterImpl) StartSync(handle *SessionHandle, session SecureSessionBase) error {
 	//TODO implement me
 	panic("implement me")
 }

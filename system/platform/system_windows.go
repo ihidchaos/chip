@@ -48,3 +48,7 @@ const (
 	SysConfDirFile     = "chip_config.ini"
 	LocalStatedDirFile = "chip_counters.ini"
 )
+
+func SystemLayer() system.Layer {
+	return nil
+}

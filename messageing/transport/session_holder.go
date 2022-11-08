@@ -19,6 +19,13 @@ func (s *SessionHolder) Contains(session *SessionHandle) bool {
 	return s.Session != nil && s.Session == session.Session
 }
 
+func (s *SessionHolder) Get() *SessionHandle {
+	if s.Session != nil {
+		return NewSessionHandle(s.Session)
+	}
+	return nil
+}
+
 //func (s *SessionHolderImpl) GrabPairingSession(session SessionHandleBase) bool {
 //	if !session.IsSecureSession() {
 //		return false
@@ -70,12 +77,12 @@ func (s *SessionHolderWithDelegate) SessionReleased() {
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegate) ShiftToSession(session SessionHandleBase) {
+func (s *SessionHolderWithDelegate) ShiftToSession(session SessionHandle) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegate) GrabPairingSession(session SessionHandleBase) {
+func (s *SessionHolderWithDelegate) GrabPairingSession(session SessionHandle) {
 	//TODO implement me
 	panic("implement me")
 }

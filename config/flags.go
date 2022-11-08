@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/galenliu/chip/platform"
+	"github.com/galenliu/chip/system/platform"
 )
 
 var (

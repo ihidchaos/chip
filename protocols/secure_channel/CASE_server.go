@@ -18,7 +18,7 @@ type CASEServerBase interface {
 
 // CASEServer IMPLEMENT(UnsolicitedMessageHandler SessionEstablishmentDelegate ExchangeDelegate)
 type CASEServer struct {
-	mExchangeManager           messageing.ExchangeManager
+	mExchangeManager           messageing.ExchangeManagerBase
 	mSessionResumptionStorage  SessionResumptionStorage
 	mCertificateValidityPolicy credentials.CertificateValidityPolicy
 
@@ -42,7 +42,7 @@ func NewCASEServer() *CASEServer {
 }
 
 func (s *CASEServer) ListenForSessionEstablishment(
-	mgr messageing.ExchangeManager,
+	mgr messageing.ExchangeManagerBase,
 	sessionManager transport.SessionManager,
 	fabrics *credentials.FabricTable,
 	storage lib.SessionResumptionStorage,
