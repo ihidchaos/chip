@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/galenliu/chip/system/platform"
+	"github.com/galenliu/chip/platform/path"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 )
 
 var (
-	ChipDefaultFactoryPath = platform.DefaultFactoryPath
-	ChipDefaultConfigPath  = platform.DefaultConfigPath
-	ChipDefaultDataPath    = platform.DefaultDataPath
+	ChipDefaultFactoryPath = path.DefaultFactoryPath
+	ChipDefaultConfigPath  = path.DefaultConfigPath
+	ChipDefaultDataPath    = path.DefaultDataPath
 )

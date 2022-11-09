@@ -39,7 +39,7 @@ func (slot *UnsolicitedMessageHandlerSlot) IsInUse() bool {
 type ExchangeManagerBase interface {
 	// SessionMessageDelegate the delegate for transport session manager
 	transport.SessionMessageDelegate
-	SessionManager() transport.SessionManager
+	SessionManager() transport.SessionManagerBase
 	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler UnsolicitedMessageHandler) error
 	RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler UnsolicitedMessageHandler) error
 	UnregisterUnsolicitedMessageHandlerForType(id *protocols.Id, messageType uint8) error
@@ -55,7 +55,7 @@ type ExchangeManagerBase interface {
 type ExchangeManager struct {
 	UMHandlerPool       [config.ChipConfigMaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot
 	mContextPool        *ExchangeContextPool
-	mSessionManager     transport.SessionManager
+	mSessionManager     transport.SessionManagerBase
 	mNextExchangeId     uint16
 	mNextKeyId          uint16
 	mReliableMessageMgr *ReliableMessageMgr
@@ -69,7 +69,7 @@ func NewExchangeManager() *ExchangeManager {
 	return impl
 }
 
-func (e *ExchangeManager) Init(sessionManager transport.SessionManager) error {
+func (e *ExchangeManager) Init(sessionManager transport.SessionManagerBase) error {
 	if e.mInitialized {
 		return lib.MatterErrorIncorrectState
 	}
@@ -104,7 +104,7 @@ func (e *ExchangeManager) GetMessageDispatch() ExchangeMessageDispatch {
 	panic("implement me")
 }
 
-func (e *ExchangeManager) SessionManager() transport.SessionManager {
+func (e *ExchangeManager) SessionManager() transport.SessionManagerBase {
 	return e.mSessionManager
 }
 
@@ -122,7 +122,7 @@ func (e *ExchangeManager) OnMessageReceived(
 		packetHeader.MessageCounter)
 
 	var msgFlags uint32 = 0
-	msgFlags = lib.SetFlag(isDuplicate == transport.KDuplicateMessageYes, msgFlags, transport.FDuplicateMessage)
+	msgFlags = lib.SetFlag(isDuplicate == transport.DuplicateMessageYes, msgFlags, transport.DuplicateMessage)
 
 	if !packetHeader.IsGroupSession() {
 		ec := e.mContextPool.MatchExchange(session, packetHeader, payloadHeader)
@@ -141,7 +141,7 @@ func (e *ExchangeManager) OnMessageReceived(
 	}
 
 	//如果不是重复的消息，而且如果消息是对方发起
-	if !lib.HasFlags(msgFlags, transport.FDuplicateMessage) && payloadHeader.IsInitiator() {
+	if !lib.HasFlags(msgFlags, transport.DuplicateMessage) && payloadHeader.IsInitiator() {
 		matchingUMH = nil
 
 		for _, umh := range e.UMHandlerPool {
@@ -292,6 +292,6 @@ func (e *ExchangeManager) GetReliableMessageMgr() *ReliableMessageMgr {
 	return e.mReliableMessageMgr
 }
 
-func (e *ExchangeManager) GetSessionManager() transport.SessionManager {
+func (e *ExchangeManager) GetSessionManager() transport.SessionManagerBase {
 	return e.mSessionManager
 }

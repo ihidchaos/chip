@@ -5,7 +5,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/storage"
-	"github.com/galenliu/chip/system"
+	"github.com/galenliu/chip/platform/system"
 	log "github.com/sirupsen/logrus"
 	"net/netip"
 )
@@ -15,20 +15,21 @@ type SessionMessageDelegate interface {
 	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session *SessionHandle, duplicate uint8, buf *raw.PacketBuffer)
 }
 
+var mGroupPeerMsgCounter = NewGroupPeerTable(ConfigMaxFabrice)
+
 const (
-	kNotReady uint8 = iota
+	PayloadIsEncrypted uint8 = iota
+	PayloadIsUnencrypted
+	DuplicateMessageYes
+	DuplicateMessageNo
+	NotReady
 	kInitialized
+	DuplicateMessage uint32 = 0x00000001
 )
 
-const (
-	KDuplicateMessageYes uint8  = 0
-	KDuplicateMessageNo  uint8  = 1
-	FDuplicateMessage    uint32 = 0x00000001
-)
-
-// SessionManager The delegate for TransportManager and FabricTable
+// SessionManagerBase The delegate for TransportManager and FabricTable
 // TransportBaseDelegate is the indirect delegate for TransportManager
-type SessionManager interface {
+type SessionManagerBase interface {
 	credentials.FabricTableDelegate
 	ManagerDelegate
 	// SecureGroupMessageDispatch  handle the Secure Group messages
@@ -42,21 +43,22 @@ type SessionManager interface {
 	SystemLayer() system.Layer
 }
 
-type SessionManagerImpl struct {
-	mUnauthenticatedSessions         *UnauthenticatedSessionTable
-	mSecureSessions                  *SecureSessionTable
-	mFabricTable                     *credentials.FabricTable
-	mState                           uint8
-	mTransportMgr                    MgrBase
+type SessionManager struct {
+	mUnauthenticatedSessions *UnauthenticatedSessionTable
+	mSecureSessions          *SecureSessionTable
+	mFabricTable             *credentials.FabricTable
+	mState                   uint8
+	mTransportMgr            MgrBase
+	mMessageCounterManager   MessageCounterManagerBase
+
+	mGlobalUnencryptedMessageCounter *GlobalUnencryptedMessageCounter
 	mGroupClientCounter              *GroupOutgoingCounters
 	mCB                              SessionMessageDelegate
-	mMessageCounterManager           MessageCounterManager
-	mGlobalUnencryptedMessageCounter *GlobalUnencryptedMessageCounterImpl
 	mSystemLayer                     system.Layer
 }
 
-func NewSessionManagerImpl() *SessionManagerImpl {
-	return &SessionManagerImpl{
+func NewSessionManagerImpl() *SessionManager {
+	return &SessionManager{
 		mUnauthenticatedSessions:         NewUnauthenticatedSessionTable(),
 		mSecureSessions:                  NewSecureSessionTable(),
 		mGroupClientCounter:              NewGroupOutgoingCounters(),
@@ -67,11 +69,11 @@ func NewSessionManagerImpl() *SessionManagerImpl {
 	}
 }
 
-func (s *SessionManagerImpl) SetMessageDelegate(delegate SessionMessageDelegate) {
+func (s *SessionManager) SetMessageDelegate(delegate SessionMessageDelegate) {
 	s.mCB = delegate
 }
 
-func (s *SessionManagerImpl) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManager, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManager) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManagerBase, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
 
 	s.mState = kInitialized
 	s.mSystemLayer = systemLay
@@ -94,7 +96,7 @@ func (s *SessionManagerImpl) Init(systemLay system.Layer, transportMgr MgrBase, 
 	return err
 }
 
-func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, packet *raw.PacketBuffer) {
+func (s *SessionManager) OnMessageReceived(srcAddr netip.AddrPort, packet *raw.PacketBuffer) {
 	packetHeader, err := packet.PacketHeader()
 	if err != nil {
 		log.Printf("failed to decode packet header: %s", err.Error())
@@ -112,7 +114,7 @@ func (s *SessionManagerImpl) OnMessageReceived(srcAddr netip.AddrPort, packet *r
 }
 
 // UnauthenticatedMessageDispatch 处理没有加密码的消息
-func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
+func (s *SessionManager) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *raw.PacketBuffer) {
 
 	source := header.SourceNodeId
 	destination := header.DestinationNodeId
@@ -143,7 +145,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 	}
 
 	unsecuredSession.SetPeerAddress(addr)
-	isDuplicate := KDuplicateMessageNo
+	isDuplicate := DuplicateMessageNo
 	// 更新Session
 	unsecuredSession.MarkActiveRx()
 
@@ -156,7 +158,7 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 
 	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.MessageCounter)
 	if err != nil && err == lib.MatterErrorDuplicateMessageReceived {
-		isDuplicate = KDuplicateMessageYes
+		isDuplicate = DuplicateMessageYes
 		log.Infof(
 			"Received a duplicate message with MessageCounter: %v on exchange %v",
 			header.MessageCounter, payloadHeader)
@@ -168,39 +170,59 @@ func (s *SessionManagerImpl) UnauthenticatedMessageDispatch(header *raw.PacketHe
 	}
 }
 
-func (s *SessionManagerImpl) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+func (s *SessionManager) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionManagerImpl) OnFabricRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+func (s *SessionManager) OnFabricRemoved(table credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionManagerImpl) SystemLayer() system.Layer {
+func (s *SessionManager) SystemLayer() system.Layer {
 	return s.mSystemLayer
 }
 
-func (s *SessionManagerImpl) OnFabricCommitted(table credentials.FabricTable, index lib.FabricIndex) {
+func (s *SessionManager) OnFabricCommitted(table credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *SessionManagerImpl) OnFabricUpdated(table credentials.FabricTable, index lib.FabricIndex) {
+func (s *SessionManager) OnFabricUpdated(table credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }
 
 // SecureGroupMessageDispatch 处理加密的组播消息
-func (s *SessionManagerImpl) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
+func (s *SessionManager) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
 
 }
 
+func (s *SessionManager) Shutdown() {
+	if s.mFabricTable != nil {
+		s.mFabricTable.RemoveFabricDelegate(s)
+		s.mFabricTable = nil
+	}
+	s.mState = NotReady
+	//s.mSecureSessions
+	s.mMessageCounterManager = nil
+	s.mSystemLayer = nil
+	s.mTransportMgr = nil
+	s.mCB = nil
+}
+
+func (s *SessionManager) FabricRemoved(fabricId lib.FabricIndex) {
+	err := mGroupPeerMsgCounter.FabricRemoved(fabricId)
+	if err != nil {
+		log.Errorf("SessionManager.FabricRemoved err:%s", err.Error())
+	}
+}
+
 // SecureUnicastMessageDispatch 处理分支，加密的单播消息
-func (s *SessionManagerImpl) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
+func (s *SessionManager) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *raw.PacketBuffer) {
 	secureSession := s.mSecureSessions.FindSecureSessionByLocalKey(header.SessionId)
-	_ = KDuplicateMessageNo
+	_ = DuplicateMessageNo
 	if msg.IsNull() {
 		log.Infof("Secure transport received Unicast NULL packet, discarding")
 		return

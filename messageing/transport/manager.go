@@ -5,7 +5,7 @@ import (
 	"net/netip"
 )
 
-// ManagerDelegate 这个实例为 SessionManager
+// ManagerDelegate 这个实例为 SessionManagerBase
 type ManagerDelegate interface {
 	OnMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer)
 }

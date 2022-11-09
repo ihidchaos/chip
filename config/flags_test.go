@@ -1,12 +1,12 @@
 package config
 
 import (
-	"github.com/galenliu/chip/system/platform"
+	"github.com/galenliu/chip/platform/path"
 	"testing"
 )
 
 func TestFlags(t *testing.T) {
-	t.Log(platform.GetFatConFile())
-	t.Log(platform.GetSysConFile())
-	t.Log(platform.GetLocalConFile())
+	t.Log(path.GetFatConFile())
+	t.Log(path.GetSysConFile())
+	t.Log(path.GetLocalConFile())
 }

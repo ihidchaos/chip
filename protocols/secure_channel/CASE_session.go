@@ -141,7 +141,7 @@ func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId *proto
 }
 
 func (s *CASESession) Init(
-	manger transport.SessionManager,
+	manger transport.SessionManagerBase,
 	policy credentials.CertificateValidityPolicy,
 	delegate *CASEServer,
 	previouslyEstablishedPeer *lib.ScopedNodeId,
@@ -195,7 +195,7 @@ func (s *CASESession) Clear() {
 }
 
 func (s *CASESession) PrepareForSessionEstablishment(
-	sessionManger transport.SessionManager,
+	sessionManger transport.SessionManagerBase,
 	fabrics *credentials.FabricTable,
 	storage SessionResumptionStorage,
 	policy credentials.CertificateValidityPolicy,

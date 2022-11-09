@@ -12,8 +12,8 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/pkg/dnssd"
 	"github.com/galenliu/chip/pkg/storage"
+	DeviceLayer "github.com/galenliu/chip/platform/device_layer"
 	sc "github.com/galenliu/chip/protocols/secure_channel"
-	DeviceLayer "github.com/galenliu/chip/system/device_layer"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"net/netip"
@@ -22,10 +22,18 @@ import (
 
 var sDeviceTypeResolver = access.DeviceTypeResolver{}
 
-type TransportManager interface {
-	transport.MgrBase
-	GetImplAtIndex(index int) raw.TransportBase
-	GetUpdImpl() raw.UDPTransport
+const (
+	ConfigDeviceMaxActiveCaseClients = 2
+)
+
+type ServerTransportMgr struct {
+	*transport.ManagerImpl
+}
+
+func NewServerTransportMgr(transports ...raw.TransportBase) *ServerTransportMgr {
+	return &ServerTransportMgr{
+		ManagerImpl: transport.NewManagerImpl(transports...),
+	}
 }
 
 type AppDelegate interface {
@@ -36,7 +44,12 @@ type AppDelegate interface {
 }
 
 type Server struct {
-	TransportManager transport.MgrBase
+	mTransports *ServerTransportMgr
+	mSessions   *transport.SessionManager
+	mCASEServer *sc.CASEServer
+
+	mCASESessionManager *CASESessionManager
+	mCASEClientPool     *CASEClientPool
 
 	mOperationalServicePort        uint16
 	mUserDirectedCommissioningPort uint16
@@ -53,20 +66,19 @@ type Server struct {
 	mGroupsProvider           credentials.GroupDataProvider
 	mTestEventTriggerDelegate TestEventTriggerDelegate
 	mFabricDelegate           credentials.FabricTableDelegate
-	mCASEClientPool           *CASEClientPool
-	mCASEServer               *sc.CASEServer
+
 	mSessionResumptionStorage lib.SessionResumptionStorage
 	mMessageCounterManager    *sc.MessageCounterManager
 	mUnsolicitedStatusHandler sc.UnsolicitedStatusHandler
 
 	mAttributePersister lib.AttributePersistenceProvider //unknown
-	mCASESessionManager *CASESessionManager
-	mDevicePool         OperationalDeviceProxyPool
-	mAclStorage         AclStorage
-	mExchangeMgr        messageing.ExchangeManagerBase
-	mSessions           transport.SessionManager
-	mListener           GroupDataProviderListener
-	mInitialized        bool
+
+	mDevicePool  OperationalDeviceProxyPool
+	mAclStorage  AclStorage
+	mExchangeMgr messageing.ExchangeManagerBase
+
+	mListener    GroupDataProviderListener
+	mInitialized bool
 }
 
 var _chipServerInstance *Server
@@ -76,34 +88,13 @@ func GetServerInstance() *Server {
 	_chipServerOnce.Do(func() {
 		if _chipServerInstance == nil {
 			_chipServerInstance = &Server{
-				mOperationalServicePort:        0,
-				mUserDirectedCommissioningPort: 0,
-				mInterfaceId:                   net.Interface{},
-				mDnssd:                         nil,
-				mFabrics:                       nil,
-				mCommissioningWindowManager:    nil,
-				mDeviceStorage:                 nil,
-				mAccessControl:                 nil,
-				mOpCerStore:                    nil,
-				mOperationalKeystore:           nil,
-				mCertificateValidityPolicy:     nil,
-				mGroupsProvider:                nil,
-				mTestEventTriggerDelegate:      TestEventTriggerDelegate{},
-				mFabricDelegate:                nil,
-				mCASEClientPool:                NewCASEClientPool(),
-				mCASEServer:                    sc.NewCASEServer(),
-				mSessionResumptionStorage:      nil,
-				mMessageCounterManager:         sc.NewMessageCounterManager(),
-				mUnsolicitedStatusHandler:      nil,
-				mAttributePersister:            nil,
-				mCASESessionManager:            NewCASESessionManager(),
-				mDevicePool:                    OperationalDeviceProxyPool{},
-				mAclStorage:                    nil,
-				TransportManager:               nil,
-				mExchangeMgr:                   nil,
-				mSessions:                      nil,
-				mListener:                      nil,
-				mInitialized:                   false,
+				mInterfaceId:              net.Interface{},
+				mTestEventTriggerDelegate: TestEventTriggerDelegate{},
+				mCASEClientPool:           NewCASEClientPool(ConfigDeviceMaxActiveCaseClients),
+				mCASEServer:               sc.NewCASEServer(),
+				mMessageCounterManager:    sc.NewMessageCounterManager(),
+				mCASESessionManager:       NewCASESessionManager(),
+				mDevicePool:               OperationalDeviceProxyPool{},
 			}
 		}
 	})
@@ -191,7 +182,7 @@ func (s *Server) Init(initParams *InitParams) error {
 		if err != nil {
 			log.Panic(err.Error())
 		}
-		s.TransportManager = transport.NewManagerImpl(udp)
+		s.mTransports = NewServerTransportMgr(udp)
 	}
 
 	{
@@ -205,7 +196,7 @@ func (s *Server) Init(initParams *InitParams) error {
 
 	{
 		session := transport.NewSessionManagerImpl()
-		err = session.Init(DeviceLayer.SystemLayer(), s.TransportManager, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
+		err = session.Init(DeviceLayer.SystemLayer(), s.mTransports, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
 		if err != nil {
 			return err
 		}
@@ -297,7 +288,7 @@ func (s *Server) Init(initParams *InitParams) error {
 	// and IPv6 endpoint to pick from. Given that the listen port passed in may be set to 0 (which then has the kernel select
 	// a valid port at bind time), that will result in two possible ports being provided back from the resultant endpoint
 	// initializations. Since IPv6 is POR for Matter, let's go ahead and pick that port.
-	if udpTransport := s.TransportManager.GetUpdImpl(); udpTransport != nil {
+	if udpTransport := s.mTransports.GetUpdImpl(); udpTransport != nil {
 		dnssdServer.SetSecuredPort(udpTransport.BoundPort())
 	}
 	dnssdServer.SetUnsecuredPort(s.mUserDirectedCommissioningPort)

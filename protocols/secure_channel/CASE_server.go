@@ -26,7 +26,7 @@ type CASEServer struct {
 
 	mPairingSession *CASESession
 
-	mSessionManager transport.SessionManager
+	mSessionManager transport.SessionManagerBase
 
 	mFabrics           *credentials.FabricTable
 	mGroupDataProvider credentials.GroupDataProvider
@@ -43,7 +43,7 @@ func NewCASEServer() *CASEServer {
 
 func (s *CASEServer) ListenForSessionEstablishment(
 	mgr messageing.ExchangeManagerBase,
-	sessionManager transport.SessionManager,
+	sessionManager transport.SessionManagerBase,
 	fabrics *credentials.FabricTable,
 	storage lib.SessionResumptionStorage,
 	policy credentials.CertificateValidityPolicy,

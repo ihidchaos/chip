@@ -1,6 +1,6 @@
 //go:build windows || (js && wasm)
 
-package platform
+package path
 
 import (
 	"os"
@@ -48,7 +48,3 @@ const (
 	SysConfDirFile     = "chip_config.ini"
 	LocalStatedDirFile = "chip_counters.ini"
 )
-
-func SystemLayer() system.Layer {
-	return nil
-}

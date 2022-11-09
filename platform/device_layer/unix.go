@@ -2,7 +2,9 @@
 
 package DeviceLayer
 
-import "github.com/galenliu/chip/system"
+import (
+	"github.com/galenliu/chip/platform/system"
+)
 
 func SystemLayer() system.Layer {
 	return nil

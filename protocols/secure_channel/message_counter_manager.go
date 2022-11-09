@@ -10,7 +10,7 @@ import (
 type MessageCounterManagerBase interface {
 	messageing.UnsolicitedMessageHandler
 	messageing.ExchangeDelegate
-	transport.MessageCounterManager
+	transport.MessageCounterManagerBase
 }
 
 type MessageCounterManager struct {
@@ -47,12 +47,12 @@ func (m *MessageCounterManager) OnExchangeCreationFailed(delegate messageing.Exc
 	panic("implement me")
 }
 
-func (m *MessageCounterManager) StartSync(handle transport.SessionHandle, session *transport.SecureSessionBase) error {
+func (m *MessageCounterManager) StartSync(handle *transport.SessionHandle, session *transport.SecureSession) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *transport.SessionHandle, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
+func (m *MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *transport.SessionHandle, state *transport.SecureSession, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
 	//TODO implement me
 	panic("implement me")
 }

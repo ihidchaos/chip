@@ -8,7 +8,7 @@ import (
 )
 
 type DeviceProxyInitParams struct {
-	SessionManager            transport2.SessionManager
+	SessionManager            transport2.SessionManagerBase
 	SessionResumptionStorage  secure_channel.SessionResumptionStorage
 	CertificateValidityPolicy credentials.CertificateValidityPolicy
 	ExchangeMgr               messageing.ExchangeManagerBase

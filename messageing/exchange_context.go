@@ -5,8 +5,8 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
-	"github.com/galenliu/chip/system/platform"
 )
 
 type ExchangeSessionHolder struct {
@@ -86,7 +86,7 @@ func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packet
 func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *raw.PacketBuffer) error {
 
 	//isStandaloneAck := payloadHeader.HasMessageType(uint8(StandaloneAck))
-	//isDuplicate := lib.HasFlags(flags, transport.FDuplicateMessage)
+	//isDuplicate := lib.HasFlags(flags, transport.DuplicateMessage)
 	if c.mDelegate != nil {
 		err := c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 		if err != nil {
@@ -150,7 +150,7 @@ func (c *ExchangeContext) OnSessionReleased() {
 
 func (c *ExchangeContext) sendMessage(id protocols.Id) error {
 
-	//c.mDispatch.SendMessage(c.ExchangeMgr().SessionManager(),c.mSession.)
+	//c.mDispatch.SendMessage(c.ExchangeMgr().SessionManagerBase(),c.mSession.)
 	return nil
 }
 
@@ -185,7 +185,7 @@ func (c *ExchangeContext) CancelResponseTimer() {
 	systemLayer.CancelTimer(c.HandleResponseTimeout, c)
 }
 
-func (c *ExchangeContext) HandleResponseTimeout(layer platform.SystemLayer, aAppState any) {
+func (c *ExchangeContext) HandleResponseTimeout(layer system.Layer, aAppState any) {
 	ec, ok := aAppState.(*ExchangeContext)
 	if !ok {
 		return

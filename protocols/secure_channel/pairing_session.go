@@ -33,7 +33,7 @@ type PairingSessionImpl struct {
 
 	mDelegate SessionEstablishmentDelegate
 
-	SessionManager       transport.SessionManager
+	SessionManager       transport.SessionManagerBase
 	mExchangeCtxt        messageing.ExchangeContext
 	mSecureSessionHolder transport.SessionHolderWithDelegate
 	mLocalMRPConfig      *transport.ReliableMessageProtocolConfig

@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/system/platform"
+	"github.com/galenliu/chip/platform/path"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -107,7 +107,7 @@ var (
 
 	DeviceOptionKvs = Flag{
 		"KVS",
-		platform.ConfigKvsPath,
+		path.ConfigKvsPath,
 		"A file to store Key Value Store items.\n"}
 
 	DeviceOptionInterfaceId = Flag{

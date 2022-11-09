@@ -1,9 +1,8 @@
 //go:build unix || (js && wasm)
 
-package platform
+package path
 
 import (
-	"github.com/galenliu/chip/system"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,7 +42,3 @@ const (
 	SysConfDirFile     = "chip_config.ini"
 	LocalStatedDirFile = "chip_counters.ini"
 )
-
-func SystemLayer() system.Layer {
-	return nil
-}
