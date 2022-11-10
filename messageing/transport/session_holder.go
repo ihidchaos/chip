@@ -28,18 +28,6 @@ func (s *SessionHolder) Get() *SessionHandle {
 	return nil
 }
 
-//func (s *SessionHolderImpl) GrabPairingSession(session SessionHandleBase) bool {
-//	if !session.IsSecureSession() {
-//		return false
-//	}
-//
-//	if session.IsEstablishing() {
-//		return false
-//	}
-//	s.GrabUnchecked(session)
-//	return true
-//}
-
 func (s *SessionHolder) Release() {
 	if s.Session != nil {
 		s.Session.RemoveHolder(s)
@@ -47,22 +35,36 @@ func (s *SessionHolder) Release() {
 	}
 }
 
+func (s *SessionHolder) GrabPairingSession(session *SessionHandle) bool {
+	s.Release()
+	if !session.IsSecureSession() {
+		return false
+	}
+	secureSession, ok := session.Session.(*SecureSession)
+	if !ok || !secureSession.IsEstablishing() {
+		return false
+	}
+	s.GrabUnchecked(session)
+	return true
+}
+
 func (s *SessionHolder) DispatchSessionEvent(delegate SessionDelegate) {
 	//TODO implement me
 	panic("implement me")
 }
 
-//func (s *SessionHolderImpl) Grad(session SessionHandleBase) bool {
-//	if !session.IsActiveSession() {
-//		return false
-//	}
-//	s.GrabUnchecked(session)
-//	return true
-//}
-//
-//func (s *SessionHolderImpl) GrabUnchecked(handle SessionHandleBase) {
-//	handle.AddHolder(s)
-//}
+func (s *SessionHolder) Grad(session *SessionHandle) bool {
+	s.Release()
+	if !session.IsActiveSession() {
+		return false
+	}
+	s.GrabUnchecked(session)
+	return true
+}
+
+func (s *SessionHolder) GrabUnchecked(session *SessionHandle) {
+	session.AddHolder(s)
+}
 
 type SessionHolderWithDelegate struct {
 	*SessionHolder
@@ -82,11 +84,6 @@ func (s *SessionHolderWithDelegate) SessionReleased() {
 }
 
 func (s *SessionHolderWithDelegate) ShiftToSession(session SessionHandle) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *SessionHolderWithDelegate) GrabPairingSession(session SessionHandle) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -2,6 +2,8 @@ package transport
 
 import (
 	"github.com/galenliu/chip/lib"
+	"golang.org/x/exp/slices"
+	"sync"
 	"time"
 )
 
@@ -20,7 +22,7 @@ type SessionBase interface {
 	AddHolder(handle *SessionHolder)
 	RemoveHolder(holder *SessionHolder)
 	SetFabricIndex(index lib.FabricIndex)
-	GetFabricIndex() lib.FabricIndex
+	FabricIndex() lib.FabricIndex
 	NotifySessionReleased()
 	DispatchSessionEvent(delegate SessionDelegate)
 }
@@ -51,20 +53,22 @@ type Session interface {
 }
 
 type SessionBaseImpl struct {
+	locker       sync.Mutex
 	mFabricIndex lib.FabricIndex
 	mHolders     []*SessionHolder
-	*lib.ReferenceCounted
+	*lib.ReferenceCountedHandle
 }
 
 func NewSessionBaseImpl(counter int, releaseHandler lib.ReleasedHandler) *SessionBaseImpl {
 	return &SessionBaseImpl{
-		mFabricIndex:     lib.FabricIndexUndefined,
-		mHolders:         make([]*SessionHolder, 0),
-		ReferenceCounted: lib.NewReferenceCounted(counter, releaseHandler),
+		mFabricIndex:           lib.FabricIndexUndefined,
+		mHolders:               make([]*SessionHolder, 0),
+		locker:                 sync.Mutex{},
+		ReferenceCountedHandle: lib.NewReferenceCountedHandle(counter, releaseHandler),
 	}
 }
 
-func (s *SessionBaseImpl) GetFabricIndex() lib.FabricIndex {
+func (s *SessionBaseImpl) FabricIndex() lib.FabricIndex {
 	return s.mFabricIndex
 }
 
@@ -84,13 +88,16 @@ func (s *SessionBaseImpl) DispatchSessionEvent(event SessionDelegate) {
 }
 
 func (s *SessionBaseImpl) AddHolder(holder *SessionHolder) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
 	s.mHolders = append(s.mHolders, holder)
 }
 
 func (s *SessionBaseImpl) RemoveHolder(holder *SessionHolder) {
-	for i, h := range s.mHolders {
-		if h == holder {
-			s.mHolders = append(s.mHolders[:i], s.mHolders[i+1:]...)
-		}
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	index := slices.Index(s.mHolders, holder)
+	if index >= 0 {
+		s.mHolders = slices.Delete(s.mHolders, index, index+1)
 	}
 }

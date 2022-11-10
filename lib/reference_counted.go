@@ -1,7 +1,8 @@
 package lib
 
 import (
-	"log"
+	"errors"
+	log "golang.org/x/exp/slog"
 	"sync"
 )
 
@@ -23,7 +24,8 @@ func (r *ReferenceCountedHandle) Retain() {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 	if r.mRefCounted == 0 {
-		log.Panicln("ReferenceCountedHandle error")
+		log.Error("ReferenceCountedHandle Retain", errors.New("ReferenceCounted is zero"))
+		return
 	}
 	r.mRefCounted = r.mRefCounted + 1
 }
@@ -32,7 +34,7 @@ func (r *ReferenceCountedHandle) Release() {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 	if r.mRefCounted == 0 {
-		log.Panicln("ReferenceCountedHandle error")
+		log.Error("ReferenceCountedHandle Release", errors.New("ReferenceCounted is zero"))
 	}
 	r.mRefCounted = r.mRefCounted - 1
 	if r.mRefCounted == 0 {
@@ -48,25 +50,4 @@ type ReferenceCounted struct {
 
 func NewReferenceCounted(initRefCount int, deleter ReleasedHandler) *ReferenceCounted {
 	return &ReferenceCounted{mRefCounted: initRefCount, delegate: deleter, locker: sync.Mutex{}}
-}
-
-func (r *ReferenceCounted) Retain() {
-	r.locker.Lock()
-	defer r.locker.Unlock()
-	if r.mRefCounted == 0 {
-		log.Panicln("ReferenceCountedHandle error")
-	}
-	r.mRefCounted = r.mRefCounted + 1
-}
-
-func (r *ReferenceCounted) Release() {
-	r.locker.Lock()
-	defer r.locker.Unlock()
-	if r.mRefCounted == 0 {
-		log.Panicln("ReferenceCountedHandle error")
-	}
-	r.mRefCounted = r.mRefCounted - 1
-	if r.mRefCounted == 0 {
-		r.delegate.Released()
-	}
 }
