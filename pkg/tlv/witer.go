@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/tlv/buffer"
+	"github.com/galenliu/chip/platform/system/buffer"
 	"io"
 	"math"
 )

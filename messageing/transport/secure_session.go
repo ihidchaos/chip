@@ -2,6 +2,7 @@ package transport
 
 import (
 	"github.com/galenliu/chip/lib"
+	log "golang.org/x/exp/slog"
 	"time"
 )
 
@@ -9,11 +10,13 @@ type SecureSessionBase interface {
 	Session
 }
 
+type OptionalFunc func(*SecureSession)
+
 type SecureSession struct {
 	*SessionBaseImpl
-	mState             StateSecureSession
+	mState             SecureSessionState
 	mTable             *SecureSessionTable
-	mSecureSessionType TypeSecureSession
+	mSecureSessionType SecureSessionType
 	mLocalSessionId    uint16
 	mPeerSessionId     uint16
 	mLocalNodeId       lib.NodeId
@@ -25,69 +28,34 @@ type SecureSession struct {
 
 func NewSecureSession(
 	table *SecureSessionTable,
-	secureSessionType TypeSecureSession,
+	secureSessionType SecureSessionType,
 	localSessionId uint16,
+	options ...OptionalFunc,
 ) *SecureSession {
-	return &SecureSession{
-		SessionBaseImpl:    NewSessionBaseImpl(),
+	session := &SecureSession{
 		mTable:             table,
 		mState:             Establishing,
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 	}
-}
-
-func NewSecureSessionImplWithNodeId(
-	table *SecureSessionTable,
-	secureSessionType TypeSecureSession,
-	localSessionId uint16,
-	localNodeId lib.NodeId,
-	peerNodeId lib.NodeId,
-	peerCATs *lib.CATValues,
-	peerSessionId uint16,
-	fabric lib.FabricIndex,
-	config *ReliableMessageProtocolConfig,
-) *SecureSession {
-	impl := &SecureSession{
-		SessionBaseImpl:    NewSessionBaseImpl(),
-		mTable:             table,
-		mState:             Establishing,
-		mSecureSessionType: secureSessionType,
-		mLocalSessionId:    localSessionId,
-		mLocalNodeId:       localNodeId,
-		mPeerNodeId:        peerNodeId,
-		mPeerSessionId:     peerSessionId,
-		mRemoteMRPConfig:   config,
-		mPeerCATs:          peerCATs,
+	session.SessionBaseImpl = NewSessionBaseImpl(1, session)
+	for _, option := range options {
+		option(session)
 	}
-	impl.SetFabricIndex(fabric)
-	return impl
-}
-
-func (s *SecureSession) Release() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *SecureSession) Retain() {
-	//TODO implement me
-	panic("implement me")
+	session.MoveToState(Active)
+	return session
 }
 
 func (s *SecureSession) IsActiveSession() bool {
 	return s.mState == Active
 }
 
-func (s *SecureSession) SessionType() uint8 {
-	return uint8(Secure)
-}
-
-func (s *SecureSession) SessionTypeString() string {
-	return "secure"
+func (s *SecureSession) SessionType() SessionType {
+	return Secure
 }
 
 func (s *SecureSession) IsGroupSession() bool {
-	return s.SessionType() == Secure.Uint8()
+	return s.SessionType() == Secure
 }
 
 func (s *SecureSession) IsEstablishing() bool {
@@ -95,7 +63,7 @@ func (s *SecureSession) IsEstablishing() bool {
 }
 
 func (s *SecureSession) IsSecureSession() bool {
-	return s.SessionType() == Secure.Uint8()
+	return s.SessionType() == Secure
 }
 
 func (s *SecureSession) DispatchSessionEvent(delegate SessionDelegate) {
@@ -108,17 +76,22 @@ func (s *SecureSession) ComputeRoundTripTimeout(duration time.Duration) time.Dur
 	panic("implement me")
 }
 
-func (s *SecureSession) SessionReleased() {
-	//TODO implement me
-	panic("implement me")
+func (s *SecureSession) Released() {
+	s.mTable.ReleaseSession(s)
+}
+
+func (s *SecureSession) MoveToState(targetState SecureSessionState) {
+	if s.mState != targetState {
+		log.Info("Moving state", "from", s.mState, "to", targetState, "Tag", s)
+		s.mState = targetState
+	}
 }
 
 func (s *SecureSession) ClearValue() {
-	//TODO implement me
-	panic("implement me")
+	s.Released()
 }
 
-func (s *SecureSession) GetLocalSessionId() uint16 {
+func (s *SecureSession) LocalSessionId() uint16 {
 	return s.mLocalSessionId
 }
 
@@ -130,11 +103,11 @@ func (s *SecureSession) IsPendingEviction() bool {
 	return s.mState == PendingEviction
 }
 
-func (s *SecureSession) GetStateStr() string {
-	return s.mState.Str()
+func (s *SecureSession) State() SecureSessionState {
+	return s.mState
 }
 
-func (s *SecureSession) GetSecureSessionType() TypeSecureSession {
+func (s *SecureSession) GetSecureSessionType() SecureSessionType {
 	return s.mSecureSessionType
 }
 
@@ -144,4 +117,46 @@ func (s *SecureSession) GetCryptoContext() *CryptoContext {
 
 func (s *SecureSession) GetPeerNodeId() lib.NodeId {
 	return s.mPeerNodeId
+}
+
+func (s *SecureSession) LogValue() log.Value {
+	return log.GroupValue(
+		log.String("name", "SecureSession"),
+	)
+}
+
+func WithLocalNodeId(localNodeId lib.NodeId) OptionalFunc {
+	return func(session *SecureSession) {
+		session.mLocalNodeId = localNodeId
+	}
+}
+
+func WithPeerNodeId(peerNodeId lib.NodeId) OptionalFunc {
+	return func(session *SecureSession) {
+		session.mPeerNodeId = peerNodeId
+	}
+}
+
+func WithPeerCATs(peerCATs *lib.CATValues) OptionalFunc {
+	return func(session *SecureSession) {
+		session.mPeerCATs = peerCATs
+	}
+}
+
+func WithPeerSessionId(peerSessionId uint16) OptionalFunc {
+	return func(session *SecureSession) {
+		session.mPeerSessionId = peerSessionId
+	}
+}
+
+func WithFabricIndex(index lib.FabricIndex) OptionalFunc {
+	return func(session *SecureSession) {
+		session.mFabricIndex = index
+	}
+}
+
+func WithMRPC(config *ReliableMessageProtocolConfig) OptionalFunc {
+	return func(session *SecureSession) {
+		session.mRemoteMRPConfig = config
+	}
 }

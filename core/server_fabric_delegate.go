@@ -18,22 +18,22 @@ func (s ServerFabricDelegateImpl) Init(server *Server) error {
 	return nil
 }
 
-func (s ServerFabricDelegateImpl) FabricWillBeRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+func (s ServerFabricDelegateImpl) FabricWillBeRemoved(table *credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s ServerFabricDelegateImpl) OnFabricRemoved(table credentials.FabricTable, index lib.FabricIndex) {
+func (s ServerFabricDelegateImpl) OnFabricRemoved(table *credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s ServerFabricDelegateImpl) OnFabricCommitted(table credentials.FabricTable, index lib.FabricIndex) {
+func (s ServerFabricDelegateImpl) OnFabricCommitted(table *credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s ServerFabricDelegateImpl) OnFabricUpdated(table credentials.FabricTable, index lib.FabricIndex) {
+func (s ServerFabricDelegateImpl) OnFabricUpdated(table *credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
 }

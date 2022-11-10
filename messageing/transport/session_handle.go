@@ -1,13 +1,15 @@
 package transport
 
+import "github.com/galenliu/chip/lib"
+
 type SessionHandle struct {
 	Session
-	mReferenceCounted int
+	*lib.ReferenceCountedHandle
 }
 
 func NewSessionHandle(session Session) *SessionHandle {
 	return &SessionHandle{
-		Session:           session,
-		mReferenceCounted: 0,
+		Session:                session,
+		ReferenceCountedHandle: lib.NewReferenceCountedHandle(1, nil),
 	}
 }

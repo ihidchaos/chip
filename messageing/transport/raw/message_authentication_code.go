@@ -2,6 +2,7 @@ package raw
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/platform/system"
 )
 
 const kMaxTagLen = 16
@@ -19,7 +20,7 @@ type MessageAuthenticationCode struct {
 	mTag       []byte
 }
 
-func (c *MessageAuthenticationCode) Decode(header *PacketHeader, msg *PacketBuffer, size uint16) error {
+func (c *MessageAuthenticationCode) Decode(header *PacketHeader, msg *system.PacketBufferHandle, size uint16) error {
 	tagLen := header.MICTagLength()
 	if tagLen == 0 {
 		return lib.MatterErrorWrongEncryptionTypeFromPeer

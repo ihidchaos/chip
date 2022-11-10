@@ -28,7 +28,7 @@ type ExchangeContext struct {
 	mDelegate    ExchangeDelegate
 	mFlags       uint16
 
-	*lib.ReferenceCounted
+	*lib.ReferenceCountedHandle
 }
 
 func NewExchangeContext(
@@ -51,7 +51,7 @@ func NewExchangeContext(
 		mFlags:                 flags,
 	}
 	ec.mSession = NewExchangeSessionHolder(ec)
-	ec.ReferenceCounted = lib.NewReferenceCounted(1, ec)
+	ec.ReferenceCountedHandle = lib.NewReferenceCountedHandle(1, ec)
 	//ec.mSession.SessionHolderWithDelegate.Grad(session)
 	return ec
 }
@@ -112,7 +112,7 @@ func (c *ExchangeContext) GetDelegate() ExchangeDelegate {
 	return c.mDelegate
 }
 
-func (c *ExchangeContext) DoRelease() {
+func (c *ExchangeContext) Released() {
 	c.mExchangeMgr.ReleaseContext(c)
 }
 

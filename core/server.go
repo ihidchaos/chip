@@ -14,7 +14,7 @@ import (
 	"github.com/galenliu/chip/pkg/storage"
 	DeviceLayer "github.com/galenliu/chip/platform/device_layer"
 	sc "github.com/galenliu/chip/protocols/secure_channel"
-	log "github.com/sirupsen/logrus"
+	log "golang.org/x/exp/slog"
 	"net"
 	"net/netip"
 	"sync"
@@ -106,7 +106,7 @@ func NewCHIPServer() *Server {
 }
 
 func (s *Server) Init(initParams *InitParams) error {
-	log.Printf("app server initializing")
+	log.Info("app server initializing")
 	var err error
 	s.mOperationalServicePort = initParams.OperationalServicePort
 	s.mUserDirectedCommissioningPort = initParams.UserDirectedCommissioningPort
@@ -160,7 +160,7 @@ func (s *Server) Init(initParams *InitParams) error {
 		aclStorage := initParams.AclStorage
 		err = aclStorage.Init(s.mDeviceStorage, s.mFabrics)
 		if err != nil {
-			log.Panic(err.Error())
+			log.Error("AclStorage init", err)
 		}
 		s.mAclStorage = aclStorage
 	}
@@ -180,7 +180,7 @@ func (s *Server) Init(initParams *InitParams) error {
 		udp := raw.NewUdpTransportImpl()
 		err = udp.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), s.mOperationalServicePort)))
 		if err != nil {
-			log.Panic(err.Error())
+			log.Error("UdpTransport init", err)
 		}
 		s.mTransports = NewServerTransportMgr(udp)
 	}
@@ -209,7 +209,7 @@ func (s *Server) Init(initParams *InitParams) error {
 		s.mFabricDelegate = fabricDelegate
 		err := s.mFabrics.AddFabricDelegate(s.mFabricDelegate)
 		if err != nil {
-			log.Panic(err.Error())
+			return err
 		}
 	}
 
@@ -217,7 +217,7 @@ func (s *Server) Init(initParams *InitParams) error {
 		exchangeMgr := messageing.NewExchangeManager()
 		err = exchangeMgr.Init(s.mSessions)
 		if err != nil {
-			log.Panic(err.Error())
+			return err
 		}
 		s.mExchangeMgr = exchangeMgr
 	}
@@ -250,7 +250,7 @@ func (s *Server) Init(initParams *InitParams) error {
 	if config.ChipDeviceConfigEnablePairingAutostart {
 		err := s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
 		if err != nil {
-			log.Panic(err.Error())
+			return err
 		}
 	}
 
@@ -319,12 +319,12 @@ func (s *Server) Init(initParams *InitParams) error {
 
 	err = s.mCASESessionManager.Init(SystemLayer(), caseSessionManagerConfig)
 	if err != nil {
-		log.Panic(err.Error())
+		return err
 	}
 
 	err = s.mCASEServer.ListenForSessionEstablishment(s.mExchangeMgr, s.mSessions, s.mFabrics, s.mSessionResumptionStorage, s.mCertificateValidityPolicy, s.mGroupsProvider)
 	if err != nil {
-		log.Panic(err.Error())
+		return err
 	}
 
 	//如果设备开启了自动配对模式，进入模式
@@ -332,7 +332,7 @@ func (s *Server) Init(initParams *InitParams) error {
 		s.GetFabricTable().DeleteAllFabrics()
 		err = s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
 		if err != nil {
-			log.Panic(err.Error())
+			return err
 		}
 	}
 	dnssdServer.StartServer()

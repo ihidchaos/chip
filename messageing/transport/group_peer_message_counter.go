@@ -5,10 +5,6 @@ import (
 	"github.com/galenliu/chip/pkg/storage"
 )
 
-const (
-	ConfigMaxFabrice int = 16
-)
-
 type GroupSender struct {
 }
 

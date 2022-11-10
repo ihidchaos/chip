@@ -2,18 +2,19 @@ package transport
 
 import (
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 	"net/netip"
 )
 
-// ManagerDelegate 这个实例为 SessionManagerBase
-type ManagerDelegate interface {
-	OnMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer)
+// MgrDelegate 这个实例为 SessionManagerBase
+type MgrDelegate interface {
+	OnMessageReceived(peerAddress netip.AddrPort, buf *system.PacketBufferHandle)
 }
 
 // MgrBase  this is the delegate for TransportBase,
 type MgrBase interface {
 	raw.TransportDelegate
-	SetSessionManager(sessionManager ManagerDelegate)
+	SetSessionManager(sessionManager MgrDelegate)
 	SendMessage(port netip.AddrPort, msg []byte) error
 	Close()
 	Disconnect(addr netip.Addr)
@@ -23,7 +24,7 @@ type MgrBase interface {
 // ManagerImpl  impl ManagerBase
 type ManagerImpl struct {
 	mTransports     []raw.TransportBase
-	mSessionManager ManagerDelegate
+	mSessionManager MgrDelegate
 }
 
 func NewManagerImpl(transports ...raw.TransportBase) *ManagerImpl {
@@ -36,7 +37,7 @@ func NewManagerImpl(transports ...raw.TransportBase) *ManagerImpl {
 	return impl
 }
 
-func (t *ManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, buf *raw.PacketBuffer) {
+func (t *ManagerImpl) HandleMessageReceived(peerAddress netip.AddrPort, buf *system.PacketBufferHandle) {
 	if t.mSessionManager != nil {
 		t.mSessionManager.OnMessageReceived(peerAddress, buf)
 	}
@@ -76,6 +77,6 @@ func (t *ManagerImpl) Disconnect(addr netip.Addr) {
 	panic("implement me")
 }
 
-func (t *ManagerImpl) SetSessionManager(sessionManager ManagerDelegate) {
+func (t *ManagerImpl) SetSessionManager(sessionManager MgrDelegate) {
 	t.mSessionManager = sessionManager
 }

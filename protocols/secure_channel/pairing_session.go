@@ -28,7 +28,7 @@ type PairingSession interface {
 
 type PairingSessionImpl struct {
 	mRole              uint8
-	mSecureSessionType transport.TypeSecureSession
+	mSecureSessionType transport.SecureSessionType
 	mPeerSessionId     uint16
 
 	mDelegate SessionEstablishmentDelegate

@@ -14,10 +14,10 @@ type FabricTableInitParams struct {
 }
 
 type FabricTableDelegate interface {
-	FabricWillBeRemoved(table FabricTable, index lib.FabricIndex)
-	OnFabricRemoved(table FabricTable, index lib.FabricIndex)
-	OnFabricCommitted(table FabricTable, index lib.FabricIndex)
-	OnFabricUpdated(table FabricTable, index lib.FabricIndex)
+	FabricWillBeRemoved(table *FabricTable, index lib.FabricIndex)
+	OnFabricRemoved(table *FabricTable, index lib.FabricIndex)
+	OnFabricCommitted(table *FabricTable, index lib.FabricIndex)
+	OnFabricUpdated(table *FabricTable, index lib.FabricIndex)
 }
 
 type FabricTableContainer interface {

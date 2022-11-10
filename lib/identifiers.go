@@ -27,15 +27,15 @@ const (
 //0x0000_0000_0000_0000 Unspecified Node ID
 
 func NodeIdFromPAKEKeyId(aPAKEKeyId PasscodeId) NodeId {
-	return NodeId(uint64(kMinPAKEKeyId) | uint64(aPAKEKeyId))
+	return NodeId(uint64(minPAKEKeyId) | uint64(aPAKEKeyId))
 }
 
 func PAKEKeyIdFromNodeId(aNodeId NodeId) PasscodeId {
-	return PasscodeId(aNodeId & kMaskPAKEKeyId)
+	return PasscodeId(aNodeId & maskPAKEKeyId)
 }
 
 func NodeIdFromGroupId(aGroupId GroupId) NodeId {
-	return NodeId(uint64(kMinGroupNodeId) | uint64(aGroupId))
+	return NodeId(uint64(minGroupNodeId) | uint64(aGroupId))
 }
 
 func (index FabricIndex) IsValidFabricIndex() bool {

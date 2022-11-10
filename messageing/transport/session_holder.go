@@ -1,8 +1,10 @@
 package transport
 
+import "github.com/galenliu/chip/lib"
+
 type SessionHolder struct {
 	Session
-	mReferenceCounted int
+	*lib.ReferenceCountedHandle
 }
 
 func (s *SessionHolder) SessionReleased() {
@@ -39,8 +41,10 @@ func (s *SessionHolder) Get() *SessionHandle {
 //}
 
 func (s *SessionHolder) Release() {
-	//TODO implement me
-	panic("implement me")
+	if s.Session != nil {
+		s.Session.RemoveHolder(s)
+		s.Session.ClearValue()
+	}
 }
 
 func (s *SessionHolder) DispatchSessionEvent(delegate SessionDelegate) {

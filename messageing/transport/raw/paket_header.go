@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	buffer2 "github.com/galenliu/chip/pkg/tlv/buffer"
+	buffer "github.com/galenliu/chip/platform/system/buffer"
+	"io"
 )
 
 const (
@@ -182,22 +183,47 @@ func (header *PacketHeader) Encode() (*bytes.Buffer, error) {
 	msgFlags = lib.SetFlag(header.DestinationGroupId.HasValue(), msgFlags, FDestinationGroupIdPresent)
 	msgFlags = KMsgHeaderVersion<<4 | msgFlags
 	buf := bytes.NewBuffer(nil)
-	err := buffer2.Write8(buf, msgFlags)
-	err = buffer2.LittleEndianWrite16(buf, header.SessionId)
-	err = buffer2.Write8(buf, header.SecFlags)
-	err = buffer2.LittleEndianWrite32(buf, header.MessageCounter)
+	err := buffer.Write8(buf, msgFlags)
+	err = buffer.LittleEndianWrite16(buf, header.SessionId)
+	err = buffer.Write8(buf, header.SecFlags)
+	err = buffer.LittleEndianWrite32(buf, header.MessageCounter)
 	if header.SourceNodeId.HasValue() {
-		err = buffer2.LittleEndianWrite64(buf, uint64(header.SourceNodeId))
+		err = buffer.LittleEndianWrite64(buf, uint64(header.SourceNodeId))
 	}
 	if header.DestinationNodeId.HasValue() {
-		err = buffer2.LittleEndianWrite64(buf, uint64(header.DestinationNodeId))
+		err = buffer.LittleEndianWrite64(buf, uint64(header.DestinationNodeId))
 	} else if header.DestinationGroupId.HasValue() {
-		err = buffer2.LittleEndianWrite16(buf, uint16(header.DestinationGroupId))
+		err = buffer.LittleEndianWrite16(buf, uint16(header.DestinationGroupId))
 	}
 	if err != nil {
 		return nil, err
 	}
 	return buf, nil
+}
+
+func (header *PacketHeader) DecodeAndConsume(buf io.Reader) error {
+
+	var err error
+	header.MessageFlags, err = buffer.Read8(buf)
+	header.SessionId, err = buffer.LittleEndianRead16(buf)
+	header.SecFlags, err = buffer.Read8(buf)
+	header.MessageCounter, err = buffer.LittleEndianRead32(buf)
+	if err != nil {
+		return err
+	}
+	if lib.HasFlags(header.MessageFlags, FSourceNodeIdPresent) {
+		v, _ := buffer.LittleEndianRead64(buf)
+		header.SourceNodeId = lib.NodeId(v)
+	}
+	if lib.HasFlags(header.MessageFlags, FDestinationNodeIdPresent) {
+		v, _ := buffer.LittleEndianRead64(buf)
+		header.DestinationNodeId = lib.NodeId(v)
+	}
+	if lib.HasFlags(header.MessageFlags, FDestinationGroupIdPresent) {
+		v, _ := buffer.LittleEndianRead16(buf)
+		header.DestinationGroupId = lib.GroupId(v)
+	}
+	return nil
 }
 
 func (header *PacketHeader) GetMessageCounter() uint32 {

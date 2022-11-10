@@ -27,3 +27,36 @@ const (
 	CASESigma3       MsgType = 0x32
 	CASESigma2Resume MsgType = 0x33
 )
+
+func (msg MsgType) String() string {
+	switch msg {
+	case CASESigma1:
+		return "CASESigma1"
+	case CASESigma2:
+		return "CASESigma2Resume"
+	case CASESigma3:
+		return "CASESigma3"
+	case CASESigma2Resume:
+		return "CASESigma2Resume"
+	case PBKDFParamRequest:
+		return "PBKDFParamRequest"
+	case PBKDFParamResponse:
+		return "PBKDFParamResponse"
+	case PASEPake1:
+		return "PASEPake1"
+	case PASEPake2:
+		return "PASEPake2"
+	case PASEPake3:
+		return "PASEPake3"
+	case MsgCounterSyncReq:
+		return "MsgCounterSyncReq"
+	case MsgCounterSyncRsp:
+		return "MsgCounterSyncRsp"
+	case StandaloneAck:
+		return "StandaloneAck"
+	case StatusReport:
+		return "StatusReport"
+	default:
+		return "unknown"
+	}
+}

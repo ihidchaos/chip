@@ -72,7 +72,7 @@ func (s *UnauthenticatedSession) IsGroupSession() bool {
 }
 
 func (s *UnauthenticatedSession) IsSecureSession() bool {
-	return s.SessionType() == Secure.Uint8()
+	return s.SessionType() == Secure
 }
 
 func (s *UnauthenticatedSession) ComputeRoundTripTimeout(duration time.Duration) time.Duration {
@@ -80,8 +80,8 @@ func (s *UnauthenticatedSession) ComputeRoundTripTimeout(duration time.Duration)
 	panic("implement me")
 }
 
-func (s *UnauthenticatedSession) SessionType() uint8 {
-	return Unauthenticated.Uint8()
+func (s *UnauthenticatedSession) SessionType() SessionType {
+	return Unauthenticated
 }
 
 func (s *UnauthenticatedSession) SessionTypeString() string {

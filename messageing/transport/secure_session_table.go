@@ -1,6 +1,7 @@
 package transport
 
 import "math/rand"
+import "golang.org/x/exp/slices"
 
 type SecureSessionTable struct {
 	mNextSessionId uint16
@@ -18,17 +19,23 @@ func (t *SecureSessionTable) Init() {
 	t.mNextSessionId = uint16(rand.Uint32())
 }
 
+func (t *SecureSessionTable) ReleaseSession(session *SecureSession) {
+	if index := slices.Index(t.mEntries, session); index >= 0 {
+		t.mEntries = slices.Delete(t.mEntries, index, index+1)
+	}
+}
+
 // FindSecureSessionByLocalKey 遍历所有的SecureSession,如果SessionId相同,则取出来
 func (t *SecureSessionTable) FindSecureSessionByLocalKey(id uint16) *SecureSession {
 	for _, e := range t.mEntries {
-		if e.GetLocalSessionId() == id {
+		if e.LocalSessionId() == id {
 			return e
 		}
 	}
 	return nil
 }
 
-func (t *SecureSessionTable) CreateNewSecureSession(sessionType TypeSecureSession, sessionId uint16) *SecureSession {
+func (t *SecureSessionTable) CreateNewSecureSession(sessionType SecureSessionType, sessionId uint16) *SecureSession {
 	secureSession := NewSecureSession(t, sessionType, sessionId)
 	t.mEntries = append(t.mEntries, secureSession)
 	return secureSession

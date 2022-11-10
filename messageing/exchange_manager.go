@@ -1,12 +1,13 @@
 package messageing
 
 import (
+	"errors"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/protocols"
-	log "github.com/sirupsen/logrus"
+	log "golang.org/x/exp/slog"
 	"math/rand"
 )
 
@@ -116,10 +117,9 @@ func (e *ExchangeManager) OnMessageReceived(
 	buf *raw.PacketBuffer,
 ) {
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
-	log.Infof("Received message of type %d with protocolId %d"+
-		"and MessageCounter: %d",
-		payloadHeader.GetMessageType(), payloadHeader.GetProtocolID(),
-		packetHeader.MessageCounter)
+	log.Info("Received message",
+		"type", payloadHeader.GetMessageType(), "protocolId", payloadHeader.GetProtocolID(),
+		"messageCounter", packetHeader.MessageCounter, "Tag", "ExchangeManager")
 
 	var msgFlags uint32 = 0
 	msgFlags = lib.SetFlag(isDuplicate == transport.DuplicateMessageYes, msgFlags, transport.DuplicateMessage)
@@ -127,16 +127,16 @@ func (e *ExchangeManager) OnMessageReceived(
 	if !packetHeader.IsGroupSession() {
 		ec := e.mContextPool.MatchExchange(session, packetHeader, payloadHeader)
 		if ec != nil {
-			log.Infof("Found matching exchange: %d Delegate: %p",
-				ec.mExchangeId, ec.GetDelegate())
+			log.Info("Found matching exchange",
+				"exchange", ec.Marshall(), "Tag", "ExchangeManager")
 			_ = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags, buf)
 			return
 		}
 	}
-	log.Infof("Received Groupcast Message with GroupId of %d", packetHeader.DestinationGroupId)
+	log.Info("Received Groupcast Message with GroupId of %d", packetHeader.DestinationGroupId)
 
 	if !session.IsActiveSession() {
-		log.Infof("Dropping message on inactive session that does not match an existing exchange")
+		log.Info("Dropping message on inactive session that does not match an existing exchange")
 		return
 	}
 
@@ -154,14 +154,14 @@ func (e *ExchangeManager) OnMessageReceived(
 			}
 		}
 	} else if !payloadHeader.NeedsAck() {
-		log.Infof("OnMessageReceived failed")
+		log.Info("OnMessageReceived failed", "Tag", "ExchangeManager")
 		return
 	}
 	if matchingUMH != nil {
 		var delegate ExchangeDelegate = nil
 		err := matchingUMH.handler.OnUnsolicitedMessageReceived(payloadHeader, delegate)
 		if err != nil {
-			log.Infof("OnMessageReceived failed, err = %s", err.Error())
+			log.Error("OnMessageReceived", err, "Tag", "ExchangeManager")
 			e.SendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags, buf)
 			return
 		}
@@ -170,20 +170,20 @@ func (e *ExchangeManager) OnMessageReceived(
 			if delegate == nil {
 				matchingUMH.handler.OnExchangeCreationFailed(delegate)
 			}
-			log.Infof("OnMessageReceived failed, err = %s", err.Error())
+			log.Error("OnMessageReceived failed", err, "Tag", "ExchangeManager")
 			return
 		}
-		log.Infof("Handling via exchange: %d Delegate: %p", ec.mExchangeId, ec.GetDelegate())
+		log.Info("Handling", "exchange", ec.Marshall(), "delegate", ec.GetDelegate(), "Tag", "ExchangeManager")
 
 		if ec.IsEncryptionRequired() != packetHeader.IsEncrypted() {
-			log.Infof("OnMessageReceived failed,err:= ERROR_INVALID_MESSAGE_TYPE ")
+			log.Info("OnMessageReceived", errors.New("invalid message type"), "Tag", "ExchangeManager")
 			ec.Close()
 			e.SendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags, buf)
 		}
 
 		err = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags, buf)
 		if err != nil {
-			log.Infof("OnMessageReceived failed,err : %s", err.Error())
+			log.Info("OnMessageReceived failed", err, "Tag", "ExchangeManager")
 		}
 		return
 	}
@@ -258,13 +258,13 @@ func (e *ExchangeManager) SendStandaloneAckIfNeeded(
 	}
 	ec := e.mContextPool.Create(e, payloadHeader.GetExchangeID(), session, !payloadHeader.IsInitiator(), nil, true)
 	if ec == nil {
-		log.Errorf("ExchangeManager OnMessageReceived faild,error= %s", "no memory")
+		log.Error("ExchangeManager OnMessageReceived ", errors.New("no memory"))
 		return
 	}
-	log.Infof("ExchangeManager Generating StandaloneAck via exchange: %s", ec.Marshall())
+	log.Info("ExchangeManager Generating StandaloneAck", "ExchangeContext", ec.Marshall(), "Tag", "ExchangeManager")
 	err := ec.HandleMessage(packetHeader.GetMessageCounter(), payloadHeader, msgFlag, buf)
 	if err != nil {
-		log.Errorf("ExchangeManager OnMessageReceived faild,error= %s", err.Error())
+		log.Error("OnMessageReceived", err, "Tag", "ExchangeManager")
 	}
 }
 

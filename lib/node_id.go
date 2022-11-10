@@ -1,59 +1,79 @@
 package lib
 
+import (
+	"bytes"
+	"fmt"
+	"github.com/galenliu/chip/platform/system/buffer"
+	"io"
+)
+
 type NodeId uint64
 
 const (
 	UndefinedNodeId NodeId = 0x0
 
-	// kMinGroupNodeId The range of possible      values has some pieces carved out for special uses.
-	kMinGroupNodeId NodeId = 0xFFFFFFFFFFFF0000
+	// minGroupNodeId The range of possible      values has some pieces carved out for special uses.
+	minGroupNodeId NodeId = 0xFFFF_FFFF_FFFF_0000
 
 	// The max group id is complicated, depending on how we want to count the
 	// various special group ids.  Let  s not define it for now, until we have use
 	// cases.
-	kMaskGroupId NodeId = 0x000000000000FFFF
+	maskGroupId NodeId = 0x0000_0000_0000_FFFF
 
 	//临时本地NodeId
-	kMinTemporaryLocalNodeId NodeId = 0xFFFF_FFFE_00000000
-	kMaxTemporaryLocalNodeId NodeId = 0xFFFFFFFEFFFFFFFE
+	minTemporaryLocalNodeId NodeId = 0xFFFF_FFFE_0000_0000
+	maxTemporaryLocalNodeId NodeId = 0xFFFF_FFFE_FFFF_FFFE
 
-	kPlaceholder NodeId = 0xFFFFFFFEFFFFFFFF
-
-	kMinCASEAuthTag  NodeId = 0xFFFFFFFD00000000
-	kMaxCASEAuthTag  NodeId = 0xFFFFFFFDFFFFFFFF
-	kMaskCASEAuthTag NodeId = 0x00000000FFFFFFFF
-
-	kMinPAKEKeyId        NodeId = 0xFFFFFFFB00000000
-	kMaxPAKEKeyId        NodeId = 0xFFFFFFFBFFFFFFFF
-	kMaskPAKEKeyId       NodeId = 0x000000000000FFFF
-	kMaskUnusedPAKEKeyId NodeId = 0x00000000FFFF0000
-	kMaxOperational      NodeId = 0xFFFF_FFEF_FFFF_FFFF
+	placeholder         NodeId = 0xFFFF_FFFE_FFFF_FFFF
+	minCASEAuthTag      NodeId = 0xFFFF_FFFD_0000_0000
+	maxCASEAuthTag      NodeId = 0xFFFF_FFFD_FFFF_FFFF
+	maskCASEAuthTag     NodeId = 0x00000_000_FFFF_FFFF
+	minPAKEKeyId        NodeId = 0xFFFF_FFFB_0000_0000
+	maxPAKEKeyId        NodeId = 0xFFFF_FFFB_FFFF_FFFF
+	maskPAKEKeyId       NodeId = 0x0000_0000_0000_FFFF
+	maskUnusedPAKEKeyId NodeId = 0x0000_0000_FFFF_0000
+	maxOperational      NodeId = 0xFFFF_FFEF_FFFF_FFFF
 )
 
+func ParseNodeId(data []byte) (NodeId, error) {
+	buf := bytes.NewBuffer(data)
+	return ReadNodeId(buf)
+}
+
+func ReadNodeId(buf io.Reader) (NodeId, error) {
+	read64, err := buffer.LittleEndianRead64(buf)
+	return NodeId(read64), err
+}
+
 func (aNodeId NodeId) IsOperationalNodeId() bool {
-	return aNodeId != UndefinedNodeId && aNodeId < kMaxOperational
+	return aNodeId != UndefinedNodeId && aNodeId < maxOperational
 }
 
 func (aNodeId NodeId) IsGroupId() bool {
-	return aNodeId >= kMinGroupNodeId
+	return aNodeId >= minGroupNodeId
 }
 
 func (aNodeId NodeId) IsCASEAuthTag() bool {
-	return aNodeId >= kMinCASEAuthTag && aNodeId <= kMaxCASEAuthTag
+	return aNodeId >= minCASEAuthTag && aNodeId <= maxCASEAuthTag
 }
 
 func (aNodeId NodeId) IsPAKEKeyId() bool {
-	return (aNodeId >= kMinPAKEKeyId) && (aNodeId <= kMaxPAKEKeyId)
+	return (aNodeId >= minPAKEKeyId) && (aNodeId <= maxPAKEKeyId)
 }
 
 func (aNodeId NodeId) GroupId() GroupId {
-	return GroupId(uint64(aNodeId) & uint64(kMaskGroupId))
+	return GroupId(uint64(aNodeId) & uint64(maskGroupId))
 }
 
 func (aNodeId NodeId) IsTemporaryLocalNodeId() bool {
-	return aNodeId >= kMinTemporaryLocalNodeId && aNodeId >= kMaxTemporaryLocalNodeId
+	return aNodeId >= minTemporaryLocalNodeId && aNodeId >= maxTemporaryLocalNodeId
 }
 
 func (aNodeId NodeId) HasValue() bool {
 	return aNodeId != UndefinedNodeId
+}
+
+func (aNodeId NodeId) String() string {
+	var value = uint64(aNodeId)
+	return fmt.Sprintf("%X", value)
 }

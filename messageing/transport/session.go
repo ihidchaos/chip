@@ -17,8 +17,8 @@ type SessionDelegate interface {
 }
 
 type SessionBase interface {
-	AddHolder(handle SessionHolder)
-	RemoveHolder(holder SessionHolder)
+	AddHolder(handle *SessionHolder)
+	RemoveHolder(holder *SessionHolder)
 	SetFabricIndex(index lib.FabricIndex)
 	GetFabricIndex() lib.FabricIndex
 	NotifySessionReleased()
@@ -27,22 +27,15 @@ type SessionBase interface {
 
 type Session interface {
 	SessionBase
-	SessionType() uint8
-	SessionTypeString() string
-	AddHolder(s SessionHolder)
-
+	SessionType() SessionType
 	Retain()
 	Release()
 	IsActiveSession() bool
-
 	IsGroupSession() bool
 	IsSecureSession() bool
 	IsEstablishing() bool
-
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
-
-	SessionReleased()
-
+	Released()
 	ClearValue()
 
 	//virtual void Retain()  = 0;
@@ -59,13 +52,15 @@ type Session interface {
 
 type SessionBaseImpl struct {
 	mFabricIndex lib.FabricIndex
-	mHolders     []SessionHolder
+	mHolders     []*SessionHolder
+	*lib.ReferenceCounted
 }
 
-func NewSessionBaseImpl() *SessionBaseImpl {
+func NewSessionBaseImpl(counter int, releaseHandler lib.ReleasedHandler) *SessionBaseImpl {
 	return &SessionBaseImpl{
-		mFabricIndex: lib.FabricIndexUndefined,
-		mHolders:     make([]SessionHolder, 0),
+		mFabricIndex:     lib.FabricIndexUndefined,
+		mHolders:         make([]*SessionHolder, 0),
+		ReferenceCounted: lib.NewReferenceCounted(counter, releaseHandler),
 	}
 }
 
@@ -88,11 +83,11 @@ func (s *SessionBaseImpl) DispatchSessionEvent(event SessionDelegate) {
 	}
 }
 
-func (s *SessionBaseImpl) AddHolder(holder SessionHolder) {
+func (s *SessionBaseImpl) AddHolder(holder *SessionHolder) {
 	s.mHolders = append(s.mHolders, holder)
 }
 
-func (s *SessionBaseImpl) RemoveHolder(holder SessionHolder) {
+func (s *SessionBaseImpl) RemoveHolder(holder *SessionHolder) {
 	for i, h := range s.mHolders {
 		if h == holder {
 			s.mHolders = append(s.mHolders[:i], s.mHolders[i+1:]...)
