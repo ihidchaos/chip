@@ -78,3 +78,6 @@ func AesCtrEncryptOrDecrypt(inputText, key, iv []byte) (outPut []byte, err error
 	stream.XORKeyStream(outPut, inputText)
 	return
 }
+
+type SymmetricKeyContext struct {
+}

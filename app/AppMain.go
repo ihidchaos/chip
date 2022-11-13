@@ -69,7 +69,7 @@ func Init(options *config.DeviceOptions) error {
 
 	credentials.SetDeviceAttestationCredentialsProvider(options.DacProvider)
 
-	deviceInstanceInfo := device.NewDeviceInstanceInfo()
+	deviceInstanceInfo := device.NewInstanceInfo()
 	deviceInstanceInfo, err = deviceInstanceInfo.Init(configMgr)
 	if err != nil {
 		log.Infof(err.Error())

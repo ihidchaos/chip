@@ -26,10 +26,10 @@ func (t *SecureSessionTable) ReleaseSession(session *SecureSession) {
 }
 
 // FindSecureSessionByLocalKey 遍历所有的SecureSession,如果SessionId相同,则取出来
-func (t *SecureSessionTable) FindSecureSessionByLocalKey(id uint16) *SecureSession {
+func (t *SecureSessionTable) FindSecureSessionByLocalKey(id uint16) *SessionHandle {
 	for _, e := range t.mEntries {
 		if e.LocalSessionId() == id {
-			return e
+			return NewSessionHandle(e)
 		}
 	}
 	return nil

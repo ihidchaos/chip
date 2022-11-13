@@ -89,7 +89,7 @@ func (d *Dnssd) StartServer() {
 
 func (d *Dnssd) AdvertiseOperational() error {
 	if d.mFabricTable == nil {
-		return lib.MatterErrorIncorrectState
+		return lib.IncorrectState
 	}
 	for _, info := range d.mFabricTable.GetFabrics() {
 		mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()

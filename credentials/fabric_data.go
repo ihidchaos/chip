@@ -121,11 +121,6 @@ func fabricData() *FabricData {
 	}
 }
 
-type GroupKey struct {
-	groupId  lib.GroupId
-	keysetId lib.KeysetId
-}
-
 type LinkedData struct {
 	id, index, next, prev, maxId uint16
 	first                        bool

@@ -4,7 +4,7 @@ import "github.com/galenliu/chip/lib"
 
 type SessionHolder struct {
 	Session
-	*lib.ReferenceCountedHandle
+	*lib.ReferenceCounted
 }
 
 func (s *SessionHolder) SessionReleased() {

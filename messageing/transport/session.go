@@ -25,11 +25,12 @@ type SessionBase interface {
 	FabricIndex() lib.FabricIndex
 	NotifySessionReleased()
 	DispatchSessionEvent(delegate SessionDelegate)
+	IsSecureSession() bool
+	SessionType() SessionType
 }
 
 type Session interface {
 	SessionBase
-	SessionType() SessionType
 	Retain()
 	Release()
 	IsActiveSession() bool
@@ -56,15 +57,17 @@ type SessionBaseImpl struct {
 	locker       sync.Mutex
 	mFabricIndex lib.FabricIndex
 	mHolders     []*SessionHolder
-	*lib.ReferenceCountedHandle
+	mSessionType SessionType
+	*lib.ReferenceCounted
 }
 
-func NewSessionBaseImpl(counter int, releaseHandler lib.ReleasedHandler) *SessionBaseImpl {
+func NewSessionBaseImpl(initCounter int, sessionType SessionType, releaseHandler lib.ReleasedHandler) *SessionBaseImpl {
 	return &SessionBaseImpl{
-		mFabricIndex:           lib.FabricIndexUndefined,
-		mHolders:               make([]*SessionHolder, 0),
-		locker:                 sync.Mutex{},
-		ReferenceCountedHandle: lib.NewReferenceCountedHandle(counter, releaseHandler),
+		mFabricIndex:     lib.FabricIndexUndefined,
+		mHolders:         make([]*SessionHolder, 0),
+		locker:           sync.Mutex{},
+		mSessionType:     sessionType,
+		ReferenceCounted: lib.NewReferenceCounted(initCounter, releaseHandler),
 	}
 }
 
@@ -100,4 +103,12 @@ func (s *SessionBaseImpl) RemoveHolder(holder *SessionHolder) {
 	if index >= 0 {
 		s.mHolders = slices.Delete(s.mHolders, index, index+1)
 	}
+}
+
+func (s *SessionBaseImpl) IsSecureSession() bool {
+	return s.SessionType() == kSecure
+}
+
+func (s *SessionBaseImpl) SessionType() SessionType {
+	return s.mSessionType
 }

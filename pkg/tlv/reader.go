@@ -3,7 +3,7 @@ package tlv
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/platform/system/buffer"
-	"github.com/galenliu/gateway/pkg/log"
+	log "golang.org/x/exp/slog"
 	"io"
 )
 
@@ -55,18 +55,18 @@ func NewReader(reader io.Reader) *ReaderImpl {
 func (r *ReaderImpl) NextE(tag Tag, tlvTyp ...TLVType) error {
 	r.Next()
 	if r.mElemTag != tag {
-		return lib.MatterErrorUnexpectedTlvElement
+		return lib.UnexpectedTlvElement
 	}
 	if len(tlvTyp) > 0 {
 		if r.GetType() != tlvTyp[0] {
-			return lib.MatterErrorWrongTlvType
+			return lib.WrongTlvType
 		}
 	}
-	log.Infof("Elem tag:%X", r.mElemTag)
-	log.Infof("ControlTag:%X", r.mControlTag)
-	log.Infof("Element Type:%X", r.mElementType)
-	log.Infof("Elem Len Or Val:%X", r.mElemLenOrVal)
-	log.Infof("--------------------")
+	log.Info("Elem tag:%X", r.mElemTag)
+	log.Info("ControlTag:%X", r.mControlTag)
+	log.Info("Element Type:%X", r.mElementType)
+	log.Info("Elem Len Or Val:%X", r.mElemLenOrVal)
+	log.Info("--------------------")
 	return r.VerifyElement()
 }
 
@@ -74,7 +74,7 @@ func (r *ReaderImpl) Next() {
 	r.reset()
 	err := r.ReadElement()
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Error("err", err)
 	}
 }
 
@@ -144,7 +144,7 @@ func (r *ReaderImpl) GetBytes(io io.Reader) ([]byte, error) {
 
 	var data = make([]byte, r.mElemLenOrVal)
 	if r.TLVTypeIsContainer() {
-		return nil, lib.MatterErrorWrongTlvType
+		return nil, lib.WrongTlvType
 	}
 	return data, nil
 }
@@ -155,7 +155,7 @@ func (r *ReaderImpl) GetBytesView() ([]byte, error) {
 		_, err := r.mBuffer.Read(data)
 		return data, err
 	}
-	return nil, lib.MatterErrorWrongTlvType
+	return nil, lib.WrongTlvType
 }
 
 func (r *ReaderImpl) ReadTag(tagControl TagControl) Tag {
@@ -239,7 +239,7 @@ func (r *ReaderImpl) GetUint64() (uint64, error) {
 	case UInt8, UInt16, UInt32, UInt64:
 		return r.mElemLenOrVal, nil
 	default:
-		return 0, lib.MatterErrorWrongTlvType
+		return 0, lib.WrongTlvType
 	}
 }
 
@@ -256,7 +256,7 @@ func (r *ReaderImpl) EnterContainer() (TLVType, error) {
 	if t == Type_Structure || t == Type_List || t == Type_Array {
 		return t, nil
 	}
-	return t, lib.MatterErrorWrongTlvType
+	return t, lib.WrongTlvType
 }
 
 func (r *ReaderImpl) ExitContainer(containerType TLVType) error {

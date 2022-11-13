@@ -1,5 +1,7 @@
 package lib
 
+import "fmt"
+
 type ActionId uint8
 type AttributeId uint32
 type ClusterId uint32
@@ -28,3 +30,8 @@ const InvalidAttributeId AttributeId = 0xFFFF_FFFF
 const InvalidCommandId CommandId = 0xFFFF_FFFF
 const InvalidEventId EventId = 0xFFFF_FFFF
 const InvalidFieldId FieldId = 0xFFFF_FFFF
+
+func (f FabricId) String() string {
+	value := uint64(f)
+	return fmt.Sprintf("%016X", value)
+}

@@ -90,7 +90,7 @@ func (f *FabricTable) Init(params *FabricTableInitParams) error {
 
 func (f *FabricTable) Delete(index lib.FabricIndex) error {
 	if f.mStorage == nil || !index.IsValidFabricIndex() {
-		return lib.MatterErrorInvalidArgument
+		return lib.InvalidArgument
 	}
 	return nil
 }
@@ -133,7 +133,7 @@ func (f *FabricTable) SetFabricLabel(label string) error {
 func (f *FabricTable) GetFabricLabel(index lib.FabricIndex) (string, error) {
 	fabricInfo := f.FindFabricWithIndex(index)
 	if fabricInfo == nil {
-		return "", lib.MatterErrorInvalidFabricIndex
+		return "", lib.InvalidFabricIndex
 	}
 	return fabricInfo.GetFabricLabel(), nil
 }
@@ -164,7 +164,7 @@ func (f *FabricTable) FetchPendingNonFabricAssociatedRootCert() ([]byte, error) 
 
 func (f *FabricTable) FetchICACert(index lib.FabricIndex) ([]byte, error) {
 	if f.mOpCertStore == nil {
-		return nil, lib.MatterErrorIncorrectState
+		return nil, lib.IncorrectState
 	}
 	icaCert, err := f.mOpCertStore.GetCertificate(index, CertChainElement_Icac)
 	if err != nil {
@@ -178,7 +178,7 @@ func (f *FabricTable) FetchICACert(index lib.FabricIndex) ([]byte, error) {
 
 func (f *FabricTable) FetchNOCCert(index lib.FabricIndex) ([]byte, error) {
 	if f.mStorage == nil {
-		return nil, lib.MatterErrorIncorrectState
+		return nil, lib.IncorrectState
 	}
 	return f.mOpCertStore.GetCertificate(index, CertChainElement_Noc)
 }
@@ -186,7 +186,7 @@ func (f *FabricTable) FetchNOCCert(index lib.FabricIndex) ([]byte, error) {
 func (f *FabricTable) FetchRootPubkey(index lib.FabricIndex) (*crypto.P256PublicKey, error) {
 	fabricInfo := f.FindFabricWithIndex(index)
 	if fabricInfo == nil {
-		return nil, lib.MatterErrorInvalidFabricIndex
+		return nil, lib.InvalidFabricIndex
 	}
 	return fabricInfo.FetchRootPubkey()
 

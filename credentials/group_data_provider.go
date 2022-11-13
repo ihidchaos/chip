@@ -7,7 +7,18 @@ import (
 	"time"
 )
 
+type GroupListener interface {
+	OnGroupAdded(fabricIndex lib.FabricIndex, newGroup *GroupInfo)
+	OnGroupRemoved(fabricIndex lib.FabricIndex, newGroup *GroupInfo)
+}
+
 const KEpochKeysMax = 3
+
+type SecurityPolicy uint8
+
+const (
+	TrustFirst SecurityPolicy = 1
+)
 
 type KeySet struct {
 	keysetId    lib.KeysetId
@@ -16,27 +27,42 @@ type KeySet struct {
 	Policy      any
 }
 
-// 对称加密密钥长度
-const lengthBytes = crypto.SymmetricKeyLengthBytes //Crypto::CHIP_CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES;
 type EpochKey struct {
 	StartTime time.Time
-	Key       []byte
+	Key       [crypto.SymmetricKeyLengthBytes]byte // 对称加密密钥长度
+}
+
+type GroupInfo struct {
+	Id lib.GroupId
+}
+
+type GroupSession struct {
+	GroupId        lib.GroupId
+	FabricIndex    lib.FabricIndex
+	SecurityPolicy SecurityPolicy
+	Key            *crypto.SymmetricKeyContext
+}
+
+type GroupKey struct {
+	groupId  lib.GroupId
+	keysetId lib.KeysetId
+}
+
+type GroupEndpoint struct {
+	GroupId    lib.GroupId
+	EndPointId lib.EndpointId
 }
 
 func (e *EpochKey) Clear() {
 	e.StartTime = time.Time{}
-	e.Key = make([]byte, lengthBytes)
+	e.Key = [crypto.SymmetricKeyLengthBytes]byte{}
 }
 
 func NewEpochKey() *EpochKey {
 	return &EpochKey{
 		StartTime: time.Time{},
-		Key:       make([]byte, lengthBytes),
+		Key:       [crypto.SymmetricKeyLengthBytes]byte{},
 	}
-}
-
-type GroupInfo struct {
-	Id lib.GroupId
 }
 
 type GroupDataProvider interface {
@@ -44,6 +70,7 @@ type GroupDataProvider interface {
 	Init() error
 	SetListener(listener GroupListener)
 	GetIpkKeySet(index lib.FabricIndex) (*KeySet, error)
+	GroupSessions(sessionId uint16) []*GroupSession
 }
 
 type GroupDataProviderImpl struct {
@@ -72,7 +99,7 @@ func (g *GroupDataProviderImpl) GetIpkKeySet(index lib.FabricIndex) (outKeyset *
 	for i, epoch := range outKeyset.EpochKeys {
 		if uint8(i) < keyset.keysetCount {
 			epoch.StartTime = keyset.operationalKeys[i].StateTime
-			epoch.Key = keyset.operationalKeys[i].EncryptionKey
+			epoch.Key[i] = keyset.operationalKeys[i].EncryptionKey[i]
 		}
 	}
 
@@ -88,6 +115,10 @@ func (g *GroupDataProviderImpl) SetListener(listener GroupListener) {
 
 func (g *GroupDataProviderImpl) SetStorageDelegate(delegate storage.KvsPersistentStorageDelegate) {
 	g.mStorage = delegate
+}
+
+func (g *GroupDataProviderImpl) GroupSessions(sessionId uint16) []*GroupSession {
+	return nil
 }
 
 func (g *GroupDataProviderImpl) Init() error {

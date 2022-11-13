@@ -5,24 +5,27 @@ type SecureSessionState uint8
 type SessionType uint8
 
 const (
-	Establishing SecureSessionState = iota
-	Active
-	Defunct
-	PendingEviction
+	kEstablishing SecureSessionState = iota
+	kActive
+	kDefunct
+	kPendingEviction
+)
+const (
+	kUndefined SessionType = iota
+	kUnauthenticated
+	kSecure
+	kGroupIncoming
+	kGroupOutgoing
+)
 
-	PASE SecureSessionType = iota - 4
-	CASE
-
-	Undefined SessionType = iota - 2
-	Unauthenticated
-	Secure
-	GroupIncoming
-	GroupOutgoing
+const (
+	kPASE SecureSessionType = iota
+	kCASE
 )
 
 func (t SecureSessionState) String() string {
 	return [...]string{
-		"Establishing", "Active", "Defunct", "PendingEviction",
+		"kEstablishing", "kActive", "kDefunct", "kPendingEviction",
 	}[t]
 }
 
@@ -32,6 +35,6 @@ func (t SecureSessionType) String() string {
 
 func (t SessionType) String() string {
 	return [...]string{
-		"Undefined", "Unauthenticated", "Secure", "GroupIncoming", "GroupOutgoing",
+		"kUndefined", "kUnauthenticated", "kSecure", "kGroupIncoming", "kGroupOutgoing",
 	}[t]
 }

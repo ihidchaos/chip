@@ -11,36 +11,12 @@ var (
 
 	RendezvousMode = false
 
-	ChipDeviceConfigEnablePairingAutostart      = false
-	ChipDeviceConfigEnablePairingAutostartName  = "pairing-autostart"
-	ChipDeviceConfigEnablePairingAutostartUsage = "Chip Device Config Enable Pairing Autostart"
-
-	ChipDeviceConfigEnableCommissionerDiscovery      = 1
-	ChipDeviceConfigEnableCommissionerDiscoveryName  = "enable-commissioner-discover"
-	ChipDeviceConfigEnableCommissionerDiscoveryUsage = "Chip Device Config Enable Commissioner Discovery"
-
-	ChipDeviceConfigEnableExtendedDiscovery      = false
-	ChipDeviceConfigEnableExtendedDiscoveryName  = "enable-extended-discovery"
-	ChipDeviceConfigEnableExtendedDiscoveryUsage = "ChipDeviceConfigEnableExtendedDiscovery"
-
-	ChipDeviceConfigExtendedDiscoveryTimeoutSecs      uint64 = 15 * 60
-	ChipDeviceConfigExtendedDiscoveryTimeoutSecsName         = "extended-discovery-timeout"
-	ChipDeviceConfigExtendedDiscoveryTimeoutSecsUsage        = "Chip Device Config Extended Discovery TimeoutSecs"
-
-	ChipDeviceConfigDiscoveryDisabled      uint8 = 0
-	ChipDeviceConfigDiscoveryDisabledName        = "discovery-disabled"
-	ChipDeviceConfigDiscoveryDisabledUsage       = "Chip Device Config Discovery Disabled Name"
-
-	ChipDeviceConfigDiscoveryNoTimeout      int8 = -1
-	ChipDeviceConfigDiscoveryNoTimeoutName       = "discover-no-timeout"
-	ChipDeviceConfigDiscoveryNoTimeoutUsage      = "Chip Device Config Discovery NoTimeout"
-
 	InetConfigEnableTcpEndpoint      int8 = 0
 	InetConfigEnableTcpEndpointName       = "enable-tcp"
 	InetConfigEnableTcpEndpointUsage      = "Inet Config Enable Tcp Endpoint 0/1(able/disable)"
 )
 
-func HandleCHIPConfig(cmd *cobra.Command) {
+func MatterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&NetworkLayerBle,
 		NetworkLayerBleName,
 		NetworkLayerBle,

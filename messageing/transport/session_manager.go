@@ -36,7 +36,7 @@ type EncryptedPacketBufferHandle struct {
 type SessionManagerBase interface {
 	credentials.FabricTableDelegate
 	MgrDelegate
-	// SecureGroupMessageDispatch  handle the Secure Group messages
+	// SecureGroupMessageDispatch  handle the kSecure group messages
 	SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *system.PacketBufferHandle)
 	// SecureUnicastMessageDispatch  handle the unsecure messages
 	SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *system.PacketBufferHandle)
@@ -72,7 +72,7 @@ type SessionManager struct {
 	mSystemLayer                     system.Layer
 }
 
-func NewSessionManagerImpl() *SessionManager {
+func NewSessionManager() *SessionManager {
 	return &SessionManager{
 		mUnauthenticatedSessions:         NewUnauthenticatedSessionTable(),
 		mSecureSessions:                  NewSecureSessionTable(),
@@ -115,7 +115,7 @@ func (s *SessionManager) OnMessageReceived(srcAddr netip.AddrPort, msg *system.P
 	packetHeader := raw.NewPacketHeader()
 	err := packetHeader.DecodeAndConsume(msg)
 	if err != nil {
-		log.Error("failed to decode packet header", err, "Tag", "SessionManager")
+		log.Error("packet header failed", err, "Tag", "SessionManager")
 		return
 	}
 	if packetHeader.IsEncrypted() {
@@ -130,58 +130,193 @@ func (s *SessionManager) OnMessageReceived(srcAddr netip.AddrPort, msg *system.P
 }
 
 // UnauthenticatedMessageDispatch 处理没有加密码的消息
-func (s *SessionManager) UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *system.PacketBufferHandle) {
+func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.PacketHeader, peerAddress netip.AddrPort, msg *system.PacketBufferHandle) {
 
-	source := header.SourceNodeId
-	destination := header.DestinationNodeId
-
-	if (source.HasValue() && destination.HasValue()) || (!source.HasValue() && !destination.HasValue()) {
-		log.Info("received malformed unsecure packet with source %d destination %d", source, destination)
+	sourceNodeId := packetHeader.SourceNodeId
+	destinationNodeId := packetHeader.DestinationNodeId
+	if (sourceNodeId.HasValue() && destinationNodeId.HasValue()) || (!sourceNodeId.HasValue() && !destinationNodeId.HasValue()) {
+		log.Info("received malformed unsecure packet", "SourceNodeId", sourceNodeId, "DestinationNodeId", destinationNodeId, "Tag", "SessionManager")
 		return
 		//ephemeral node id is only assigned to the initiator, there should be one and only one node id exists.
 	}
-
-	var unsecuredSession *UnauthenticatedSession
-	if source.HasValue() {
+	var optionalSession *SessionHandle = nil
+	var err error = nil
+	if sourceNodeId.HasValue() {
 		// Assume peer is the initiator, we are the responder.
 		// 对方是发起人，我们是响应者
-		unsecuredSession = s.mUnauthenticatedSessions.FindOrAllocateResponder(source, GetLocalMRPConfig())
-		if unsecuredSession == nil {
-			log.Info("UnauthenticatedSession exhausted")
+		optionalSession, err = s.mUnauthenticatedSessions.FindOrAllocateResponder(sourceNodeId, GetLocalMRPConfig())
+		if err != nil {
+			log.Error("UnauthenticatedSession exhausted", err)
 			return
 		}
 	} else {
 		// Assume peer is the responder, we are the initiator.
 		// 对方为响应，我们是发起人
-		unsecuredSession = s.mUnauthenticatedSessions.FindInitiator(destination)
-		if unsecuredSession == nil {
-			log.Info("Received unknown unsecure packet for initiator", "destination", destination)
+		optionalSession = s.mUnauthenticatedSessions.FindInitiator(destinationNodeId)
+		if optionalSession == nil {
+			log.Info("Received unknown unsecure packet for initiator", "DestinationNodeId", destinationNodeId, "Tag", "SessionManager")
 			return
 		}
 	}
-
-	unsecuredSession.SetPeerAddress(addr)
+	var unsecuredSession *UnauthenticatedSession
+	unsecuredSession = optionalSession.Session.(*UnauthenticatedSession)
+	unsecuredSession.SetPeerAddress(peerAddress)
 	isDuplicate := DuplicateMessageNo
 	// 更新Session
 	unsecuredSession.MarkActiveRx()
 
 	payloadHeader := raw.NewPayloadHeader()
-	err := payloadHeader.DecodeAndConsume(buf)
+	err = payloadHeader.DecodeAndConsume(msg)
 	if err != nil {
-		log.Info("Received invalid packet")
+		log.Error("Received invalid packet", err, "Tag", "SessionManager")
 		return
 	}
 
-	err = unsecuredSession.GetPeerMessageCounter().VerifyUnencrypted(header.MessageCounter)
-	if err != nil && err == lib.MatterErrorDuplicateMessageReceived {
-		isDuplicate = DuplicateMessageYes
+	err = unsecuredSession.PeerMessageCounter().VerifyUnencrypted(packetHeader.MessageCounter)
+	if err == lib.DuplicateMessageReceived {
 		log.Info(
-			"Received a duplicate message", "MessageCounter", header.MessageCounter, "payloadHeader", payloadHeader)
+			"Received a duplicate message", "messageCounter", packetHeader.MessageCounter, "payloadHeader", payloadHeader)
+		isDuplicate = DuplicateMessageYes
+		err = nil
 	} else {
-		unsecuredSession.GetPeerMessageCounter().CommitUnencrypted(header.MessageCounter)
+		unsecuredSession.PeerMessageCounter().CommitUnencrypted(packetHeader.MessageCounter)
 	}
 	if s.mCB != nil {
-		s.mCB.OnMessageReceived(header, payloadHeader, NewSessionHandle(unsecuredSession), isDuplicate, buf)
+		log.Debug("Message Received", "payloadHeader", payloadHeader, "packetHeader", packetHeader, "unsecuredSession", unsecuredSession, "peerAddress", peerAddress, "message", msg)
+		s.mCB.OnMessageReceived(packetHeader, payloadHeader, NewSessionHandle(unsecuredSession), isDuplicate, msg)
+	}
+}
+
+// SecureUnicastMessageDispatch 处理分支，加密的单播消息
+func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHeader, peerAddress netip.AddrPort, msg *system.PacketBufferHandle) {
+
+	sessionHandle := s.mSecureSessions.FindSecureSessionByLocalKey(packetHeader.SessionId)
+	isDuplicate := DuplicateMessageNo
+	if msg.IsNull() {
+		log.Info("kSecure transport received unicast NULL packet, discarding")
+		return
+	}
+	if sessionHandle == nil {
+		log.Info("Data received on an unknown session, Dropping it!", "LSID", packetHeader.SessionId)
+		return
+	}
+
+	secureSession := sessionHandle.Session.(*SecureSession)
+
+	if secureSession.IsDefunct() && !secureSession.IsActiveSession() && !secureSession.IsPendingEviction() {
+		log.Info("kSecure transport received message on a session in an invalid state", "stata", secureSession.State())
+		return
+	}
+
+	nonce, _ := BuildNonce(packetHeader.SecFlags, packetHeader.MessageCounter, func() lib.NodeId {
+		if secureSession.SecureSessionType() == kCASE {
+			return secureSession.GetPeerNodeId()
+		}
+		return lib.UndefinedNodeId
+	}())
+
+	payloadHeader, err := Decrypt(secureSession.GetCryptoContext(), nonce, packetHeader, msg)
+	if err != nil {
+		log.Error("Secure transport received message, but failed to decode/authenticate it", err)
+	}
+
+	err = secureSession.SessionMessageCounter().VerifyEncryptedUnicast(packetHeader.GetMessageCounter())
+	if err == lib.DuplicateMessageReceived {
+		log.Info("Received a duplicate message on exchange", "MessageCounter", packetHeader.MessageCounter, "PayloadHeader", payloadHeader)
+		isDuplicate = DuplicateMessageYes
+		err = nil
+	}
+	if err != nil {
+		log.Error("Message counter verify failed", err, "Tag", "Inet")
+		return
+	}
+	secureSession.MarkActiveRx()
+	if isDuplicate == DuplicateMessageYes && !payloadHeader.NeedsAck() {
+		//如果这是一个重复的消息，且不需要ACK，则直接返回，节约CPU资源。
+		return
+	}
+
+	if isDuplicate == DuplicateMessageNo {
+		secureSession.SessionMessageCounter().PeerMessageCounter().CommitUnencryptedUnicast(packetHeader.MessageCounter)
+	}
+
+	if secureSession.PeerAddress() != peerAddress {
+		secureSession.SetPeerAddress(peerAddress)
+	}
+
+	if s.mCB != nil {
+		log.Debug("Message Received", "PayloadHeader", payloadHeader, "packetHeader", packetHeader, "secureSession", secureSession, "PeerAddress", peerAddress, "message", msg)
+		s.mCB.OnMessageReceived(packetHeader, payloadHeader, NewSessionHandle(secureSession), isDuplicate, msg)
+	}
+}
+
+// SecureGroupMessageDispatch 处理加密的组播消息
+func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHeader, peerAddress netip.AddrPort, msg *system.PacketBufferHandle) {
+	groups := credentials.GetGroupDataProvider()
+	if groups == nil {
+		return
+	}
+
+	var groupId = packetHeader.DestinationGroupId
+	if !groupId.HasValue() {
+		return
+	}
+	if msg.IsNull() {
+		log.Info("Secure transport received Groupcast NULL packet,discarding")
+		return
+	}
+	// Check if Message Header is valid first
+	if !(packetHeader.IsValidMCSPMsg() || packetHeader.IsValidGroupMsg()) {
+		return
+	}
+
+	// Trial decryption with GroupDataProvider
+	var err error
+	var payloadHeader *raw.PayloadHeader
+	var nonce NonceStorage
+	var groupContext *credentials.GroupSession
+	for _, groupContext = range groups.GroupSessions(packetHeader.SessionId) {
+		if groupId != groupContext.GroupId {
+			continue
+		}
+		nonce, err = BuildNonce(packetHeader.SecFlags, packetHeader.MessageCounter, packetHeader.SourceNodeId)
+		payloadHeader, err = Decrypt(NewCryptoContext(groupContext.Key), nonce, packetHeader, msg)
+	}
+	if err != nil {
+		log.Error("Failed to retrieve Key. Discarding everything", err)
+		return
+	}
+
+	if packetHeader.IsValidMCSPMsg() {
+		return
+	}
+	if payloadHeader.NeedsAck() {
+		log.Info("Unexpected ACK requested for group message")
+		return
+	}
+	counter, err := mGroupPeerMsgCounter.FindOrAddPeer(groupContext.FabricIndex, packetHeader.SourceNodeId, packetHeader.IsSecureSessionControlMsg())
+	if err == nil {
+		if groupContext.SecurityPolicy == credentials.TrustFirst {
+			err = counter.VerifyOrTrustFirstGroup(packetHeader.MessageCounter)
+		} else {
+			// TODO support cache and sync with MCSP. Issue  #11689
+			log.Info("Received Group Msg with key policy Cache and Sync, but MCSP is not implemented")
+			return
+		}
+		if err != nil {
+			log.Error("Message counter verify failed", err)
+			return
+		}
+
+	} else {
+		log.Info("Group Counter Tables full or invalid NodeId/FabricIndex after decryption of message, dropping everything")
+		return
+	}
+	counter.CommitGroup(packetHeader.MessageCounter)
+	if s.mCB != nil {
+		groupSession := NewIncomingGroupSession(groupContext.GroupId, groupContext.FabricIndex, packetHeader.SourceNodeId)
+		log.Debug("Message Received", "PayloadHeader", payloadHeader, "packetHeader", packetHeader, "GroupSession", groupSession, "PeerAddress", peerAddress, "message", msg)
+		s.mCB.OnMessageReceived(packetHeader, payloadHeader, NewSessionHandle(groupSession), DuplicateMessageNo, msg)
 	}
 }
 
@@ -204,11 +339,6 @@ func (s *SessionManager) OnFabricUpdated(table *credentials.FabricTable, index l
 	panic("implement me")
 }
 
-// SecureGroupMessageDispatch 处理加密的组播消息
-func (s *SessionManager) SecureGroupMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *system.PacketBufferHandle) {
-
-}
-
 func (s *SessionManager) Shutdown() {
 	if s.mFabricTable != nil {
 		s.mFabricTable.RemoveFabricDelegate(s)
@@ -227,31 +357,6 @@ func (s *SessionManager) FabricRemoved(fabricId lib.FabricIndex) {
 	if err != nil {
 		log.Error("SessionManager.FabricRemoved", err)
 	}
-}
-
-// SecureUnicastMessageDispatch 处理分支，加密的单播消息
-func (s *SessionManager) SecureUnicastMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, msg *system.PacketBufferHandle) {
-	secureSession := s.mSecureSessions.FindSecureSessionByLocalKey(header.SessionId)
-	_ = DuplicateMessageNo
-	if msg.IsNull() {
-		log.Info("Secure transport received Unicast NULL packet, discarding")
-		return
-	}
-	if secureSession == nil {
-		log.Info("Data received on an unknown session (LSID=%d). Dropping it!", header.SessionId)
-		return
-	}
-
-	if secureSession.IsDefunct() && !secureSession.IsActiveSession() && !secureSession.IsPendingEviction() {
-		log.Info("Secure transport received message on a session in an invalid state (state = '%s')",
-			secureSession.State())
-	}
-	var nodeId = lib.UndefinedNodeId
-	if secureSession.GetSecureSessionType() == CASE {
-		nodeId = secureSession.GetPeerNodeId()
-	}
-	nonce, _ := BuildNonce(header.SecFlags, header.MessageCounter, nodeId)
-	_ = Decrypt(secureSession.GetCryptoContext(), nonce, header, msg)
 }
 
 func (s *SessionManager) PrepareMessage(session *SessionHandle, payloadHeader *raw.PayloadHeader, msgBuf *system.PacketBufferHandle, encryptedMessage *EncryptedPacketBufferHandle) error {

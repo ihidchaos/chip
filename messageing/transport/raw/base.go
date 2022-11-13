@@ -5,11 +5,13 @@ import (
 	"net/netip"
 )
 
-type TransportDelegate interface {
-	HandleMessageReceived(srcAddr netip.AddrPort, buf *system.PacketBufferHandle)
+type Delegate interface {
+	HandleMessageReceived(srcAddr netip.AddrPort, msg *system.PacketBufferHandle)
 }
 
 type TransportBase interface {
-	SetDelegate(m TransportDelegate)
-	HandleMessageReceived(srcAddr netip.AddrPort, buf *PacketBuffer)
+	SetDelegate(m Delegate)
+	SendMessage(peerAddr netip.AddrPort, msg *system.PacketBufferHandle) error
+	Disconnect(peerAddr netip.AddrPort)
+	Close()
 }

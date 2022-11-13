@@ -1,10 +1,9 @@
 package lib
 
-type Uint interface {
-	~uint8 | ~uint16 | ~uint32 | ~uint64 | uint
-}
+import "golang.org/x/exp/constraints"
 
-func HasFlags[T Uint](value T, flags ...T) (b bool) {
+// HasFlags Value中所有Flags是否存在
+func HasFlags[T constraints.Unsigned](value T, flags ...T) (b bool) {
 	b = true
 	for _, f := range flags {
 		if value&f == 0 {
@@ -14,14 +13,14 @@ func HasFlags[T Uint](value T, flags ...T) (b bool) {
 	return
 }
 
-func SetFlags[T Uint](value T, flags ...T) T {
+func SetFlags[T constraints.Unsigned](value T, flags ...T) T {
 	for _, f := range flags {
 		value = f | value
 	}
 	return value
 }
 
-func SetFlag[T Uint](isSet bool, value T, flag T) T {
+func SetFlag[T constraints.Unsigned](isSet bool, value T, flag T) T {
 	if isSet {
 		value = SetFlags(value, flag)
 	}

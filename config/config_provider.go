@@ -136,7 +136,7 @@ func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
 func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
 		log.Printf("storage get failed")
-		return lib.MatterDeviceErrorConfigNotFound
+		return lib.DeviceErrorConfigNotFound
 	}
 	err := conf.mChipFactoryStorage.DeleteAll()
 	if err != nil {
@@ -149,7 +149,7 @@ func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 func (conf *ConfigProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
 		log.Printf("storage get failed")
-		return lib.MatterDeviceErrorConfigNotFound
+		return lib.DeviceErrorConfigNotFound
 	}
 	err := conf.mChipCountersStorage.DeleteAll()
 	if err != nil {

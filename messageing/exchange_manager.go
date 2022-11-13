@@ -6,6 +6,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
 	log "golang.org/x/exp/slog"
 	"math/rand"
@@ -54,7 +55,7 @@ type ExchangeManagerBase interface {
 
 // ExchangeManager ExchangeManager
 type ExchangeManager struct {
-	UMHandlerPool       [config.ChipConfigMaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot
+	UMHandlerPool       [config.MaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot
 	mContextPool        *ExchangeContextPool
 	mSessionManager     transport.SessionManagerBase
 	mNextExchangeId     uint16
@@ -65,19 +66,19 @@ type ExchangeManager struct {
 
 func NewExchangeManager() *ExchangeManager {
 	impl := &ExchangeManager{}
-	impl.UMHandlerPool = [config.ChipConfigMaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot{}
+	impl.UMHandlerPool = [config.MaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot{}
 	impl.mContextPool = NewExchangeContextContainer()
 	return impl
 }
 
 func (e *ExchangeManager) Init(sessionManager transport.SessionManagerBase) error {
 	if e.mInitialized {
-		return lib.MatterErrorIncorrectState
+		return lib.IncorrectState
 	}
 	e.mSessionManager = sessionManager
 	e.mNextExchangeId = uint16(rand.Uint32())
 	e.mNextKeyId = 0
-	e.UMHandlerPool = [config.ChipConfigMaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot{}
+	e.UMHandlerPool = [config.MaxUnsolicitedMessageHandlers]UnsolicitedMessageHandlerSlot{}
 
 	for _, handler := range e.UMHandlerPool {
 		if handler.handler != nil {
@@ -114,7 +115,7 @@ func (e *ExchangeManager) OnMessageReceived(
 	payloadHeader *raw.PayloadHeader,
 	session *transport.SessionHandle,
 	isDuplicate uint8,
-	buf *raw.PacketBuffer,
+	buf *system.PacketBufferHandle,
 ) {
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 	log.Info("Received message",
@@ -228,7 +229,7 @@ func (e *ExchangeManager) registerUMH(id *protocols.Id, msgType int16, handle Un
 		}
 	}
 	if selected == nil {
-		return lib.MatterErrorTooManyUnsolicitedMessageHandlers
+		return lib.TooManyUnsolicitedMessageHandlers
 	}
 	selected.handler = handle
 	selected.protocolId = id
@@ -243,7 +244,7 @@ func (e *ExchangeManager) unregisterUMH(id *protocols.Id, msgType int16) error {
 			return nil
 		}
 	}
-	return lib.MatterErrorNoUnsolicitedMessageHandler
+	return lib.NoUnsolicitedMessageHandler
 }
 
 func (e *ExchangeManager) SendStandaloneAckIfNeeded(
@@ -251,7 +252,7 @@ func (e *ExchangeManager) SendStandaloneAckIfNeeded(
 	payloadHeader *raw.PayloadHeader,
 	session *transport.SessionHandle,
 	msgFlag uint32,
-	buf *raw.PacketBuffer,
+	buf *system.PacketBufferHandle,
 ) {
 	if !payloadHeader.NeedsAck() {
 		return

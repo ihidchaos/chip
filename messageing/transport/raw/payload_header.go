@@ -1,24 +1,26 @@
 package raw
 
 import (
+	"fmt"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/platform/system/buffer"
 	"github.com/galenliu/chip/protocols"
+	log "golang.org/x/exp/slog"
 	"io"
 )
 
 const (
-	FInitiator uint8 = 0b1
-	// FAckMsg / Set when current message is an acknowledgment for a previously received message.
-	FAckMsg uint8 = 0b10
-	// FNeedsAck / Set when current message is requesting an acknowledgment from the recipient.
-	FNeedsAck uint8 = 0b100
+	fInitiator uint8 = 0b1
+	// fAckMsg / Set when current message is an acknowledgment for a previously received message.
+	fAckMsg uint8 = 0b10
+	// fNeedsAck / Set when current message is requesting an acknowledgment from the recipient.
+	fNeedsAck uint8 = 0b100
 
 	// FSecuredExtension / Secured Extension block is present.
 	//FSecuredExtension uint8 = 0b1000
 
-	// FVendorIdPresent / Set when a vendor id is prepended to the Message Protocol Id field.
-	FVendorIdPresent uint8 = 0b10000
+	// fVendorIdPresent / Set when a vendor id is prepended to the Message Protocol Id field.
+	fVendorIdPresent uint8 = 0b10000
 )
 
 /**********************************************
@@ -54,13 +56,25 @@ type PayloadHeader struct {
 	mAckMessageCounter uint32
 }
 
-func NewPayloadHeader() *PayloadHeader {
-	header := &PayloadHeader{}
+type payloadHeaderOption func(header *PayloadHeader)
+
+func NewPayloadHeader(opts ...payloadHeaderOption) *PayloadHeader {
+	header := &PayloadHeader{
+		mExchangeFlags:     0,
+		mProtocolOpcode:    0,
+		mExchangeId:        0,
+		mProtocolId:        protocols.Id{},
+		mVendorId:          0,
+		mAckMessageCounter: 0,
+	}
+	for _, opt := range opts {
+		opt(header)
+	}
 	return header
 }
 
 func (header *PayloadHeader) IsInitiator() bool {
-	return lib.HasFlags(header.mExchangeFlags, FInitiator)
+	return lib.HasFlags(header.mExchangeFlags, fInitiator)
 }
 
 func (header *PayloadHeader) HasMessageType(t uint8) bool {
@@ -68,38 +82,18 @@ func (header *PayloadHeader) HasMessageType(t uint8) bool {
 }
 
 func (header *PayloadHeader) IsAckMsg() bool {
-	return lib.HasFlags(header.mExchangeFlags, FAckMsg)
+	return lib.HasFlags(header.mExchangeFlags, fAckMsg)
 }
 
 func (header *PayloadHeader) NeedsAck() bool {
-	return lib.HasFlags(header.mExchangeFlags, FNeedsAck)
+	return lib.HasFlags(header.mExchangeFlags, fNeedsAck)
 }
 
 func (header *PayloadHeader) HaveVendorId() bool {
-	return lib.HasFlags(header.mExchangeFlags, FVendorIdPresent)
+	return lib.HasFlags(header.mExchangeFlags, fVendorIdPresent)
 }
 
 func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
-	return header.decode(buf)
-}
-
-func (header *PayloadHeader) GetProtocolID() protocols.Id {
-	return header.mProtocolId
-}
-
-func (header *PayloadHeader) GetMessageType() uint8 {
-	return header.mProtocolOpcode
-}
-
-func (header *PayloadHeader) GetExchangeID() uint16 {
-	return header.mExchangeId
-}
-
-func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
-	return header.mProtocolId.Equal(id)
-}
-
-func (header *PayloadHeader) decode(buf io.Reader) error {
 	var err error
 	header.mExchangeFlags, err = buffer.Read8(buf)
 	header.mProtocolOpcode, err = buffer.Read8(buf)
@@ -125,4 +119,27 @@ func (header *PayloadHeader) decode(buf io.Reader) error {
 		header.mAckMessageCounter = ackCounter
 	}
 	return nil
+}
+
+func (header *PayloadHeader) GetProtocolID() protocols.Id {
+	return header.mProtocolId
+}
+
+func (header *PayloadHeader) GetMessageType() uint8 {
+	return header.mProtocolOpcode
+}
+
+func (header *PayloadHeader) GetExchangeID() uint16 {
+	return header.mExchangeId
+}
+
+func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
+	return header.mProtocolId.Equal(id)
+}
+
+func (header *PayloadHeader) LogValue() log.Value {
+	return log.GroupValue(
+		log.String("exchangeId", fmt.Sprintf("%04X", header.mExchangeId)),
+		log.Bool("IsInitiator", header.IsInitiator()),
+	)
 }

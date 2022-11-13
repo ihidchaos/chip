@@ -126,7 +126,7 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 	}
 
 	{
-		if config.ChipConfigEnableSessionResumption {
+		if config.EnableSessionResumption {
 			err := sSessionResumptionStorage.Init(params.PersistentStorageDelegate)
 			if err != nil {
 				return err

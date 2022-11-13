@@ -6,19 +6,19 @@ import (
 	"github.com/galenliu/chip/platform/system"
 )
 
-func Decrypt(context *CryptoContext, nonce []byte, packetHeader *raw.PacketHeader, msg *system.PacketBufferHandle) error {
+func Decrypt(context *CryptoContext, nonce NonceStorage, packetHeader *raw.PacketHeader, msg *system.PacketBufferHandle) (*raw.PayloadHeader, error) {
 
 	if msg.IsNull() {
-		return lib.MatterErrorInvalidArgument
+		return nil, lib.InvalidArgument
 	}
 	footerLen := packetHeader.MICTagLength()
 	if int(footerLen) >= msg.DataLength() {
-		return lib.MatterErrorInvalidArgument
+		return nil, lib.InvalidArgument
 	}
 	mac := raw.NewMessageAuthenticationCode()
 	err := mac.Decode(packetHeader, msg, footerLen)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return nil, nil
 }

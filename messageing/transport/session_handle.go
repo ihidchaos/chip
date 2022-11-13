@@ -4,12 +4,12 @@ import "github.com/galenliu/chip/lib"
 
 type SessionHandle struct {
 	Session
-	*lib.ReferenceCountedHandle
+	*lib.ReferenceCounted
 }
 
 func NewSessionHandle(session Session) *SessionHandle {
 	return &SessionHandle{
-		Session:                session,
-		ReferenceCountedHandle: lib.NewReferenceCountedHandle(1, nil),
+		Session:          session,
+		ReferenceCounted: lib.NewReferenceCounted(1, nil),
 	}
 }

@@ -23,10 +23,10 @@ type MessageAuthenticationCode struct {
 func (c *MessageAuthenticationCode) Decode(header *PacketHeader, msg *system.PacketBufferHandle, size uint16) error {
 	tagLen := header.MICTagLength()
 	if tagLen == 0 {
-		return lib.MatterErrorWrongEncryptionTypeFromPeer
+		return lib.WrongEncryptionTypeFromPeer
 	}
 	if size < tagLen {
-		return lib.MatterErrorInvalidArgument
+		return lib.InvalidArgument
 	}
 	c.mTag = msg.Bytes()[msg.TotLength()-int(tagLen) : msg.DataLength()]
 	return nil

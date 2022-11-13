@@ -27,12 +27,12 @@ const (
 )
 
 type ServerTransportMgr struct {
-	*transport.ManagerImpl
+	*transport.Manager
 }
 
 func NewServerTransportMgr(transports ...raw.TransportBase) *ServerTransportMgr {
 	return &ServerTransportMgr{
-		ManagerImpl: transport.NewManagerImpl(transports...),
+		Manager: transport.NewManager(transports...),
 	}
 }
 
@@ -177,7 +177,7 @@ func (s *Server) Init(initParams *InitParams) error {
 
 	{
 		udpParams := raw.UdpListenParameters{}
-		udp := raw.NewUdpTransportImpl()
+		udp := raw.NewUdpTransport()
 		err = udp.Init(udpParams.SetAddress(netip.AddrPortFrom(netip.IPv6Unspecified(), s.mOperationalServicePort)))
 		if err != nil {
 			log.Error("UdpTransport init", err)
@@ -195,7 +195,7 @@ func (s *Server) Init(initParams *InitParams) error {
 	}
 
 	{
-		session := transport.NewSessionManagerImpl()
+		session := transport.NewSessionManager()
 		err = session.Init(DeviceLayer.SystemLayer(), s.mTransports, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
 		if err != nil {
 			return err

@@ -12,8 +12,8 @@ var UndefinedScopedNodeId = &ScopedNodeId{
 
 func NewScopedNodeId(id NodeId, index FabricIndex) ScopedNodeId {
 	return ScopedNodeId{
-		mNodeId:      UndefinedNodeId,
-		mFabricIndex: FabricIndexUndefined,
+		mNodeId:      id,
+		mFabricIndex: index,
 	}
 }
 

@@ -10,44 +10,38 @@ type ReleasedHandler interface {
 	Released()
 }
 
-type ReferenceCountedHandle struct {
-	locker      sync.Mutex
-	mRefCounted int
-	handler     ReleasedHandler
+type ReferenceCounted struct {
+	locker    sync.Mutex
+	mRefCount int
+	handler   ReleasedHandler
 }
 
-func NewReferenceCountedHandle(initRefCount int, deleter ReleasedHandler) *ReferenceCountedHandle {
-	return &ReferenceCountedHandle{mRefCounted: initRefCount, handler: deleter, locker: sync.Mutex{}}
+func NewReferenceCounted(initRefCount int, deleter ReleasedHandler) *ReferenceCounted {
+	return &ReferenceCounted{mRefCount: initRefCount, handler: deleter, locker: sync.Mutex{}}
 }
 
-func (r *ReferenceCountedHandle) Retain() {
+func (r *ReferenceCounted) Retain() {
 	r.locker.Lock()
 	defer r.locker.Unlock()
-	if r.mRefCounted == 0 {
-		log.Error("ReferenceCountedHandle Retain", errors.New("ReferenceCounted is zero"))
+	if r.mRefCount == 0 {
+		log.Error("ReferenceCounted Retain", errors.New("ReferenceCounted is zero"))
 		return
 	}
-	r.mRefCounted = r.mRefCounted + 1
+	r.mRefCount = r.mRefCount + 1
 }
 
-func (r *ReferenceCountedHandle) Release() {
+func (r *ReferenceCounted) Release() {
 	r.locker.Lock()
 	defer r.locker.Unlock()
-	if r.mRefCounted == 0 {
-		log.Error("ReferenceCountedHandle Release", errors.New("ReferenceCounted is zero"))
+	if r.mRefCount == 0 {
+		log.Error("ReferenceCounted Release", errors.New("ReferenceCounted is zero"))
 	}
-	r.mRefCounted = r.mRefCounted - 1
-	if r.mRefCounted == 0 {
+	r.mRefCount = r.mRefCount - 1
+	if r.mRefCount == 0 {
 		r.handler.Released()
 	}
 }
 
-type ReferenceCounted struct {
-	locker      sync.Mutex
-	mRefCounted int
-	delegate    ReleasedHandler
-}
-
-func NewReferenceCounted(initRefCount int, deleter ReleasedHandler) *ReferenceCounted {
-	return &ReferenceCounted{mRefCounted: initRefCount, delegate: deleter, locker: sync.Mutex{}}
+func (r *ReferenceCounted) ReferenceCount() int {
+	return r.mRefCount
 }

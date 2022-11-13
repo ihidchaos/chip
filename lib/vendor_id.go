@@ -1,5 +1,9 @@
 package lib
 
+import "fmt"
+
+type VendorId uint16
+
 const (
 	VendorIdCommon         VendorId = 0x0000
 	VendorIdMatterStandard VendorId = 0x0000
@@ -12,3 +16,8 @@ const (
 	VendorTest4            VendorId = 0xFFF4
 	VendorIdNotSpecified   VendorId = 0xFFFF
 )
+
+func (id VendorId) String() string {
+	var value = uint16(id)
+	return fmt.Sprintf("%04X", value)
+}

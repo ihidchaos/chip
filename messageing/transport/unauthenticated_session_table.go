@@ -6,15 +6,26 @@ import (
 	"time"
 )
 
-type TypeSessionRole uint8
+type SessionRole uint8
 
 const (
-	RoleInitiator TypeSessionRole = iota
+	RoleInitiator SessionRole = iota
 	RoleResponder
 )
 
-func (t TypeSessionRole) Uint8() uint8 {
+func (t SessionRole) Uint8() uint8 {
 	return uint8(t)
+}
+
+func (t SessionRole) String() string {
+	switch t {
+	case RoleResponder:
+		return "Responder"
+	case RoleInitiator:
+		return "Initiator"
+	default:
+		return "unknown"
+	}
 }
 
 type UnauthenticatedSessionTable struct {
@@ -25,84 +36,63 @@ type UnauthenticatedSessionTable struct {
 func NewUnauthenticatedSessionTable() *UnauthenticatedSessionTable {
 	return &UnauthenticatedSessionTable{
 		mEntries: make([]*UnauthenticatedSession, 0),
-		mMaxSize: config.ChipConfigSecureSessionPoolSize,
+		mMaxSize: config.SecureSessionPoolSize,
 	}
 }
 
-func (s *UnauthenticatedSession) SessionReleased() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *UnauthenticatedSession) DispatchSessionEvent(delegate SessionDelegate) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *UnauthenticatedSession) SessionRole() TypeSessionRole {
-	return s.mSessionRole
-}
-
-func (s *UnauthenticatedSession) GetEphemeralInitiatorNodeID() lib.NodeId {
-	return s.mEphemeralInitiatorNodeId
-}
-
-func (s *UnauthenticatedSession) MarkActiveRx() {
-	s.mLastPeerActivityTime = time.Now()
-	s.MarkActive()
-}
-
-func (s *UnauthenticatedSession) MarkActive() {
-	s.mLastActivityTime = time.Now()
-}
-
-func (s *UnauthenticatedSession) GetPeerMessageCounter() *PeerMessageCounter {
-	return s.mPeerMessageCounter
-}
-
-func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSession {
-	result := t.FindEntry(RoleResponder, ephemeralInitiatorNodeID)
+func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeId lib.NodeId, config *ReliableMessageProtocolConfig) (*SessionHandle, error) {
+	var err error = nil
+	result := t.findEntry(RoleResponder, ephemeralInitiatorNodeId)
 	if result != nil {
-		return result
+		return NewSessionHandle(result), nil
 	}
-	return t.AllocEntry(RoleResponder, ephemeralInitiatorNodeID, config)
+	result, err = t.allocEntry(RoleResponder, ephemeralInitiatorNodeId, config)
+	if err != nil {
+		return nil, err
+	}
+	return NewSessionHandle(result), nil
 }
 
-func (t *UnauthenticatedSessionTable) AllocEntry(sessionRole TypeSessionRole, ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSession {
-	entry := NewUnauthenticatedSessionImpl(sessionRole, ephemeralInitiatorNodeID, config)
-	if len(t.mEntries) < t.mMaxSize {
-		t.mEntries = append(t.mEntries, entry)
-	}
-	return t.FindLeastRecentUsedEntry(entry)
-}
-
-func (t *UnauthenticatedSessionTable) FindEntry(sessionRole TypeSessionRole, ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSession {
-	for _, entry := range t.mEntries {
-		if entry.SessionRole() == sessionRole && entry.GetEphemeralInitiatorNodeID() == ephemeralInitiatorNodeID {
-			return entry
-		}
+func (t *UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *SessionHandle {
+	result := t.findEntry(RoleInitiator, ephemeralInitiatorNodeID)
+	if result != nil {
+		return NewSessionHandle(result)
 	}
 	return nil
 }
 
-func (t *UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *UnauthenticatedSession {
-	result := t.FindEntry(RoleInitiator, ephemeralInitiatorNodeID)
-	return result
-}
-
-func (t *UnauthenticatedSessionTable) FindLeastRecentUsedEntry(entry *UnauthenticatedSession) *UnauthenticatedSession {
-	var oldTime time.Time
-	var result *UnauthenticatedSession
+func (t *UnauthenticatedSessionTable) findLeastRecentUsedEntry() *UnauthenticatedSession {
+	var result *UnauthenticatedSession = nil
+	var oldTime = time.Now()
 	for _, e := range t.mEntries {
-		if oldTime.IsZero() {
-			result = e
-			oldTime = e.LastActivityTime()
-		}
-		if e.LastActivityTime().After(oldTime) {
+		if e.ReferenceCount() == 0 && e.LastPeerActivityTime().After(oldTime) {
 			oldTime = e.LastActivityTime()
 			result = e
 		}
 	}
-	result = entry
 	return result
+}
+
+func (t *UnauthenticatedSessionTable) allocEntry(sessionRole SessionRole, ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) (*UnauthenticatedSession, error) {
+	var entry *UnauthenticatedSession
+	if len(t.mEntries) < t.mMaxSize {
+		entry = NewUnauthenticatedSession(sessionRole, ephemeralInitiatorNodeID, config)
+		t.mEntries = append(t.mEntries, entry)
+		return entry, nil
+	}
+	entry = t.findLeastRecentUsedEntry()
+	if entry == nil {
+		return nil, lib.NotMemory
+	}
+	entry = NewUnauthenticatedSession(sessionRole, ephemeralInitiatorNodeID, config)
+	return entry, nil
+}
+
+func (t *UnauthenticatedSessionTable) findEntry(sessionRole SessionRole, ephemeralInitiatorNodeId lib.NodeId) *UnauthenticatedSession {
+	for _, entry := range t.mEntries {
+		if entry.SessionRole() == sessionRole && entry.EphemeralInitiatorNodeId() == ephemeralInitiatorNodeId {
+			return entry
+		}
+	}
+	return nil
 }

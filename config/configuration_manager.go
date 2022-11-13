@@ -220,7 +220,7 @@ func (c *ConfigurationManagerImpl) GetInitialPairingHint() (uint16, error) {
 }
 
 func (c *ConfigurationManagerImpl) GetInitialPairingInstruction() (string, error) {
-	return ChipDeviceConfigPairingInitialInstruction, nil
+	return PairingInitialInstruction, nil
 }
 
 func (c *ConfigurationManagerImpl) GetSecondaryPairingHint() (uint16, error) {
@@ -229,7 +229,7 @@ func (c *ConfigurationManagerImpl) GetSecondaryPairingHint() (uint16, error) {
 }
 
 func (c *ConfigurationManagerImpl) GetSecondaryPairingInstruction() (string, error) {
-	return ChipDeviceConfigPairingSecondaryInstruction, nil
+	return PairingSecondaryInstruction, nil
 }
 
 func (c *ConfigurationManagerImpl) GetLocationCapability() (uint8, error) {
@@ -261,7 +261,7 @@ func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *Device
 		}
 	} else {
 		if !configProvider.ConfigValueExists(KConfigKey_VendorId) {
-			err := c.StoreVendorId(ChipDeviceConfigDeviceVendorId)
+			err := c.StoreVendorId(DeviceVendorId)
 			if err != nil {
 				return nil, err
 			}
@@ -275,7 +275,7 @@ func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *Device
 		}
 	} else {
 		if !configProvider.ConfigValueExists(KConfigKey_ProductId) {
-			err := c.StoreProductId(ChipDeviceConfigDeviceProductId)
+			err := c.StoreProductId(DeviceProductId)
 			if err != nil {
 				log.Panic(err.Error())
 			}
@@ -396,42 +396,42 @@ func (c *ConfigurationManagerImpl) RunUnitTests() error {
 	panic("implement me")
 }
 
-func (c ConfigurationManagerImpl) GetVendorId() (uint16, error) {
+func (c *ConfigurationManagerImpl) GetVendorId() (uint16, error) {
 	return c.Provider.ReadConfigValueUint16(KConfigKey_VendorId)
 }
 
-func (c ConfigurationManagerImpl) GetSetupDiscriminator() (uint16, error) {
+func (c *ConfigurationManagerImpl) GetSetupDiscriminator() (uint16, error) {
 	return c.mDiscriminator, nil
 }
 
-func (c ConfigurationManagerImpl) GetVendorName() (string, error) {
+func (c *ConfigurationManagerImpl) GetVendorName() (string, error) {
 	return c.mVendorName, nil
 }
 
-func (c ConfigurationManagerImpl) GetProductId() (uint16, error) {
+func (c *ConfigurationManagerImpl) GetProductId() (uint16, error) {
 	return c.Provider.ReadConfigValueUint16(KConfigKey_ProductId)
 }
 
-func (c ConfigurationManagerImpl) GetProductName() string {
+func (c *ConfigurationManagerImpl) GetProductName() string {
 	return c.mProductName
 }
 
-func (c ConfigurationManagerImpl) IsCommissionableDeviceTypeEnabled() bool {
+func (c *ConfigurationManagerImpl) IsCommissionableDeviceTypeEnabled() bool {
 	return c.deviceConfigEnableCommissionableDeviceType
 }
 
-func (c ConfigurationManagerImpl) GetDeviceTypeId() (uint32, error) {
+func (c *ConfigurationManagerImpl) GetDeviceTypeId() (uint32, error) {
 	return c.mDeviceType, nil
 }
 
-func (c ConfigurationManagerImpl) SetDeviceTypeId(t uint32) {
+func (c *ConfigurationManagerImpl) SetDeviceTypeId(t uint32) {
 	c.mDeviceType = t
 }
 
-func (c ConfigurationManagerImpl) IsCommissionableDeviceNameEnabled() bool {
-	return ChipDeviceConfigEnableCommissionableDeviceName == 1
+func (c *ConfigurationManagerImpl) IsCommissionableDeviceNameEnabled() bool {
+	return EnableCommissionableDeviceName == 1
 }
 
-func (c ConfigurationManagerImpl) GetCommissionableDeviceName() (string, error) {
-	return ChipDeviceConfigDeviceName, nil
+func (c *ConfigurationManagerImpl) GetCommissionableDeviceName() (string, error) {
+	return DeviceName, nil
 }

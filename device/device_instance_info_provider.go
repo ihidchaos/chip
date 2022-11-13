@@ -8,79 +8,79 @@ import (
 	"time"
 )
 
-type DeviceInstanceInfoProvider interface {
-	GetVendorName() (string, error)
+type InstanceInfoProvider interface {
+	VendorName() (string, error)
 	GetVendorId() (uint16, error)
 
-	GetProductName() (string, error)
+	ProductName() (string, error)
 	GetProductId() (uint16, error)
 
-	GetSerialNumber() (string, error)
+	SerialNumber() (string, error)
 
 	GetManufacturingDate() (time.Time, error)
 
 	GetHardwareVersion() (uint16, error)
-	GetHardwareVersionString() (string, error)
+	HardwareVersionString() (string, error)
 
 	GetRotatingDeviceIdUniqueId() ([]byte, error)
 }
 
-type DeviceInstanceInfoImpl struct {
+type InstanceInfo struct {
 	mConfigManager config.ConfigurationManager
 }
 
-func NewDeviceInstanceInfoImpl() *DeviceInstanceInfoImpl {
+func NewDeviceInstanceInfoImpl() *InstanceInfo {
 	return GetDeviceInstanceInfoProvider()
 }
 
-var _deviceInstanceInfo *DeviceInstanceInfoImpl
+var _deviceInstanceInfo *InstanceInfo
 var _deviceInstanceInfoOnce sync.Once
 
-func GetDeviceInstanceInfoProvider() *DeviceInstanceInfoImpl {
+func GetDeviceInstanceInfoProvider() *InstanceInfo {
 	_deviceInstanceInfoOnce.Do(func() {
 		if _deviceInstanceInfo == nil {
-			_deviceInstanceInfo = &DeviceInstanceInfoImpl{}
+			_deviceInstanceInfo = &InstanceInfo{}
 		}
 	})
 	return _deviceInstanceInfo
 }
 
-func (c *DeviceInstanceInfoImpl) Init(configMgr config.ConfigurationManager) (*DeviceInstanceInfoImpl, error) {
+func (c *InstanceInfo) Init(configMgr config.ConfigurationManager) (*InstanceInfo, error) {
 	c.mConfigManager = configMgr
 	return c, nil
 }
 
-func NewDeviceInstanceInfo() *DeviceInstanceInfoImpl {
+func NewInstanceInfo() *InstanceInfo {
 	return GetDeviceInstanceInfoProvider()
 }
 
-func (d DeviceInstanceInfoImpl) GetVendorId() (uint16, error) {
-	return config.ChipDeviceConfigDeviceVendorId, nil
+func (d *InstanceInfo) GetVendorId() (uint16, error) {
+	return config.DeviceVendorId, nil
 }
 
-func (d DeviceInstanceInfoImpl) GetProductId() (uint16, error) {
+func (d *InstanceInfo) GetProductId() (uint16, error) {
 
-	return config.ChipDeviceConfigDeviceProductId, nil
+	return config.DeviceProductId, nil
 
 }
 
-func (d DeviceInstanceInfoImpl) GetProductName() (string, error) {
-	return config.ChipDeviceConfigDeviceProductName, nil
+func (d *InstanceInfo) ProductName() (string, error) {
+	return config.DeviceProductName, nil
 }
 
-func (d DeviceInstanceInfoImpl) GetVendorName() (string, error) {
-	return config.ChipDeviceConfigDeviceVendorName, nil
+func (d *InstanceInfo) VendorName() (string, error) {
+	return config.DeviceVendorName, nil
 }
 
-func (d *DeviceInstanceInfoImpl) GetSerialNumber() (string, error) {
+func (d *InstanceInfo) SerialNumber() (string, error) {
 	sn, err := d.mConfigManager.ReadConfigValueStr(config.KConfigKey_SerialNum)
 	if sn == "" || err != nil {
-		return config.ChipDeviceConfigTestSerialNumber, nil
+		return config.TestSerialNumber, nil
 	}
 	return sn, nil
 }
 
-func (d *DeviceInstanceInfoImpl) GetManufacturingDate() (time.Time, error) {
+func (d *InstanceInfo) GetManufacturingDate() (time.Time, error) {
 	data, err := d.mConfigManager.ReadConfigValueStr(config.KConfigKey_ManufacturingDate)
 	if err != nil {
 		log.Panicf("invalid manufacturing date: %s", err.Error())
@@ -92,18 +92,18 @@ func (d *DeviceInstanceInfoImpl) GetManufacturingDate() (time.Time, error) {
 	return t, nil
 }
 
-func (d DeviceInstanceInfoImpl) GetHardwareVersion() (uint16, error) {
+func (d *InstanceInfo) GetHardwareVersion() (uint16, error) {
 	version, err := d.mConfigManager.ReadConfigValueUint16(config.KConfigKey_HardwareVersion)
 	if err != nil {
-		return config.ChipDeviceConfigDefaultDeviceHardwareVersion, nil
+		return config.DefaultDeviceHardwareVersion, nil
 	}
 	return version, nil
 }
 
-func (d DeviceInstanceInfoImpl) GetHardwareVersionString() (string, error) {
-	return config.ChipDeviceConfigDefaultDeviceHardwareVersionString, nil
+func (d *InstanceInfo) HardwareVersionString() (string, error) {
+	return config.DefaultDeviceHardwareVersionString, nil
 }
 
-func (d DeviceInstanceInfoImpl) GetRotatingDeviceIdUniqueId() ([]byte, error) {
-	return config.ChipDeviceConfigRotatingDeviceIdUniqueId, nil
+func (d *InstanceInfo) GetRotatingDeviceIdUniqueId() ([]byte, error) {
+	return config.RotatingDeviceIdUniqueId, nil
 }

@@ -89,7 +89,7 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 	case StateSentSigma3:
 	case StateSentSigma2Resume:
 	default:
-		return lib.MatterErrorInvalidMessageType
+		return lib.InvalidMessageType
 	}
 	return nil
 }
@@ -237,7 +237,7 @@ func (s *CASESession) HandleSigma1(buf *raw.PacketBuffer) error {
 	s.mPeerSessionId = sigma1.initiatorSessionId
 
 	if s.mFabricsTable == nil {
-		return lib.MatterErrorIncorrectState
+		return lib.IncorrectState
 	}
 
 	if sigma1.sessionResumptionRequested && len(sigma1.resumptionId) == 16 {

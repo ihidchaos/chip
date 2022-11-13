@@ -1,5 +1,7 @@
 package lib
 
+import "fmt"
+
 type GroupId uint16
 
 // 0xFF00-0xFFFC Reserved for future use
@@ -15,6 +17,11 @@ const (
 	kMinFabricGroupId GroupId = 0x0001
 	kMaxFabricGroupId GroupId = 0x7FFF
 )
+
+func (i GroupId) String() string {
+	value := uint16(i)
+	return fmt.Sprintf("%04X", value)
+}
 
 func (i GroupId) Bytes() [4]byte {
 	return [4]byte{

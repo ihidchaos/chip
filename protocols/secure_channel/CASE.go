@@ -43,7 +43,7 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 	err = tlvReader.NextE(tlv2.ContextTag(kInitiatorRandomTag))
 	sigma1.initiatorRandom, err = tlvReader.GetBytesView()
 	if err != nil && len(sigma1.initiatorRandom) != 32 {
-		err = lib.MatterErrorInvalidCaseParameter
+		err = lib.InvalidCaseParameter
 		return
 	}
 
@@ -58,7 +58,7 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 	err = tlvReader.NextE(tlv2.ContextTag(kDestinationIdTag))
 	sigma1.destinationId, err = tlvReader.GetBytesView()
 	if err != nil && len(sigma1.destinationId) != crypto.KSha256HashLength {
-		err = lib.MatterErrorInvalidCaseParameter
+		err = lib.InvalidCaseParameter
 		return
 	}
 
@@ -66,7 +66,7 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 	err = tlvReader.NextE(tlv2.ContextTag(kInitiatorPubKeyTag))
 	sigma1.initiatorEphPubKey, err = tlvReader.GetBytesView()
 	if err != nil && len(sigma1.initiatorEphPubKey) != crypto.KP256PublicKeyLength {
-		err = lib.MatterErrorInvalidCaseParameter
+		err = lib.InvalidCaseParameter
 		return
 	}
 

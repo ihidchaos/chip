@@ -1,7 +1,8 @@
 package raw
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/galenliu/chip/platform/system"
+	log "golang.org/x/exp/slog"
 	"io"
 	"net"
 	"net/netip"
@@ -12,42 +13,27 @@ const (
 	Initialized
 )
 
-// UDPTransport Must impl TransportBase
-type UDPTransport interface {
+// UDPTransportBase Must impl TransportBase
+type UDPTransportBase interface {
 	TransportBase
 	BoundPort() uint16
 	Init(parameters *UdpListenParameters) error
 }
 
-// UDPTransportImpl impl TransportBase and add  init func
-type UDPTransportImpl struct {
-	mDelegate TransportDelegate
+// UDPTransport impl TransportBase and add  init func
+type UDPTransport struct {
+	mDelegate Delegate
 	mState    uint8
 	mPort     uint16
 }
 
-func NewUdpTransportImpl() *UDPTransportImpl {
-	return &UDPTransportImpl{
+func NewUdpTransport() *UDPTransport {
+	return &UDPTransport{
 		mState: 0,
 	}
 }
 
-func (u *UDPTransportImpl) Disconnect(addr netip.Addr) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *UDPTransportImpl) SendMessage(port netip.AddrPort, msg []byte) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *UDPTransportImpl) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (u *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
+func (u *UDPTransport) Init(parameters *UdpListenParameters) error {
 
 	if u.mState != NotReady {
 		u.Close()
@@ -64,48 +50,64 @@ func (u *UDPTransportImpl) Init(parameters *UdpListenParameters) error {
 				Port: int(parameters.Address().Port()),
 			})
 			if err != nil {
-				log.Infof("UDPTransport listen err : %s", err.Error())
+				log.Error("UDPTransportBase Connection", err, "Tag", "UDPTransportBase")
 				u.Close()
 				return
 			}
-			go u.handelConnection(udpConn, parameters.mAddress.Port())
+			go u.onConnection(udpConn, parameters.mAddress.Port())
 		}
 	}()
 	return nil
 }
 
-func (u *UDPTransportImpl) BoundPort() uint16 {
+func (u *UDPTransport) Disconnect(addr netip.AddrPort) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (u *UDPTransport) SendMessage(port netip.AddrPort, msg *system.PacketBufferHandle) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (u *UDPTransport) MulticastGroupJoinLeave(addr netip.Addr, join bool) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (u *UDPTransport) BoundPort() uint16 {
 	return u.mPort
 }
 
-func (u *UDPTransportImpl) handelConnection(conn *net.UDPConn, port uint16) {
-	var data []byte
-	_, err := io.ReadFull(conn, data)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-	if data == nil {
-		return
-	}
-	packetBuffer := NewPacketBuffer(data)
-	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
-	srcAddrPort := netip.AddrPortFrom(srcAddr, port)
-	u.OnUdpReceive(srcAddrPort, packetBuffer)
-}
-
-func (u *UDPTransportImpl) OnUdpReceive(srcAddr netip.AddrPort, data *PacketBuffer) {
-	u.mDelegate.HandleMessageReceived(srcAddr, data)
-}
-
-func (u *UDPTransportImpl) HandleMessageReceived(addrPort netip.AddrPort, data *PacketBuffer) {
-	u.mDelegate.HandleMessageReceived(addrPort, data)
-}
-
-func (u *UDPTransportImpl) SetDelegate(m TransportDelegate) {
+func (u *UDPTransport) SetDelegate(m Delegate) {
 	u.mDelegate = m
 }
 
-func (u *UDPTransportImpl) Close() {
+func (u *UDPTransport) Close() {
 
+}
+
+func (u *UDPTransport) onConnection(conn *net.UDPConn, port uint16) {
+	var data []byte
+	_, err := io.ReadFull(conn, data)
+	if err != nil {
+		log.Error("read data", err, "Tag", "UDPTransportBase")
+		return
+	}
+	packetBuffer := system.NewPacketBufferHandle(data)
+	if err := packetBuffer.IsValid(); err != nil {
+		log.Error("invalid message", err, "Tag", "UDPTransportBase")
+		return
+	}
+	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
+	srcAddrPort := netip.AddrPortFrom(srcAddr, port)
+	u.onUdpReceive(srcAddrPort, packetBuffer)
+}
+
+func (u *UDPTransport) onUdpReceive(srcAddr netip.AddrPort, data *system.PacketBufferHandle) {
+	if u.mDelegate == nil {
+		log.Warn("not delegate", "Tag", "UDPTransportBase")
+		return
+	}
+	u.mDelegate.HandleMessageReceived(srcAddr, data)
 }

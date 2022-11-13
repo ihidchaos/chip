@@ -10,7 +10,7 @@ import (
 type NodeId uint64
 
 const (
-	UndefinedNodeId NodeId = 0x0
+	UndefinedNodeId NodeId = 0x0000_0000_0000_0000
 
 	// minGroupNodeId The range of possible      values has some pieces carved out for special uses.
 	minGroupNodeId NodeId = 0xFFFF_FFFF_FFFF_0000
@@ -75,5 +75,5 @@ func (aNodeId NodeId) HasValue() bool {
 
 func (aNodeId NodeId) String() string {
 	var value = uint64(aNodeId)
-	return fmt.Sprintf("%X", value)
+	return fmt.Sprintf("%016X", value)
 }

@@ -1,10 +1,10 @@
 package raw
 
-type BLETransport interface {
+type BLETransportBase interface {
 	TransportBase
 }
 
-type BLETransportImpl struct {
+type BLETransport struct {
 	mState uint8
 	mPort  uint16
 }

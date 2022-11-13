@@ -28,7 +28,7 @@ type ExchangeContext struct {
 	mDelegate    ExchangeDelegate
 	mFlags       uint16
 
-	*lib.ReferenceCountedHandle
+	*lib.ReferenceCounted
 }
 
 func NewExchangeContext(
@@ -51,7 +51,7 @@ func NewExchangeContext(
 		mFlags:                 flags,
 	}
 	ec.mSession = NewExchangeSessionHolder(ec)
-	ec.ReferenceCountedHandle = lib.NewReferenceCountedHandle(1, ec)
+	ec.ReferenceCounted = lib.NewReferenceCounted(1, ec)
 	//ec.mSession.SessionHolderWithDelegate.Grad(session)
 	return ec
 }
@@ -83,7 +83,7 @@ func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packet
 		(payloadHeader.IsInitiator() != c.IsInitiator())
 }
 
-func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *raw.PacketBuffer) error {
+func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *system.PacketBufferHandle) error {
 
 	//isStandaloneAck := payloadHeader.HasMessageType(uint8(StandaloneAck))
 	//isDuplicate := lib.HasFlags(flags, transport.DuplicateMessage)

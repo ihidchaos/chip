@@ -214,7 +214,6 @@ func (d *DeviceOptions) Init(config *viper.Viper) (*DeviceOptions, error) {
 	GetDeviceOptionsInstance().Payload.Version = uint8(config.GetUint(DeviceOptionVersion.Key))
 	GetDeviceOptionsInstance().Payload.VendorID = uint16(config.GetUint32(DeviceOptionVendorID.Key))
 	GetDeviceOptionsInstance().Payload.Discriminator.SetLongValue(uint16(config.GetUint32(DeviceOptionDiscriminator.Key)))
-
 	GetDeviceOptionsInstance().SecuredDevicePort = uint16(config.GetUint32(DeviceOptionSecuredDevicePort.Key))
 	GetDeviceOptionsInstance().SecuredCommissionerPort = uint16(config.GetUint32(DeviceOptionSecuredCommissionerPort.Key))
 	GetDeviceOptionsInstance().UnsecuredCommissionerPort = uint16(config.GetUint32(DeviceOptionUnsecuredCommissionerPort.Key))

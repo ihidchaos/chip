@@ -3,27 +3,37 @@ package transport
 import (
 	"github.com/galenliu/chip/lib"
 	log "golang.org/x/exp/slog"
+	"net/netip"
 	"time"
 )
 
 type SecureSessionBase interface {
 	Session
+	SecureSessionType() SecureSessionType
+	MarkActiveRx()
+	MarkActive()
+	PeerAddress() netip.AddrPort
+	SetPeerAddress(address netip.AddrPort)
 }
 
 type OptionalFunc func(*SecureSession)
 
 type SecureSession struct {
 	*SessionBaseImpl
-	mState             SecureSessionState
-	mTable             *SecureSessionTable
-	mSecureSessionType SecureSessionType
-	mLocalSessionId    uint16
-	mPeerSessionId     uint16
-	mLocalNodeId       lib.NodeId
-	mPeerNodeId        lib.NodeId
-	mRemoteMRPConfig   *ReliableMessageProtocolConfig
-	mCryptoContext     *CryptoContext
-	mPeerCATs          *lib.CATValues
+	mState                 SecureSessionState
+	mTable                 *SecureSessionTable
+	mSecureSessionType     SecureSessionType
+	mLocalSessionId        uint16
+	mPeerSessionId         uint16
+	mLocalNodeId           lib.NodeId
+	mPeerNodeId            lib.NodeId
+	mRemoteMRPConfig       *ReliableMessageProtocolConfig
+	mCryptoContext         *CryptoContext
+	mPeerCATs              *lib.CATValues
+	mLastPeerActivityTime  time.Time
+	mLastActivityTime      time.Time
+	mSessionMessageCounter *SessionMessageCounter
+	mPeerAddress           netip.AddrPort
 }
 
 func NewSecureSession(
@@ -34,36 +44,28 @@ func NewSecureSession(
 ) *SecureSession {
 	session := &SecureSession{
 		mTable:             table,
-		mState:             Establishing,
+		mState:             kEstablishing,
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 	}
-	session.SessionBaseImpl = NewSessionBaseImpl(1, session)
+	session.SessionBaseImpl = NewSessionBaseImpl(1, kSecure, session)
 	for _, option := range options {
 		option(session)
 	}
-	session.MoveToState(Active)
+	session.MoveToState(kActive)
 	return session
 }
 
 func (s *SecureSession) IsActiveSession() bool {
-	return s.mState == Active
-}
-
-func (s *SecureSession) SessionType() SessionType {
-	return Secure
+	return s.mState == kActive
 }
 
 func (s *SecureSession) IsGroupSession() bool {
-	return s.SessionType() == Secure
+	return s.SessionType() == kSecure
 }
 
 func (s *SecureSession) IsEstablishing() bool {
-	return s.mState == Establishing
-}
-
-func (s *SecureSession) IsSecureSession() bool {
-	return s.SessionType() == Secure
+	return s.mState == kEstablishing
 }
 
 func (s *SecureSession) DispatchSessionEvent(delegate SessionDelegate) {
@@ -96,18 +98,18 @@ func (s *SecureSession) LocalSessionId() uint16 {
 }
 
 func (s *SecureSession) IsDefunct() bool {
-	return s.mState == Defunct
+	return s.mState == kDefunct
 }
 
 func (s *SecureSession) IsPendingEviction() bool {
-	return s.mState == PendingEviction
+	return s.mState == kPendingEviction
 }
 
 func (s *SecureSession) State() SecureSessionState {
 	return s.mState
 }
 
-func (s *SecureSession) GetSecureSessionType() SecureSessionType {
+func (s *SecureSession) SecureSessionType() SecureSessionType {
 	return s.mSecureSessionType
 }
 
@@ -123,6 +125,30 @@ func (s *SecureSession) LogValue() log.Value {
 	return log.GroupValue(
 		log.String("name", "SecureSession"),
 	)
+}
+
+func (s *SecureSession) SessionMessageCounter() *SessionMessageCounter {
+	return s.mSessionMessageCounter
+}
+
+func (s *SecureSession) MarkActiveRx() {
+	s.mLastPeerActivityTime = time.Now()
+	s.MarkActive()
+	if s.mState == kDefunct {
+		s.MoveToState(kActive)
+	}
+}
+
+func (s *SecureSession) MarkActive() {
+	s.mLastActivityTime = time.Now()
+}
+
+func (s *SecureSession) PeerAddress() netip.AddrPort {
+	return s.mPeerAddress
+}
+
+func (s *SecureSession) SetPeerAddress(address netip.AddrPort) {
+	s.mPeerAddress = address
 }
 
 func WithLocalNodeId(localNodeId lib.NodeId) OptionalFunc {

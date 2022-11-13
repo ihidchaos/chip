@@ -1,6 +1,5 @@
 package lib
 
-type VendorId uint16
 type ProductId uint16
 
 const ProductIdAnonymous ProductId = 0x0000

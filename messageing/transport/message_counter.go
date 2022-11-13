@@ -2,6 +2,7 @@ package transport
 
 import (
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 	"net/netip"
 )
 
@@ -36,7 +37,7 @@ func (g *GlobalUnencryptedMessageCounter) StartSync(handle *SessionHandle, sessi
 	panic("implement me")
 }
 
-func (g *GlobalUnencryptedMessageCounter) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *SessionHandle, state uint8, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
+func (g *GlobalUnencryptedMessageCounter) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *SessionHandle, state uint8, peerAdders netip.AddrPort, buf *system.PacketBufferHandle) error {
 	//TODO implement me
 	panic("implement me")
 }

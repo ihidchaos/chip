@@ -1,11 +1,15 @@
-package commission
+package common
 
 import (
 	"github.com/spf13/cobra"
 )
 
-func (c *command) initInitCmd() (err error) {
-	cmd := &cobra.Command{
+type InitCommand struct {
+	*cobra.Command
+}
+
+func (c *InitCommand) initInitCmd() (err error) {
+	_ = &cobra.Command{
 		Use:   "init",
 		Short: "init chip",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -15,9 +19,8 @@ func (c *command) initInitCmd() (err error) {
 			return nil
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return c.config.BindPFlags(cmd.Flags())
+			return nil
 		},
 	}
-	c.root.AddCommand(cmd)
 	return nil
 }

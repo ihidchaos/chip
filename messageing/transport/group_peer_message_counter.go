@@ -19,8 +19,8 @@ func NewGroupPeerTable(size int) *GroupPeerTable {
 	return &GroupPeerTable{mGroupFabrics: make([]*GroupFabric, size)}
 }
 
-func (g *GroupPeerTable) FindOrAddPeer(fabricIndex lib.FabricIndex, nodeId lib.NodeId, isControl bool, counter *PeerMessageCounter) error {
-	return nil
+func (g *GroupPeerTable) FindOrAddPeer(fabricIndex lib.FabricIndex, nodeId lib.NodeId, isControl bool) (*PeerMessageCounter, error) {
+	return nil, nil
 }
 
 func (g *GroupPeerTable) RemovePeer(fabricIndex lib.FabricIndex, nodeId lib.NodeId, isControl bool) error {

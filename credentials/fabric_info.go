@@ -96,7 +96,7 @@ func (info *FabricInfo) Reset() {
 
 func (info *FabricInfo) FetchRootPubkey() (*crypto.P256PublicKey, error) {
 	if !info.IsInitialized() {
-		return nil, lib.MatterErrorKeyNotFound
+		return nil, lib.KeyNotFound
 	}
 	return info.mRootPublicKey, nil
 }

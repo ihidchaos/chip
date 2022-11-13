@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	kMsgUnicastSessionIdUnsecured uint16 = 0x0000
+	kMsgUnsecuredUnicastSessionId uint16 = 0x0000
 	KMsgHeaderVersion             uint8  = 0x0000
 
 	FSourceNodeIdPresent       uint8 = 0b00000100
@@ -26,15 +26,23 @@ const (
 	FVersionIdMask   uint8 = 0b11110000
 )
 
-type TSessionType uint8
+type SessionType uint8
 
 const (
-	KUnicast TSessionType = 0
-	KGroup   TSessionType = 1
+	unicast SessionType = 0
+	group   SessionType = 1
 )
 
-func (T TSessionType) Uint8() uint8 {
-	return uint8(T)
+func (t SessionType) String() string {
+	var value = uint8(t)
+	switch value {
+	case 0:
+		return "unicase"
+	case 1:
+		return "group"
+	default:
+		return "unknown"
+	}
 }
 
 /**********************************************
@@ -69,11 +77,13 @@ type PacketHeader struct {
 	SourceNodeId       lib.NodeId
 	DestinationNodeId  lib.NodeId
 	DestinationGroupId lib.GroupId
-	SessionType        TSessionType
+	SessionType        SessionType
 }
 
-func NewPacketHeader() *PacketHeader {
-	return &PacketHeader{
+type paketHeaderOption func(*PacketHeader)
+
+func NewPacketHeader(opts ...paketHeaderOption) *PacketHeader {
+	h := &PacketHeader{
 		MessageFlags:       0,
 		SecFlags:           0,
 		SourceNodeId:       lib.UndefinedNodeId,
@@ -83,6 +93,10 @@ func NewPacketHeader() *PacketHeader {
 		SessionType:        0,
 		SessionId:          0,
 	}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h
 }
 
 func (header *PacketHeader) HasPrivacyFlag() bool {
@@ -99,9 +113,9 @@ func (header *PacketHeader) IsUnicastSession() bool {
 
 func (header *PacketHeader) IsSessionTypeValid() bool {
 	switch header.SessionType {
-	case KUnicast:
+	case unicast:
 		return true
-	case KGroup:
+	case group:
 		return true
 	default:
 		return false
@@ -119,7 +133,7 @@ func (header *PacketHeader) IsValidMCSPMsg() bool {
 }
 
 func (header *PacketHeader) IsEncrypted() bool {
-	return !(header.SessionId == kMsgUnicastSessionIdUnsecured && header.IsUnicastSession())
+	return !(header.SessionId == kMsgUnsecuredUnicastSessionId && header.IsUnicastSession())
 }
 
 func (header *PacketHeader) GetVersionId() uint8 {
@@ -159,7 +173,7 @@ func (header *PacketHeader) ClearDestinationGroupId() {
 }
 
 func (header *PacketHeader) SetSessionType(t uint8) {
-	header.SessionType = TSessionType(t)
+	header.SessionType = SessionType(t)
 }
 
 func (header *PacketHeader) SetSessionId(id uint16) {
@@ -171,8 +185,8 @@ func (header *PacketHeader) SetMessageCounter(u uint32) {
 }
 
 func (header *PacketHeader) SetUnsecured() {
-	header.SessionId = kMsgUnicastSessionIdUnsecured
-	header.SessionType = KUnicast
+	header.SessionId = kMsgUnsecuredUnicastSessionId
+	header.SessionType = unicast
 }
 
 func (header *PacketHeader) Encode() (*bytes.Buffer, error) {
