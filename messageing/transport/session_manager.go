@@ -12,7 +12,7 @@ import (
 
 // SessionMessageDelegate 这里的delegate实例为ExchangeManager
 type SessionMessageDelegate interface {
-	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session *SessionHandle, duplicate uint8, buf *system.PacketBufferHandle)
+	OnMessageReceived(packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader, session *SessionHandle, isDuplicate bool, buf *system.PacketBufferHandle)
 }
 
 var mGroupPeerMsgCounter = NewGroupPeerTable(ConfigMaxFabrice)
@@ -20,11 +20,9 @@ var mGroupPeerMsgCounter = NewGroupPeerTable(ConfigMaxFabrice)
 const (
 	PayloadIsEncrypted uint8 = iota
 	PayloadIsUnencrypted
-	DuplicateMessageYes
-	DuplicateMessageNo
 	NotReady
 	kInitialized
-	DuplicateMessage uint32 = 0x00000001
+	DuplicateMessageFlag uint32 = 0x00000001
 )
 
 type EncryptedPacketBufferHandle struct {
@@ -161,7 +159,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 	var unsecuredSession *UnauthenticatedSession
 	unsecuredSession = optionalSession.Session.(*UnauthenticatedSession)
 	unsecuredSession.SetPeerAddress(peerAddress)
-	isDuplicate := DuplicateMessageNo
+	isDuplicate := false
 	// 更新Session
 	unsecuredSession.MarkActiveRx()
 
@@ -176,7 +174,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 	if err == lib.DuplicateMessageReceived {
 		log.Info(
 			"Received a duplicate message", "messageCounter", packetHeader.MessageCounter, "payloadHeader", payloadHeader)
-		isDuplicate = DuplicateMessageYes
+		isDuplicate = true
 		err = nil
 	} else {
 		unsecuredSession.PeerMessageCounter().CommitUnencrypted(packetHeader.MessageCounter)
@@ -191,7 +189,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHeader, peerAddress netip.AddrPort, msg *system.PacketBufferHandle) {
 
 	sessionHandle := s.mSecureSessions.FindSecureSessionByLocalKey(packetHeader.SessionId)
-	isDuplicate := DuplicateMessageNo
+	isDuplicate := false
 	if msg.IsNull() {
 		log.Info("kSecure transport received unicast NULL packet, discarding")
 		return
@@ -208,7 +206,7 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 		return
 	}
 
-	nonce, _ := BuildNonce(packetHeader.SecFlags, packetHeader.MessageCounter, func() lib.NodeId {
+	nonce := BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, func() lib.NodeId {
 		if secureSession.SecureSessionType() == kCASE {
 			return secureSession.GetPeerNodeId()
 		}
@@ -220,10 +218,10 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 		log.Error("Secure transport received message, but failed to decode/authenticate it", err)
 	}
 
-	err = secureSession.SessionMessageCounter().VerifyEncryptedUnicast(packetHeader.GetMessageCounter())
+	err = secureSession.SessionMessageCounter().VerifyEncryptedUnicast(packetHeader.MessageCounter)
 	if err == lib.DuplicateMessageReceived {
 		log.Info("Received a duplicate message on exchange", "MessageCounter", packetHeader.MessageCounter, "PayloadHeader", payloadHeader)
-		isDuplicate = DuplicateMessageYes
+		isDuplicate = true
 		err = nil
 	}
 	if err != nil {
@@ -231,12 +229,12 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 		return
 	}
 	secureSession.MarkActiveRx()
-	if isDuplicate == DuplicateMessageYes && !payloadHeader.NeedsAck() {
+	if isDuplicate && !payloadHeader.NeedsAck() {
 		//如果这是一个重复的消息，且不需要ACK，则直接返回，节约CPU资源。
 		return
 	}
 
-	if isDuplicate == DuplicateMessageNo {
+	if !isDuplicate {
 		secureSession.SessionMessageCounter().PeerMessageCounter().CommitUnencryptedUnicast(packetHeader.MessageCounter)
 	}
 
@@ -279,7 +277,7 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 		if groupId != groupContext.GroupId {
 			continue
 		}
-		nonce, err = BuildNonce(packetHeader.SecFlags, packetHeader.MessageCounter, packetHeader.SourceNodeId)
+		nonce = BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, packetHeader.SourceNodeId)
 		payloadHeader, err = Decrypt(NewCryptoContext(groupContext.Key), nonce, packetHeader, msg)
 	}
 	if err != nil {
@@ -316,7 +314,7 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 	if s.mCB != nil {
 		groupSession := NewIncomingGroupSession(groupContext.GroupId, groupContext.FabricIndex, packetHeader.SourceNodeId)
 		log.Debug("Message Received", "PayloadHeader", payloadHeader, "packetHeader", packetHeader, "GroupSession", groupSession, "PeerAddress", peerAddress, "message", msg)
-		s.mCB.OnMessageReceived(packetHeader, payloadHeader, NewSessionHandle(groupSession), DuplicateMessageNo, msg)
+		s.mCB.OnMessageReceived(packetHeader, payloadHeader, NewSessionHandle(groupSession), false, msg)
 	}
 }
 

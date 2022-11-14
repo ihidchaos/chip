@@ -22,38 +22,38 @@ func MatterFlags(cmd *cobra.Command) {
 		NetworkLayerBle,
 		NetworkLayerBleUsage)
 
-	cmd.Flags().BoolVar(&ChipDeviceConfigEnablePairingAutostart,
-		ChipDeviceConfigEnablePairingAutostartName,
-		ChipDeviceConfigEnablePairingAutostart,
-		ChipDeviceConfigEnablePairingAutostartUsage)
+	cmd.Flags().BoolVar(&PairingAutostart,
+		PairingAutostartName,
+		PairingAutostart,
+		PairingAutostartUsage)
 
-	cmd.Flags().IntVar(&ChipDeviceConfigEnableCommissionerDiscovery,
-		ChipDeviceConfigEnableCommissionerDiscoveryName,
-		ChipDeviceConfigEnableCommissionerDiscovery,
-		ChipDeviceConfigEnableCommissionerDiscoveryUsage)
+	cmd.Flags().IntVar(&CommissionerDiscovery,
+		CommissionerDiscoveryName,
+		CommissionerDiscovery,
+		CommissionerDiscoveryUsage)
 
-	cmd.Flags().BoolVar(&ChipDeviceConfigEnableExtendedDiscovery,
-		ChipDeviceConfigEnableExtendedDiscoveryName,
-		ChipDeviceConfigEnableExtendedDiscovery,
-		ChipDeviceConfigEnableExtendedDiscoveryUsage)
+	cmd.Flags().BoolVar(&ExtendedDiscovery,
+		ExtendedDiscoveryName,
+		ExtendedDiscovery,
+		ExtendedDiscoveryUsage)
 
-	cmd.Flags().Uint64Var(&ChipDeviceConfigExtendedDiscoveryTimeoutSecs,
-		ChipDeviceConfigExtendedDiscoveryTimeoutSecsName,
-		ChipDeviceConfigExtendedDiscoveryTimeoutSecs,
-		ChipDeviceConfigExtendedDiscoveryTimeoutSecsUsage)
+	cmd.Flags().Uint64Var(&ExtendedDiscoveryTimeoutSecs,
+		ExtendedDiscoveryTimeoutSecsName,
+		ExtendedDiscoveryTimeoutSecs,
+		ExtendedDiscoveryTimeoutSecsUsage)
 
-	cmd.Flags().Uint8Var(&ChipDeviceConfigDiscoveryDisabled,
-		ChipDeviceConfigDiscoveryDisabledName,
-		ChipDeviceConfigDiscoveryDisabled,
-		ChipDeviceConfigDiscoveryDisabledUsage)
+	cmd.Flags().Uint8Var(&DiscoveryDisabled,
+		DiscoveryDisabledName,
+		DiscoveryDisabled,
+		DiscoveryDisabledUsage)
 
-	cmd.Flags().Int8Var(&ChipDeviceConfigDiscoveryNoTimeout,
-		ChipDeviceConfigDiscoveryNoTimeoutName,
-		ChipDeviceConfigDiscoveryNoTimeout,
-		ChipDeviceConfigDiscoveryNoTimeoutUsage)
+	cmd.Flags().Int8Var(&DiscoveryNoTimeout,
+		DiscoveryNoTimeoutName,
+		DiscoveryNoTimeout,
+		DiscoveryNoTimeoutUsage)
 
 	cmd.Flags().Int8Var(&InetConfigEnableTcpEndpoint,
 		InetConfigEnableTcpEndpointName,
-		ChipDeviceConfigDiscoveryNoTimeout,
+		DiscoveryNoTimeout,
 		InetConfigEnableTcpEndpointUsage)
 }

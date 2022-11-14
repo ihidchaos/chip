@@ -6,6 +6,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,7 +23,7 @@ type CASEServer struct {
 	mSessionResumptionStorage  SessionResumptionStorage
 	mCertificateValidityPolicy credentials.CertificateValidityPolicy
 
-	mPinnedSecureSession transport.SessionHandleBase
+	mPinnedSecureSession *transport.SessionHandle
 
 	mPairingSession *CASESession
 
@@ -94,7 +95,7 @@ func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, del
 	return nil
 }
 
-func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *raw.PacketBuffer) error {
+func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *system.PacketBufferHandle) error {
 	err := s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(protocols.NotSpecifiedProtocolId, uint8(messageing.CASESigma1))
 	if err != nil {
 		return err

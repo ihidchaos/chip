@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/pkg/storage"
-	log "github.com/sirupsen/logrus"
+	log "golang.org/x/exp/slog"
 	"sync"
 )
 
@@ -135,12 +135,12 @@ func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
 
 func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
-		log.Printf("storage get failed")
+		log.Info("storage get failed")
 		return lib.DeviceErrorConfigNotFound
 	}
 	err := conf.mChipFactoryStorage.DeleteAll()
 	if err != nil {
-		log.Printf("storage ClearAll failed: %s", err.Error())
+		log.Error("storage ClearAll failed: %s", err)
 		return err
 	}
 	return nil
@@ -148,12 +148,13 @@ func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 
 func (conf *ConfigProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
-		log.Printf("storage get failed")
+		log.Info("storage get failed")
+
 		return lib.DeviceErrorConfigNotFound
 	}
 	err := conf.mChipCountersStorage.DeleteAll()
 	if err != nil {
-		log.Printf("storage ClearAll failed: %s", err.Error())
+		log.Error("storage ClearAll failed", err)
 		return err
 	}
 	return nil
@@ -196,21 +197,21 @@ func (conf *ConfigProviderImpl) EnsureNamespace(k string) error {
 		if conf.mChipFactoryStorage == nil {
 			conf.mChipFactoryStorage = storage.NewPersistentStorageImpl()
 		}
-		log.Infof("init factory storage: %s", ChipDefaultFactoryPath)
+		log.Info("init factory storage:", "Path", ChipDefaultFactoryPath)
 		return conf.mChipFactoryStorage.Init(ChipDefaultFactoryPath)
 	}
 	if k == KConfigNamespaceChipConfig {
 		if conf.mChipConfigStorage == nil {
 			conf.mChipConfigStorage = storage.NewPersistentStorageImpl()
 		}
-		log.Infof("init config storage: %s", ChipDefaultConfigPath)
+		log.Info("init config storage", "path", ChipDefaultConfigPath)
 		return conf.mChipConfigStorage.Init(ChipDefaultConfigPath)
 	}
 	if k == KConfigNamespaceChipCounters {
 		if conf.mChipCountersStorage == nil {
 			conf.mChipCountersStorage = storage.NewPersistentStorageImpl()
 		}
-		log.Infof("init counters storage: %s", ChipDefaultDataPath)
+		log.Info("init counters storage", "path", ChipDefaultDataPath)
 		return conf.mChipCountersStorage.Init(ChipDefaultDataPath)
 	}
 	return nil

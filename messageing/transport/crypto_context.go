@@ -11,7 +11,6 @@ import (
 const (
 	KSessionRoleInitiator = iota
 	KSessionRoleResponder
-
 	kAESCCMNonceLen uint8 = 13
 )
 
@@ -31,13 +30,13 @@ func (c *CryptoContext) Decrypt(msg *system.PacketBufferHandle, nonce []byte, he
 
 }
 
-// BuildNonce 使用SecFlags,messageCounter,nodeId三个字段生成Nonce，Len == 13
-func BuildNonce(secFlags uint8, messageCounter uint32, nodeId lib.NodeId) (NonceStorage, error) {
+// BuildNonce 使用SecFlags,messageCounter,nodeId三个字段生成Nonce(用于AES加解密的初始化向量)，Len == 13
+func BuildNonce(secFlags uint8, messageCounter uint32, nodeId lib.NodeId) NonceStorage {
 	data := NonceStorage{}
 	data[0] = secFlags
 	binary.LittleEndian.PutUint32(data[1:5], messageCounter)
 	binary.LittleEndian.PutUint64(data[5:12], uint64(nodeId))
-	return data, nil
+	return data
 }
 
 func GetAdditionalAuthData(header *raw.PacketHeader) {

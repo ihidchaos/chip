@@ -46,6 +46,10 @@ func (o *OutgoingGroupSession) ClearValue() {
 	panic("implement me")
 }
 
+func (s *OutgoingGroupSession) GetPeer() lib.ScopedNodeId {
+	return lib.NewScopedNodeId(lib.UndefinedNodeId, s.FabricIndex())
+}
+
 func (o *OutgoingGroupSession) GroupId() lib.GroupId {
 	return o.mGroupId
 }
@@ -63,6 +67,10 @@ func (i *IncomingGroupSession) IsGroupSession() bool {
 func (i *IncomingGroupSession) IsEstablishing() bool {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *IncomingGroupSession) GetPeer() lib.ScopedNodeId {
+	return lib.NewScopedNodeId(s.mPeerNodeId, s.FabricIndex())
 }
 
 func (i *IncomingGroupSession) ComputeRoundTripTimeout(duration time.Duration) time.Duration {

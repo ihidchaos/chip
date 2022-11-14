@@ -151,6 +151,10 @@ func (s *SecureSession) SetPeerAddress(address netip.AddrPort) {
 	s.mPeerAddress = address
 }
 
+func (s *SecureSession) GetPeer() lib.ScopedNodeId {
+	return lib.NewScopedNodeId(s.mPeerNodeId, s.FabricIndex())
+}
+
 func WithLocalNodeId(localNodeId lib.NodeId) OptionalFunc {
 	return func(session *SecureSession) {
 		session.mLocalNodeId = localNodeId

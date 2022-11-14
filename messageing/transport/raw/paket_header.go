@@ -12,9 +12,9 @@ const (
 	kMsgUnsecuredUnicastSessionId uint16 = 0x0000
 	KMsgHeaderVersion             uint8  = 0x0000
 
-	FSourceNodeIdPresent       uint8 = 0b00000100
-	FDestinationNodeIdPresent  uint8 = 0b00000001
-	FDestinationGroupIdPresent uint8 = 0b00000010
+	fSourceNodeIdPresent       uint8 = 0b00000100
+	fDestinationNodeIdPresent  uint8 = 0b00000001
+	fDestinationGroupIdPresent uint8 = 0b00000010
 	//FDSIZReserved              uint8 = 0b00000011
 
 	FPrivacyFlag    uint8 = 0b10000000
@@ -22,7 +22,7 @@ const (
 
 	//FMsgExtensionFlag uint8 = 0b00100000
 
-	FSessionTypeMask uint8 = 0b00000001
+	fSessionTypeMask uint8 = 0b00000011
 	FVersionIdMask   uint8 = 0b11110000
 )
 
@@ -70,27 +70,29 @@ func (t SessionType) String() string {
  **********************************************/
 
 type PacketHeader struct {
-	MessageFlags       uint8
-	SessionId          uint16
-	SecFlags           uint8
-	MessageCounter     uint32
-	SourceNodeId       lib.NodeId
-	DestinationNodeId  lib.NodeId
 	DestinationGroupId lib.GroupId
-	SessionType        SessionType
+
+	mMessageFlags     uint8
+	mSecFlags         uint8
+	SessionId         uint16
+	MessageCounter    uint32
+	SourceNodeId      lib.NodeId
+	DestinationNodeId lib.NodeId
+
+	mSessionType SessionType
 }
 
 type paketHeaderOption func(*PacketHeader)
 
 func NewPacketHeader(opts ...paketHeaderOption) *PacketHeader {
 	h := &PacketHeader{
-		MessageFlags:       0,
-		SecFlags:           0,
+		mMessageFlags:      0,
+		mSecFlags:          0,
 		SourceNodeId:       lib.UndefinedNodeId,
 		DestinationNodeId:  lib.UndefinedNodeId,
 		DestinationGroupId: lib.UndefinedGroupId,
 		MessageCounter:     0,
-		SessionType:        0,
+		mSessionType:       0,
 		SessionId:          0,
 	}
 	for _, opt := range opts {
@@ -100,19 +102,23 @@ func NewPacketHeader(opts ...paketHeaderOption) *PacketHeader {
 }
 
 func (header *PacketHeader) HasPrivacyFlag() bool {
-	return lib.HasFlags(header.SecFlags, FPrivacyFlag)
+	return lib.HasFlags(header.mSecFlags, FPrivacyFlag)
 }
 
 func (header *PacketHeader) IsGroupSession() bool {
-	return lib.HasFlags(header.SecFlags, FSessionTypeMask)
+	return header.mSessionType == group
 }
 
 func (header *PacketHeader) IsUnicastSession() bool {
-	return !lib.HasFlags(header.SecFlags, FSessionTypeMask)
+	return header.mSessionType == unicast
+}
+
+func (header *PacketHeader) SecurityFlags() uint8 {
+	return header.mSecFlags
 }
 
 func (header *PacketHeader) IsSessionTypeValid() bool {
-	switch header.SessionType {
+	switch header.mSessionType {
 	case unicast:
 		return true
 	case group:
@@ -136,8 +142,8 @@ func (header *PacketHeader) IsEncrypted() bool {
 	return !(header.SessionId == kMsgUnsecuredUnicastSessionId && header.IsUnicastSession())
 }
 
-func (header *PacketHeader) GetVersionId() uint8 {
-	return (header.MessageFlags & FVersionIdMask) >> 4
+func (header *PacketHeader) VersionId() uint8 {
+	return (header.mMessageFlags & FVersionIdMask) >> 4
 }
 
 func (header *PacketHeader) MICTagLength() uint16 {
@@ -148,7 +154,7 @@ func (header *PacketHeader) MICTagLength() uint16 {
 }
 
 func (header *PacketHeader) IsSecureSessionControlMsg() bool {
-	return (header.SecFlags & FControlMsgFlag) != 0
+	return (header.mSecFlags & FControlMsgFlag) != 0
 }
 
 func (header *PacketHeader) SetSecureSessionControlMsg(value bool) {
@@ -172,10 +178,6 @@ func (header *PacketHeader) ClearDestinationGroupId() {
 	header.DestinationNodeId = 0
 }
 
-func (header *PacketHeader) SetSessionType(t uint8) {
-	header.SessionType = SessionType(t)
-}
-
 func (header *PacketHeader) SetSessionId(id uint16) {
 	header.SessionId = id
 }
@@ -186,20 +188,20 @@ func (header *PacketHeader) SetMessageCounter(u uint32) {
 
 func (header *PacketHeader) SetUnsecured() {
 	header.SessionId = kMsgUnsecuredUnicastSessionId
-	header.SessionType = unicast
+	header.mSessionType = unicast
 }
 
 func (header *PacketHeader) Encode() (*bytes.Buffer, error) {
 
-	var msgFlags = header.MessageFlags
-	msgFlags = lib.SetFlag(header.SourceNodeId.HasValue(), msgFlags, FSourceNodeIdPresent)
-	msgFlags = lib.SetFlag(header.DestinationNodeId.HasValue(), msgFlags, FDestinationNodeIdPresent)
-	msgFlags = lib.SetFlag(header.DestinationGroupId.HasValue(), msgFlags, FDestinationGroupIdPresent)
+	var msgFlags = header.mMessageFlags
+	msgFlags = lib.SetFlag(header.SourceNodeId.HasValue(), msgFlags, fSourceNodeIdPresent)
+	msgFlags = lib.SetFlag(header.DestinationNodeId.HasValue(), msgFlags, fDestinationNodeIdPresent)
+	msgFlags = lib.SetFlag(header.DestinationGroupId.HasValue(), msgFlags, fDestinationGroupIdPresent)
 	msgFlags = KMsgHeaderVersion<<4 | msgFlags
 	buf := bytes.NewBuffer(nil)
 	err := buffer.Write8(buf, msgFlags)
 	err = buffer.LittleEndianWrite16(buf, header.SessionId)
-	err = buffer.Write8(buf, header.SecFlags)
+	err = buffer.Write8(buf, header.mSecFlags)
 	err = buffer.LittleEndianWrite32(buf, header.MessageCounter)
 	if header.SourceNodeId.HasValue() {
 		err = buffer.LittleEndianWrite64(buf, uint64(header.SourceNodeId))
@@ -218,28 +220,33 @@ func (header *PacketHeader) Encode() (*bytes.Buffer, error) {
 func (header *PacketHeader) DecodeAndConsume(buf io.Reader) error {
 
 	var err error
-	header.MessageFlags, err = buffer.Read8(buf)
+	header.mMessageFlags, err = buffer.Read8(buf)
+
+	secFlags, err := buffer.Read8(buf)
+	header.setSecurityFlags(secFlags)
+
 	header.SessionId, err = buffer.LittleEndianRead16(buf)
-	header.SecFlags, err = buffer.Read8(buf)
 	header.MessageCounter, err = buffer.LittleEndianRead32(buf)
 	if err != nil {
 		return err
 	}
-	if lib.HasFlags(header.MessageFlags, FSourceNodeIdPresent) {
+
+	if lib.HasFlags(header.mMessageFlags, fSourceNodeIdPresent) {
 		v, _ := buffer.LittleEndianRead64(buf)
 		header.SourceNodeId = lib.NodeId(v)
 	}
-	if lib.HasFlags(header.MessageFlags, FDestinationNodeIdPresent) {
+	if lib.HasFlags(header.mMessageFlags, fDestinationNodeIdPresent) {
 		v, _ := buffer.LittleEndianRead64(buf)
 		header.DestinationNodeId = lib.NodeId(v)
 	}
-	if lib.HasFlags(header.MessageFlags, FDestinationGroupIdPresent) {
+	if lib.HasFlags(header.mMessageFlags, fDestinationGroupIdPresent) {
 		v, _ := buffer.LittleEndianRead16(buf)
 		header.DestinationGroupId = lib.GroupId(v)
 	}
 	return nil
 }
 
-func (header *PacketHeader) GetMessageCounter() uint32 {
-	return header.MessageCounter
+func (header *PacketHeader) setSecurityFlags(flags uint8) {
+	header.mSecFlags = flags
+	header.mSessionType = SessionType(flags & fSessionTypeMask)
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/galenliu/chip/ble"
 	"github.com/galenliu/chip/clusters"
-	log "github.com/sirupsen/logrus"
+	log "golang.org/x/exp/slog"
 	"math/rand"
 	"sync"
 	"time"
@@ -240,15 +240,15 @@ func (c *ConfigurationManagerImpl) GetLocationCapability() (uint8, error) {
 func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *DeviceOptions) (*ConfigurationManagerImpl, error) {
 	err := configProvider.EnsureNamespace(KConfigNamespaceChipConfig)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Warn(err.Error())
 	}
 	err = configProvider.EnsureNamespace(KConfigNamespaceChipCounters)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Warn(err.Error())
 	}
 	err = configProvider.EnsureNamespace(KConfigNamespaceChipFactory)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Warn(err.Error())
 	}
 
 	c.Provider = configProvider
@@ -277,7 +277,7 @@ func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *Device
 		if !configProvider.ConfigValueExists(KConfigKey_ProductId) {
 			err := c.StoreProductId(DeviceProductId)
 			if err != nil {
-				log.Panic(err.Error())
+				log.Info(err.Error())
 			}
 		}
 	}
@@ -315,14 +315,14 @@ func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *Device
 	if !configProvider.ConfigValueExists(KConfigKey_RegulatoryLocation) {
 		err := configProvider.WriteConfigValueUint32(KConfigKey_RegulatoryLocation, clusters.RegulatorylocationtypeKindoor)
 		if err != nil {
-			log.Panic(err.Error())
+			log.Warn(err.Error())
 		}
 	}
 
 	if !configProvider.ConfigValueExists(KConfigKey_LocationCapability) {
 		err := configProvider.WriteConfigValueUint32(KConfigKey_LocationCapability, clusters.RegulatorylocationtypeKindooroutdoor)
 		if err != nil {
-			log.Panic(err.Error())
+			log.Warn(err.Error())
 		}
 	}
 	return c, nil

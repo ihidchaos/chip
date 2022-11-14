@@ -26,6 +26,10 @@ type UnauthenticatedSession struct {
 	mPeerMessageCounter       *PeerMessageCounter
 }
 
+func (s *UnauthenticatedSession) GetPeer() lib.ScopedNodeId {
+	return lib.NewScopedNodeId(lib.UndefinedNodeId, s.mFabricIndex)
+}
+
 func NewUnauthenticatedSession(roleResponder SessionRole, ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *UnauthenticatedSession {
 	session := &UnauthenticatedSession{
 		mSessionRole:              roleResponder,

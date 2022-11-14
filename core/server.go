@@ -247,7 +247,7 @@ func (s *Server) Init(initParams *InitParams) error {
 	dnssdServer.SetFabricTable(s.mFabrics)
 	dnssdServer.SetCommissioningModeProvider(s.mCommissioningWindowManager)
 
-	if config.ChipDeviceConfigEnablePairingAutostart {
+	if config.PairingAutostart {
 		err := s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
 		if err != nil {
 			return err
@@ -328,7 +328,7 @@ func (s *Server) Init(initParams *InitParams) error {
 	}
 
 	//如果设备开启了自动配对模式，进入模式
-	if config.ChipDeviceConfigEnablePairingAutostart {
+	if config.PairingAutostart {
 		s.GetFabricTable().DeleteAllFabrics()
 		err = s.mCommissioningWindowManager.OpenBasicCommissioningWindow()
 		if err != nil {

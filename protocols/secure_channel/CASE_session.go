@@ -75,7 +75,7 @@ func NewCASESession() *CASESession {
 }
 
 func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *raw.PacketBuffer) error {
-	msgType := messageing.MsgType(payloadHeader.GetMessageType())
+	msgType := messageing.MsgType(payloadHeader.MessageType())
 	sha256.New()
 
 	switch s.mState {

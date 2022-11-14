@@ -7,6 +7,7 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
+	log "golang.org/x/exp/slog"
 )
 
 type ExchangeSessionHolder struct {
@@ -77,7 +78,7 @@ func (c *ExchangeContext) SendMessage(protocolId *protocols.Id, msgType MsgType,
 }
 
 func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
-	return (c.mExchangeId == payloadHeader.GetExchangeID()) &&
+	return (c.mExchangeId == payloadHeader.ExchangeId()) &&
 		(c.mSession.Contains(session)) &&
 		(c.IsEncryptionRequired() == packetHeader.IsEncrypted()) &&
 		(payloadHeader.IsInitiator() != c.IsInitiator())
@@ -86,7 +87,7 @@ func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packet
 func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *system.PacketBufferHandle) error {
 
 	//isStandaloneAck := payloadHeader.HasMessageType(uint8(StandaloneAck))
-	//isDuplicate := lib.HasFlags(flags, transport.DuplicateMessage)
+	//isDuplicate := lib.HasFlags(flags, transport.DuplicateMessageFlag)
 	if c.mDelegate != nil {
 		err := c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 		if err != nil {
@@ -129,7 +130,7 @@ func (c *ExchangeContext) DoClose(clearRetransTable bool) {
 	c.FlushAcks()
 
 	if clearRetransTable {
-		c.mExchangeMgr.GetReliableMessageMgr().ClearRetransTable(c)
+		c.mExchangeMgr.ReliableMessageMgr().ClearRetransTable(c)
 	}
 	c.CancelResponseTimer()
 }
@@ -139,7 +140,7 @@ func (c *ExchangeContext) Close() {
 	c.Release()
 }
 
-func (c *ExchangeContext) ExchangeMgr() ExchangeManagerBase {
+func (c *ExchangeContext) ExchangeMgr() *ExchangeManager {
 	return c.mExchangeMgr
 }
 
@@ -178,7 +179,7 @@ func (c *ExchangeContext) FlushAcks() {
 }
 
 func (c *ExchangeContext) CancelResponseTimer() {
-	systemLayer := c.mExchangeMgr.GetSessionManager().SystemLayer()
+	systemLayer := c.mExchangeMgr.SessionManager().SystemLayer()
 	if systemLayer == nil {
 		return
 	}
@@ -195,4 +196,11 @@ func (c *ExchangeContext) HandleResponseTimeout(layer system.Layer, aAppState an
 
 func (c *ExchangeContext) NotifyResponseTimeout(b bool) {
 
+}
+
+func (c *ExchangeContext) LogValue() log.Value {
+	return log.GroupValue(
+		log.Any("flags", c.mFlags),
+		log.Any("exchangeId", c.mExchangeId),
+	)
 }

@@ -35,3 +35,8 @@ func (f FabricId) String() string {
 	value := uint64(f)
 	return fmt.Sprintf("%016X", value)
 }
+
+func (f CompressedFabricId) String() string {
+	value := uint64(f)
+	return fmt.Sprintf("%016X", value)
+}

@@ -21,6 +21,7 @@ const (
 
 	ResumptionIdSize = 16
 
+	ProtocolName = "SecureChannel"
 	/* "NCASE_Sigma2N" */
 )
 
@@ -47,9 +48,41 @@ const (
 	CASE_Sigma2       MsgType = 0x31
 	CASE_Sigma3       MsgType = 0x32
 	CASE_Sigma2Resume MsgType = 0x33
-
-	StatusReport = 0x40
+	StatusReport              = 0x40
 )
+
+func (m MsgType) String() string {
+	switch m {
+	case MsgCounterSyncReq:
+		return "MsgCounterSyncReq"
+	case MsgCounterSyncRsp:
+		return "MsgCounterSyncRsp"
+	case StandaloneAck:
+		return "StandaloneAck"
+	case PBKDFParamRequest:
+		return "PBKDFParamRequest"
+	case PBKDFParamResponse:
+		return "PBKDFParamResponse"
+	case PASE_Pake1:
+		return "PASE_Pake1"
+	case PASE_Pake2:
+		return "PASE_Pake2"
+	case PASE_Pake3:
+		return "PASE_Pake3"
+	case CASE_Sigma1:
+		return "CASE_Sigma1"
+	case CASE_Sigma2:
+		return "CASE_Sigma2"
+	case CASE_Sigma3:
+		return "CASE_Sigma3"
+	case CASE_Sigma2Resume:
+		return "CASE_Sigma2Resume"
+	case StatusReport:
+		return "StatusReport"
+	default:
+		return "----"
+	}
+}
 
 var (
 	KDFSR2Info     = []byte{0x53, 0x69, 0x67, 0x6d, 0x61, 0x32}

@@ -246,7 +246,7 @@ func (d *Dnssd) start(mode int) {
 		}
 	}
 
-	if config.ChipDeviceConfigEnableCommissionerDiscovery != 0 {
+	if config.CommissionerDiscovery != 0 {
 		err := d.AdvertiseCommissioner()
 		if err != nil {
 			log.Errorf("failed to advertise commissioner: %s", err.Error())
@@ -259,7 +259,7 @@ func (d *Dnssd) start(mode int) {
 }
 
 func (d *Dnssd) AdvertiseCommissionableNode(mode int) error {
-	if config.ChipDeviceConfigEnableExtendedDiscovery {
+	if config.ExtendedDiscovery {
 		d.mCurrentCommissioningMode = mode
 	}
 	if mode != CommissioningModeDisabled {
