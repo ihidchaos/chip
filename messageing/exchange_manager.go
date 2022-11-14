@@ -42,7 +42,7 @@ func (slot *UnsolicitedMessageHandlerSlot) IsInUse() bool {
 type ExchangeManagerBase interface {
 	// SessionMessageDelegate the delegate for transport session manager
 	transport.SessionMessageDelegate
-	SessionManager() transport.SessionManagerBase
+	SessionManager() *transport.SessionManager
 	RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler UnsolicitedMessageHandler) error
 	RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler UnsolicitedMessageHandler) error
 	UnregisterUnsolicitedMessageHandlerForType(id *protocols.Id, messageType uint8) error
@@ -118,15 +118,23 @@ func (e *ExchangeManager) OnMessageReceived(
 	isDuplicate bool,
 	msg *system.PacketBufferHandle,
 ) {
+
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 
 	{
-
+		//logging
 		var compressedFabricId lib.CompressedFabricId = 0
-
-		log.Debug("Exchange Manager Received message",
+		if session.IsSecureSession() && e.mSessionManager.FabricTable() != nil {
+			secureSession := session.Session.(*transport.SecureSession)
+			fabricInfo := e.mSessionManager.FabricTable().FindFabricWithIndex(secureSession.FabricIndex())
+			if fabricInfo != nil {
+				compressedFabricId = fabricInfo.CompressedFabricId()
+			}
+		}
+		log.Debug(">>>",
 			"E", fmt.Sprintf("%04X", payloadHeader.ExchangeId()),
 			"M", fmt.Sprintf("%08X", packetHeader.MessageCounter),
+			"Ack", fmt.Sprintf("%04X", payloadHeader.AckMessageCounter()),
 			"S", session.SessionType(),
 			"From", log.GroupValue(
 				log.Any("FabricIndex", session.FabricIndex()),
@@ -135,14 +143,14 @@ func (e *ExchangeManager) OnMessageReceived(
 			),
 			"Type", log.GroupValue(
 				log.Any("protocolId", payloadHeader.ProtocolID()),
-				log.Any("Opcode", payloadHeader.MessageType()),
+				log.Any("opcode", payloadHeader.MessageType()),
 				log.Any("protocolName", payloadHeader.ProtocolID().ProtocolName()),
 				log.Any("message type", payloadHeader.ProtocolID().MessageTypeName(payloadHeader.MessageType())),
 			))
 	}
 
 	var msgFlags uint32 = 0
-	msgFlags = lib.SetFlag(isDuplicate, msgFlags, transport.DuplicateMessageFlag)
+	msgFlags = lib.SetFlag(isDuplicate, msgFlags, fDuplicateMessage)
 
 	if !packetHeader.IsGroupSession() {
 		ec := e.mContextPool.MatchExchange(session, packetHeader, payloadHeader)
@@ -161,7 +169,7 @@ func (e *ExchangeManager) OnMessageReceived(
 	}
 
 	//如果不是重复的消息，而且如果消息是对方发起
-	if !lib.HasFlags(msgFlags, transport.DuplicateMessageFlag) && payloadHeader.IsInitiator() {
+	if !lib.HasFlags(msgFlags, fDuplicateMessage) && payloadHeader.IsInitiator() {
 		matchingUMH = nil
 		for _, umh := range e.UMHandlerPool {
 			if umh.IsInUse() && payloadHeader.HasProtocol(umh.protocolId) {
@@ -192,7 +200,7 @@ func (e *ExchangeManager) OnMessageReceived(
 			log.Error("OnMessageReceived failed", err, "Tag", "ExchangeManager")
 			return
 		}
-		log.Info("Handling", "exchange", ec.Marshall(), "delegate", ec.GetDelegate(), "Tag", "ExchangeManager")
+		log.Info("Handling", "exchange", ec, "delegate", ec.GetDelegate(), "Tag", "ExchangeManager")
 
 		if ec.IsEncryptionRequired() != packetHeader.IsEncrypted() {
 			log.Info("OnMessageReceived", errors.New("invalid message type"), "Tag", "ExchangeManager")

@@ -3,6 +3,7 @@ package secure_channel
 import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 )
 
 type UnsolicitedStatusHandler interface {
@@ -19,7 +20,8 @@ type UnsolicitedStatusHandlerImpl struct {
 	mExchangeManager messageing.ExchangeManagerBase
 }
 
-func (h UnsolicitedStatusHandlerImpl) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data *raw.PacketBuffer) error {
+func (h UnsolicitedStatusHandlerImpl) OnMessageReceived(context *messageing.ExchangeContext,
+	header *raw.PayloadHeader, data *system.PacketBufferHandle) error {
 	//TODO implement me
 	panic("implement me")
 }

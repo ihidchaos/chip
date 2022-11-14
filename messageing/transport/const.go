@@ -19,8 +19,8 @@ const (
 )
 
 const (
-	kPASE SecureSessionType = iota
-	kCASE
+	SecureSessionTypePASE SecureSessionType = iota
+	SecureSessionTypeCASE
 )
 
 func (t SecureSessionState) String() string {

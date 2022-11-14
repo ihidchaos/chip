@@ -17,7 +17,7 @@ type PairingSession interface {
 	PeerCATs() lib.CATValues
 	GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy
 
-	CopySecureSession() transport.SessionHandleBase
+	CopySecureSession() *transport.SessionHandle
 
 	IsValidPeerSessionId() bool
 	DeriveSecureSession(ctx transport.CryptoContext) error
@@ -35,7 +35,7 @@ type PairingSessionImpl struct {
 
 	SessionManager       transport.SessionManagerBase
 	mExchangeCtxt        messageing.ExchangeContext
-	mSecureSessionHolder transport.SessionHolderWithDelegate
+	mSecureSessionHolder *transport.SessionHolderWithDelegate
 	mLocalMRPConfig      *transport.ReliableMessageProtocolConfig
 }
 
@@ -60,7 +60,7 @@ func (p PairingSessionImpl) GetNewSessionHandlingPolicy() transport.NewSessionHa
 	return transport.KStayAtOldSession
 }
 
-func (p PairingSessionImpl) CopySecureSession() transport.SessionHandleBase {
+func (p PairingSessionImpl) CopySecureSession() *transport.SessionHandle {
 	//TODO implement me
 	panic("implement me")
 }
@@ -105,7 +105,7 @@ func (p PairingSessionImpl) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *t
 func NewPairingSessionImpl() *PairingSessionImpl {
 	return &PairingSessionImpl{
 		mRole:                0,
-		mSecureSessionType:   transport.CASE,
+		mSecureSessionType:   transport.SecureSessionTypeCASE,
 		SessionManager:       nil,
 		mExchangeCtxt:        messageing.ExchangeContext{},
 		mSecureSessionHolder: nil,

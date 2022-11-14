@@ -2,6 +2,7 @@ package transport
 
 import (
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 	"net/netip"
 )
 
@@ -12,6 +13,6 @@ type MessageCounterManagerBase interface {
 		session *SessionHandle,
 		state *SecureSession,
 		peerAdders netip.AddrPort,
-		buf *raw.PacketBuffer,
+		buf *system.PacketBufferHandle,
 	) error
 }

@@ -28,7 +28,6 @@ const (
 type MsgType uint8
 
 const (
-
 	// Message Counter Synchronization Protocol Message Types
 	MsgCounterSyncReq MsgType = 0x00
 	MsgCounterSyncRsp MsgType = 0x01

@@ -42,8 +42,8 @@ type AdvertiseImpl struct {
 	mMdnsServer                  MdnsServer
 }
 
-func (d *AdvertiseImpl) AdvertiseOperational(params *OperationalAdvertisingParameters) error {
-	return d.advertiseOperational(params)
+func (a *AdvertiseImpl) AdvertiseOperational(params *OperationalAdvertisingParameters) error {
+	return a.advertiseOperational(params)
 }
 
 func NewAdvertise() *AdvertiseImpl {
@@ -57,28 +57,28 @@ func NewAdvertise() *AdvertiseImpl {
 	return a
 }
 
-func (d *AdvertiseImpl) Init() error {
-	d.mMdnsServer = NewMdnsServerImpl()
-	if !d.mInitialized {
-		_ = d.UpdateCommissionableInstanceName()
+func (a *AdvertiseImpl) Init() error {
+	a.mMdnsServer = NewMdnsServerImpl()
+	if !a.mInitialized {
+		_ = a.UpdateCommissionableInstanceName()
 	}
-	d.mResponseSender.SetServer(d.mMdnsServer)
-	d.mMdnsServer.SetHandler(d.mResponseSender)
-	err := d.mMdnsServer.StartServer(MdnsPort)
+	a.mResponseSender.SetServer(a.mMdnsServer)
+	a.mMdnsServer.SetHandler(a.mResponseSender)
+	err := a.mMdnsServer.StartServer(MdnsPort)
 	if err != nil {
 		return err
 	}
-	err = d.AdvertiseRecords(AdvertiseTypeStarted)
-	d.mInitialized = true
+	err = a.AdvertiseRecords(AdvertiseTypeStarted)
+	a.mInitialized = true
 	return err
 }
 
-func (d *AdvertiseImpl) GetCommissionableInstanceName() (string, error) {
-	return d.mCommissionableInstanceName, nil
+func (a *AdvertiseImpl) GetCommissionableInstanceName() (string, error) {
+	return a.mCommissionableInstanceName, nil
 }
 
-func (d *AdvertiseImpl) UpdateCommissionableInstanceName() error {
-	d.mCommissionableInstanceName = fmt.Sprintf("%016X", rand.Uint64())
+func (a *AdvertiseImpl) UpdateCommissionableInstanceName() error {
+	a.mCommissionableInstanceName = fmt.Sprintf("%016X", rand.Uint64())
 	log.Infof("")
 	return nil
 }
@@ -208,16 +208,16 @@ func (a *AdvertiseImpl) AdvertiseCommission(params *CommissionAdvertisingParamet
 	return nil
 }
 
-func (d *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParameters) error {
+func (a *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParameters) error {
 
 	var name = fmt.Sprintf("%016X-%016X", params.GetPeerId().GetCompressedFabricId(), params.GetPeerId().GetNodeId())
 
-	_ = d.AdvertiseRecords(AdvertiseTypeRemovingAll)
+	_ = a.AdvertiseRecords(AdvertiseTypeRemovingAll)
 	instanceName := Fqdn(name, KOperationalServiceName, KOperationalProtocol, KLocalDomain)
 
-	operationalAllocator := d.FindOperationalAllocator(instanceName)
+	operationalAllocator := a.FindOperationalAllocator(instanceName)
 	if operationalAllocator == nil {
-		operationalAllocator := d.FindEmptyOperationalAllocator()
+		operationalAllocator := a.FindEmptyOperationalAllocator()
 		if operationalAllocator == nil {
 			return fmt.Errorf("failed to find an open operational allocator")
 		}
@@ -239,7 +239,7 @@ func (d *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParam
 		return fmt.Errorf("failed to add SRV record mDNS responder")
 	}
 
-	if !operationalAllocator.AddResponder(responder.NewTxtResponder(instanceName, d.GetOperationalTxtEntries(params))).
+	if !operationalAllocator.AddResponder(responder.NewTxtResponder(instanceName, a.GetOperationalTxtEntries(params))).
 		SetReportAdditional(hostName).
 		IsValid() {
 		return fmt.Errorf("failed to add TXT record mDNS responder")
@@ -268,29 +268,29 @@ func (d *AdvertiseImpl) advertiseOperational(params *OperationalAdvertisingParam
 	}
 
 	log.Infof("CHIP minimal mDNS configured as 'Operational device'.")
-	_ = d.AdvertiseRecords(AdvertiseTypeStarted)
+	_ = a.AdvertiseRecords(AdvertiseTypeStarted)
 	log.Infof("mDNS service published: %s", instanceName)
 	return nil
 }
 
-func (d *AdvertiseImpl) FinalizeServiceUpdate() error {
+func (a *AdvertiseImpl) FinalizeServiceUpdate() error {
 	return nil
 }
 
-func (d *AdvertiseImpl) RemoveServices() error {
+func (a *AdvertiseImpl) RemoveServices() error {
 	return nil
 }
 
-func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *CommissionAdvertisingParameters) []string {
+func (a *AdvertiseImpl) GetCommissioningTxtEntries(params *CommissionAdvertisingParameters) []string {
 
 	var txtFields []string
 
 	// set vid and pid
 	if vid, err := params.GetVendorId(); vid != 0 && err == nil {
 		if pid, err := params.GetProductId(); pid != 0 && err == nil {
-			txtFields = append(txtFields, fmt.Sprintf("VP=%d+%d", vid, pid))
+			txtFields = append(txtFields, fmt.Sprintf("VP=%a+%a", vid, pid))
 		}
-		txtFields = append(txtFields, fmt.Sprintf("VP=%d", vid))
+		txtFields = append(txtFields, fmt.Sprintf("VP=%a", vid))
 	}
 
 	// set device type
@@ -304,14 +304,14 @@ func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *CommissionAdvertising
 	}
 
 	// set common txt
-	commonTxt := d.AddCommonTxtEntries(params.BaseAdvertisingParams)
+	commonTxt := a.AddCommonTxtEntries(params.BaseAdvertisingParams)
 	if commonTxt != nil && len(commonTxt) > 0 {
 		txtFields = append(txtFields, commonTxt...)
 	}
 
 	if params.GetCommissionAdvertiseMode() == AdvertiseModeCommissionableNode {
-		txtFields = append(txtFields, fmt.Sprintf("D=%d", params.GetLongDiscriminator()))
-		txtFields = append(txtFields, fmt.Sprintf("CM=%d", params.GetCommissioningMode()))
+		txtFields = append(txtFields, fmt.Sprintf("D=%a", params.GetLongDiscriminator()))
+		txtFields = append(txtFields, fmt.Sprintf("CM=%a", params.GetCommissioningMode()))
 	}
 
 	if rid := params.GetRotatingDeviceId(); rid != "" {
@@ -319,7 +319,7 @@ func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *CommissionAdvertising
 	}
 
 	if ph := params.GetPairingHint(); ph != 0 {
-		txtFields = append(txtFields, fmt.Sprintf("PH=%d", ph))
+		txtFields = append(txtFields, fmt.Sprintf("PH=%a", ph))
 	}
 
 	if pi := params.GetPairingInstruction(); pi != "" {
@@ -329,15 +329,15 @@ func (d *AdvertiseImpl) GetCommissioningTxtEntries(params *CommissionAdvertising
 	return txtFields
 }
 
-func (d *AdvertiseImpl) GetOperationalTxtEntries(params *OperationalAdvertisingParameters) []string {
-	txtFields := d.AddCommonTxtEntries(params.BaseAdvertisingParams)
+func (a *AdvertiseImpl) GetOperationalTxtEntries(params *OperationalAdvertisingParameters) []string {
+	txtFields := a.AddCommonTxtEntries(params.BaseAdvertisingParams)
 	if len(txtFields) == 0 || txtFields == nil {
-		return append(txtFields, d.mEmptyTextEntries)
+		return append(txtFields, a.mEmptyTextEntries)
 	}
 	return txtFields
 }
 
-func (d *AdvertiseImpl) AddCommonTxtEntries(params BaseAdvertisingParams) []string {
+func (a *AdvertiseImpl) AddCommonTxtEntries(params BaseAdvertisingParams) []string {
 
 	var list []string
 	if mrp := params.GetLocalMRPConfig(); mrp != nil {
@@ -345,19 +345,19 @@ func (d *AdvertiseImpl) AddCommonTxtEntries(params BaseAdvertisingParams) []stri
 			log.Infof("MRP retry interval idle value exceeds allowed range of 1 hour, using maximum available")
 			mrp.IdleRetransTimeout = kMaxRetryInterval
 		}
-		sleepyIdleIntervalBuf := fmt.Sprintf("SII=%d", mrp.IdleRetransTimeout)
+		sleepyIdleIntervalBuf := fmt.Sprintf("SII=%a", mrp.IdleRetransTimeout)
 		list = append(list, sleepyIdleIntervalBuf)
 
 		if mrp.ActiveRetransTimeout > kMaxRetryInterval {
 			log.Infof("MRP retry interval active value exceeds allowed range of 1 hour, using maximum available")
 			mrp.ActiveRetransTimeout = kMaxRetryInterval
 		}
-		sleepyActiveIntervalBuf := fmt.Sprintf("SAI=%d", mrp.ActiveRetransTimeout)
+		sleepyActiveIntervalBuf := fmt.Sprintf("SAI=%a", mrp.ActiveRetransTimeout)
 		list = append(list, sleepyActiveIntervalBuf)
 	}
 
 	if value, err := params.GetTcpSupported(); err == nil {
-		list = append(list, fmt.Sprintf("T=%d", func() int {
+		list = append(list, fmt.Sprintf("T=%a", func() int {
 			if value {
 				return 1
 			}
@@ -367,8 +367,8 @@ func (d *AdvertiseImpl) AddCommonTxtEntries(params BaseAdvertisingParams) []stri
 	return list
 }
 
-func (d *AdvertiseImpl) FindOperationalAllocator(name string) *QueryResponderAllocator {
-	for _, allocator := range d.mOperationalResponders {
+func (a *AdvertiseImpl) FindOperationalAllocator(name string) *QueryResponderAllocator {
+	for _, allocator := range a.mOperationalResponders {
 		r := allocator.GetResponder(dns.TypeSRV, name)
 		if r != nil {
 			return allocator
@@ -377,14 +377,14 @@ func (d *AdvertiseImpl) FindOperationalAllocator(name string) *QueryResponderAll
 	return nil
 }
 
-func (d *AdvertiseImpl) FindEmptyOperationalAllocator() *QueryResponderAllocator {
+func (a *AdvertiseImpl) FindEmptyOperationalAllocator() *QueryResponderAllocator {
 	OperationalQueryAllocator := NewQueryResponderAllocator()
-	d.mResponseSender.AddQueryResponder(OperationalQueryAllocator.GetQueryResponder())
-	d.mOperationalResponders = append(d.mOperationalResponders, OperationalQueryAllocator)
+	a.mResponseSender.AddQueryResponder(OperationalQueryAllocator.GetQueryResponder())
+	a.mOperationalResponders = append(a.mOperationalResponders, OperationalQueryAllocator)
 	return OperationalQueryAllocator
 }
 
-func (d *AdvertiseImpl) AdvertiseRecords(typ int) error {
+func (a *AdvertiseImpl) AdvertiseRecords(typ int) error {
 
 	var responseConfiguration = &responder.ResponseConfiguration{}
 	if typ == AdvertiseTypeRemovingAll {
@@ -405,7 +405,7 @@ func (d *AdvertiseImpl) AdvertiseRecords(typ int) error {
 								if ip.Is4() {
 									queryData.SetSrcAddr(netip.AddrPortFrom(ip, MdnsPort))
 									queryData.SetDestAddr(netip.AddrPortFrom(IPv4LinkLocalMulticast, MdnsPort))
-									err := d.mResponseSender.Respond(queryData, interfaceId)
+									err := a.mResponseSender.Respond(queryData, interfaceId)
 									if err != nil {
 										log.Errorf("failed to advertise records: %s", err.Error())
 									}
@@ -413,7 +413,7 @@ func (d *AdvertiseImpl) AdvertiseRecords(typ int) error {
 								if ip.Is6() {
 									queryData.SetSrcAddr(netip.AddrPortFrom(ip, MdnsPort))
 									queryData.SetDestAddr(netip.AddrPortFrom(IPv6LinkLocalMulticast, MdnsPort))
-									err := d.mResponseSender.Respond(queryData, interfaceId)
+									err := a.mResponseSender.Respond(queryData, interfaceId)
 									if err != nil {
 										log.Errorf("failed to advertise records: %s", err.Error())
 									}

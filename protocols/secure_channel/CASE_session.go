@@ -12,8 +12,9 @@ import (
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	tlv2 "github.com/galenliu/chip/pkg/tlv"
+	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
-	"github.com/galenliu/gateway/pkg/log"
+	log "golang.org/x/exp/slog"
 	rand "math/rand"
 )
 
@@ -74,13 +75,13 @@ func NewCASESession() *CASESession {
 	}
 }
 
-func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *raw.PacketBuffer) error {
-	msgType := messageing.MsgType(payloadHeader.MessageType())
+func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *system.PacketBufferHandle) error {
+	msgType := MsgType(payloadHeader.MessageType())
 	sha256.New()
 
 	switch s.mState {
 	case StateInitialized:
-		if msgType == messageing.CASESigma1 {
+		if msgType == CASE_Sigma1 {
 			return s.HandleSigma1AndSendSigma2(buf)
 		}
 	case StateSentSigma1:
@@ -212,20 +213,20 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	s.mSessionResumptionStorage = storage
 	s.mLocalMRPConfig = config
 
-	log.Infof("Allocated SecureSessionBase-waiting for Sigma1 msg")
+	log.Info("Allocated SecureSession-waiting for Sigma1 msg")
 
 	return nil
 }
 
-func (s *CASESession) CopySecureSession() transport.SessionHandleBase {
+func (s *CASESession) CopySecureSession() *transport.SessionHandle {
 	return nil
 }
 
-func (s *CASESession) HandleSigma1AndSendSigma2(buf *raw.PacketBuffer) error {
+func (s *CASESession) HandleSigma1AndSendSigma2(buf *system.PacketBufferHandle) error {
 	return s.HandleSigma1(buf)
 }
 
-func (s *CASESession) HandleSigma1(buf *raw.PacketBuffer) error {
+func (s *CASESession) HandleSigma1(buf *system.PacketBufferHandle) error {
 
 	tlvReader := tlv2.NewReader(buf)
 	sigma1, err := ParseSigma1(tlvReader)
@@ -233,7 +234,7 @@ func (s *CASESession) HandleSigma1(buf *raw.PacketBuffer) error {
 		return err
 	}
 
-	log.Infof("Peer assigned session key ID %d", sigma1.initiatorSessionId)
+	log.Info("Peer assigned session key ID %d", sigma1.initiatorSessionId)
 	s.mPeerSessionId = sigma1.initiatorSessionId
 
 	if s.mFabricsTable == nil {
@@ -245,9 +246,9 @@ func (s *CASESession) HandleSigma1(buf *raw.PacketBuffer) error {
 
 	err = s.FindLocalNodeFromDestinationId(sigma1.destinationId, sigma1.initiatorRandom)
 	if err == nil {
-		log.Infof("CASE matched destination ID: fabricIndex %x, NodeID 0x", s.mFabricIndex, s.mLocalNodeId)
+		log.Info("CASE matched destination", "FabricIndex", s.mFabricIndex, "NodeID", s.mLocalNodeId)
 	} else {
-		log.Infof("CASE failed to match destination ID with local fabrics")
+		log.Info("CASE failed to match destination ID with local fabrics")
 	}
 
 	pubKey, err := crypto.UnmarshalP256PublicKey(sigma1.initiatorEphPubKey)
@@ -401,38 +402,38 @@ func (s *CASESession) SendSigma2() error {
 	//记录下Hash值
 	s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(protocols.SecureChannelId, messageing.CASESigma2, tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
+	err = s.mExchangeCtxt.SendMessage(protocols.SecureChannelId, uint8(CASE_Sigma2), tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}
 
 	s.mState = StateSentSigma2
 
-	log.Infof("Sent sigma2 message")
+	log.Info("Sent sigma2 message")
 
 	return nil
 }
 
 func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initiatorRandom []byte) error {
 
-	for _, fabricInfo := range s.mFabricsTable.GetFabrics() {
+	for _, fabricInfo := range s.mFabricsTable.Fabrics() {
 
-		fabriceId := fabricInfo.GetFabricId()
+		fabriceId := fabricInfo.FabricId()
 		nodeId := fabricInfo.GetNodeId()
-		rootPubKey, err := s.mFabricsTable.FetchRootPubkey(fabricInfo.GetFabricIndex())
+		rootPubKey, err := s.mFabricsTable.FetchRootPubkey(fabricInfo.FabricIndex())
 		if err != nil {
 			return err
 		}
-		ipkKeySet, err := s.mGroupDataProvider.GetIpkKeySet(fabricInfo.GetFabricIndex())
+		ipkKeySet, err := s.mGroupDataProvider.GetIpkKeySet(fabricInfo.FabricIndex())
 		if err != nil || (ipkKeySet.NumKeysUsed == 0 || ipkKeySet.NumKeysUsed > credentials.KEpochKeysMax) {
 			continue
 		}
 
 		// Try every IPK candidate we have for a match
 		for keyIdx := 0; uint8(keyIdx) < ipkKeySet.NumKeysUsed; keyIdx++ {
-			candidateDestinationId, err := GenerateCaseDestinationId(ipkKeySet.EpochKeys[keyIdx].Key, initiatorRandom, rootPubKey, fabriceId, nodeId)
+			candidateDestinationId, err := GenerateCASEDestinationId(ipkKeySet.EpochKeys[keyIdx].Key[:], initiatorRandom, rootPubKey, fabriceId, nodeId)
 			if err != nil && len(candidateDestinationId) == len(destinationId) {
-				s.mFabricIndex = fabricInfo.GetFabricIndex()
+				s.mFabricIndex = fabricInfo.FabricIndex()
 				s.mLocalNodeId = nodeId
 			}
 		}

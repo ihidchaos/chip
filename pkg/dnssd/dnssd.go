@@ -91,13 +91,13 @@ func (d *Dnssd) AdvertiseOperational() error {
 	if d.mFabricTable == nil {
 		return lib.IncorrectState
 	}
-	for _, info := range d.mFabricTable.GetFabrics() {
+	for _, info := range d.mFabricTable.Fabrics() {
 		mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()
 		if mac == "" || err != nil {
 			mac = fmt.Sprintf("%016X", rand.Uint64())
 		}
 		advertiseParameters := NewOperationalAdvertisingParameters()
-		advertiseParameters.SetPeerId(PeerId{info.GetNodeId(), info.GetCompressedFabricId()})
+		advertiseParameters.SetPeerId(PeerId{info.GetNodeId(), info.CompressedFabricId()})
 		advertiseParameters.SetMaC(mac)
 		advertiseParameters.SetPort(d.mSecuredPort)
 		advertiseParameters.SetInterfaceId(d.mInterfaceId)

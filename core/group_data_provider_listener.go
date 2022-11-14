@@ -3,7 +3,7 @@ package core
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/gateway/pkg/log"
+	log "golang.org/x/exp/slog"
 )
 
 type GroupDataProviderListener interface {
@@ -21,7 +21,7 @@ func (g *GroupDataProviderListenerImpl) OnGroupAdded(fabricIndex lib.FabricIndex
 		log.Info("Group added to nonexistent fabric?")
 		return
 	}
-	if err := g.mServer.TransportManager.MulticastGroupJoinLeave(lib.Multicast(fabric.GetFabricId(), newGroup.Id), true); err != nil {
+	if err := g.mServer.mTransports.MulticastGroupJoinLeave(lib.Multicast(fabric.FabricId(), newGroup.Id), true); err != nil {
 
 	}
 }
@@ -32,7 +32,7 @@ func (g *GroupDataProviderListenerImpl) OnGroupRemoved(fabricIndex lib.FabricInd
 		log.Info("Group added to nonexistent fabric?")
 		return
 	}
-	_ = g.mServer.TransportManager.MulticastGroupJoinLeave(lib.Multicast(fabric.GetFabricId(), newGroup.Id), false)
+	_ = g.mServer.mTransports.MulticastGroupJoinLeave(lib.Multicast(fabric.FabricId(), newGroup.Id), false)
 }
 
 func (g *GroupDataProviderListenerImpl) Init(server *Server) error {

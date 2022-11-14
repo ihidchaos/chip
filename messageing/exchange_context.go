@@ -70,7 +70,7 @@ func (c *ExchangeContext) IsGroupExchangeContext() bool {
 	return c.mSession.IsGroupSession()
 }
 
-func (c *ExchangeContext) SendMessage(protocolId *protocols.Id, msgType MsgType, r2 []byte, response uint16) error {
+func (c *ExchangeContext) SendMessage(protocolId *protocols.Id, msgType uint8, r2 []byte, response uint16) error {
 
 	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
 
@@ -87,7 +87,7 @@ func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packet
 func (c *ExchangeContext) HandleMessage(counter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *system.PacketBufferHandle) error {
 
 	//isStandaloneAck := payloadHeader.HasMessageType(uint8(StandaloneAck))
-	//isDuplicate := lib.HasFlags(flags, transport.DuplicateMessageFlag)
+	//isDuplicate := lib.HasFlags(flags, transport.fDuplicateMessage)
 	if c.mDelegate != nil {
 		err := c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 		if err != nil {

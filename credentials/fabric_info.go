@@ -15,10 +15,10 @@ type FabricInfoProvider interface {
 	GetScopedNodeId() lib.ScopedNodeId
 	GetScopedNodeIdForNode(node lib.NodeId) lib.ScopedNodeId
 
-	GetFabricId() lib.FabricId
-	GetFabricIndex() lib.FabricIndex
+	FabricId() lib.FabricId
+	FabricIndex() lib.FabricIndex
 
-	GetCompressedFabricId() lib.CompressedFabricId
+	CompressedFabricId() lib.CompressedFabricId
 
 	GetVendorId() lib.VendorId
 
@@ -60,15 +60,15 @@ func (info *FabricInfo) CommitToStorage(storage storage.KvsPersistentStorageDele
 
 }
 
-func (info *FabricInfo) GetFabricId() lib.FabricId {
+func (info *FabricInfo) FabricId() lib.FabricId {
 	return info.mFabricId
 }
 
-func (info *FabricInfo) GetFabricIndex() lib.FabricIndex {
+func (info *FabricInfo) FabricIndex() lib.FabricIndex {
 	return info.mFabricIndex
 }
 
-func (info *FabricInfo) GetCompressedFabricId() lib.CompressedFabricId {
+func (info *FabricInfo) CompressedFabricId() lib.CompressedFabricId {
 	return info.mCompressedFabriceId
 }
 

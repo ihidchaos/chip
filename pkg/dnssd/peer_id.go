@@ -13,11 +13,11 @@ func NewPeerId(mNodeId lib.NodeId, mCompressedFabricId lib.CompressedFabricId) *
 	return &PeerId{mNodeId: mNodeId, mCompressedFabricId: mCompressedFabricId}
 }
 
-func (p PeerId) GetCompressedFabricId() lib.CompressedFabricId {
+func (p *PeerId) GetCompressedFabricId() lib.CompressedFabricId {
 	return p.mCompressedFabricId
 }
 
-func (p PeerId) GetNodeId() lib.NodeId {
+func (p *PeerId) GetNodeId() lib.NodeId {
 	return p.mNodeId
 }
 

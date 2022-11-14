@@ -111,7 +111,7 @@ func (f *FabricTable) ClearCommitMarker() {
 }
 
 func (f *FabricTable) Forget(index lib.FabricIndex) {
-	fabricInfo := f.GetMutableFabricByIndex(index)
+	fabricInfo := f.MutableFabricByIndex(index)
 	if fabricInfo == nil {
 		return
 	}
@@ -130,7 +130,7 @@ func (f *FabricTable) SetFabricLabel(label string) error {
 	return nil
 }
 
-func (f *FabricTable) GetFabricLabel(index lib.FabricIndex) (string, error) {
+func (f *FabricTable) FabricLabel(index lib.FabricIndex) (string, error) {
 	fabricInfo := f.FindFabricWithIndex(index)
 	if fabricInfo == nil {
 		return "", lib.InvalidFabricIndex
@@ -138,7 +138,7 @@ func (f *FabricTable) GetFabricLabel(index lib.FabricIndex) (string, error) {
 	return fabricInfo.GetFabricLabel(), nil
 }
 
-func (f *FabricTable) GetLastKnownGoodChipEpochTime() (time.Time, error) {
+func (f *FabricTable) LastKnownGoodChipEpochTime() (time.Time, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -203,33 +203,33 @@ func (f *FabricTable) SignWithOpKeypair(index lib.FabricIndex) *crypto.P256ECDSA
 }
 
 func (f *FabricTable) FindFabricWithIndex(index lib.FabricIndex) *FabricInfo {
-	if f.HasPendingFabricUpdate() && f.mPendingFabric.GetFabricIndex() == index {
+	if f.HasPendingFabricUpdate() && f.mPendingFabric.FabricIndex() == index {
 		return f.mPendingFabric
 	}
 	for _, f := range f.mStates {
 		if !f.IsInitialized() {
 			continue
 		}
-		if f.GetFabricIndex() == index {
+		if f.FabricIndex() == index {
 			return f
 		}
 	}
 	return nil
 }
 
-func (f *FabricTable) GetFabrics() []*FabricInfo {
+func (f *FabricTable) Fabrics() []*FabricInfo {
 	return f.mStates
 }
 
-func (f *FabricTable) GetMutableFabricByIndex(index lib.FabricIndex) *FabricInfo {
-	if f.HasPendingFabricUpdate() && f.mPendingFabric.GetFabricIndex() == index {
+func (f *FabricTable) MutableFabricByIndex(index lib.FabricIndex) *FabricInfo {
+	if f.HasPendingFabricUpdate() && f.mPendingFabric.FabricIndex() == index {
 		return f.mPendingFabric
 	}
 	for _, fabricInfo := range f.mStates {
 		if !fabricInfo.IsInitialized() {
 			continue
 		}
-		if fabricInfo.GetFabricIndex() == index {
+		if fabricInfo.FabricIndex() == index {
 			return fabricInfo
 		}
 	}

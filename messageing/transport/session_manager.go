@@ -20,9 +20,8 @@ var mGroupPeerMsgCounter = NewGroupPeerTable(ConfigMaxFabrice)
 const (
 	PayloadIsEncrypted uint8 = iota
 	PayloadIsUnencrypted
-	NotReady
+	kNotReady
 	kInitialized
-	DuplicateMessageFlag uint32 = 0x00000001
 )
 
 type EncryptedPacketBufferHandle struct {
@@ -48,6 +47,8 @@ type SessionManagerBase interface {
 	ExpireAllSessions(node *lib.ScopedNodeId)
 	ExpireAllSessionsForFabric(fabricIndex lib.FabricIndex)
 	ExpireAllSessionsOnLogicalFabric(node *lib.ScopedNodeId)
+
+	FabricTable() *credentials.FabricTable
 
 	CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *ReliableMessageProtocolConfig) *SessionHandle
 	FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType SecureSessionType) *SessionHandle
@@ -207,7 +208,7 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 	}
 
 	nonce := BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, func() lib.NodeId {
-		if secureSession.SecureSessionType() == kCASE {
+		if secureSession.SecureSessionType() == SecureSessionTypeCASE {
 			return secureSession.GetPeerNodeId()
 		}
 		return lib.UndefinedNodeId
@@ -342,7 +343,7 @@ func (s *SessionManager) Shutdown() {
 		s.mFabricTable.RemoveFabricDelegate(s)
 		s.mFabricTable = nil
 	}
-	s.mState = NotReady
+	s.mState = kNotReady
 	//s.mSecureSessions
 	s.mMessageCounterManager = nil
 	s.mSystemLayer = nil
@@ -391,4 +392,8 @@ func (s *SessionManager) FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sess
 func (s *SessionManager) OnFabricRemoved(table *credentials.FabricTable, index lib.FabricIndex) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *SessionManager) FabricTable() *credentials.FabricTable {
+	return s.mFabricTable
 }

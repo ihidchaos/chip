@@ -4,6 +4,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/platform/system"
 	"net/netip"
 )
 
@@ -16,7 +17,7 @@ type MessageCounterManagerBase interface {
 type MessageCounterManager struct {
 }
 
-func (m *MessageCounterManager) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data *raw.PacketBuffer) error {
+func (m *MessageCounterManager) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, data *system.PacketBufferHandle) error {
 	if header.HasMessageType(uint8(MsgCounterSyncReq)) {
 		return m.handleMsgCounterSyncReq(context, header)
 	}
@@ -52,7 +53,11 @@ func (m *MessageCounterManager) StartSync(handle *transport.SessionHandle, sessi
 	panic("implement me")
 }
 
-func (m *MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader, handle *transport.SessionHandle, state *transport.SecureSession, peerAdders netip.AddrPort, buf *raw.PacketBuffer) error {
+func (m *MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader,
+	handle *transport.SessionHandle,
+	state *transport.SecureSession,
+	peerAdders netip.AddrPort,
+	buf *system.PacketBufferHandle) error {
 	//TODO implement me
 	panic("implement me")
 }

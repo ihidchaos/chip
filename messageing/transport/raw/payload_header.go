@@ -121,6 +121,10 @@ func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
 	return nil
 }
 
+func (header *PayloadHeader) AckMessageCounter() uint32 {
+	return header.mAckMessageCounter
+}
+
 func (header *PayloadHeader) ProtocolID() *protocols.Id {
 	return &header.mProtocolId
 }

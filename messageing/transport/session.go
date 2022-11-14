@@ -35,7 +35,6 @@ type Session interface {
 	Release()
 	IsActiveSession() bool
 	IsGroupSession() bool
-	IsSecureSession() bool
 	IsEstablishing() bool
 	GetPeer() lib.ScopedNodeId
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration

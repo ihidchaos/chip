@@ -29,6 +29,6 @@ func (o *OperationalAdvertisingParameters) GetCompressedFabricId() lib.Compresse
 	return o.mPeerId.GetCompressedFabricId()
 }
 
-func (o *OperationalAdvertisingParameters) GetPeerId() PeerId {
-	return o.mPeerId
+func (o *OperationalAdvertisingParameters) GetPeerId() *PeerId {
+	return &o.mPeerId
 }
