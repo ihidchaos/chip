@@ -223,6 +223,5 @@ func (d *DeviceOptions) Init(config *viper.Viper) (*DeviceOptions, error) {
 	GetDeviceOptionsInstance().InterfaceId = net.Interface{}
 	GetDeviceOptionsInstance().TraceStreamDecodeEnabled = false
 	GetDeviceOptionsInstance().TraceStreamToLogEnabled = false
-
 	return d, nil
 }

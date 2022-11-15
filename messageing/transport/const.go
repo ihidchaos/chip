@@ -25,7 +25,7 @@ const (
 
 func (t SecureSessionState) String() string {
 	return [...]string{
-		"kEstablishing", "kActive", "kDefunct", "kPendingEviction",
+		"Establishing", "Active", "Defunct", "PendingEviction",
 	}[t]
 }
 
@@ -35,6 +35,6 @@ func (t SecureSessionType) String() string {
 
 func (t SessionType) String() string {
 	return [...]string{
-		"kUndefined", "kUnauthenticated", "kSecure", "kGroupIncoming", "kGroupOutgoing",
+		"Undefined", "Unauthenticated", "Secure", "GroupIncoming", "GroupOutgoing",
 	}[t]
 }

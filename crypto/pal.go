@@ -71,7 +71,6 @@ func AesCtrEncryptOrDecrypt(inputText, key, iv []byte) (outPut []byte, err error
 	if err != nil {
 		return
 	}
-
 	//创建一个使用CTR分组接口, iv的长度等于明文分组的长度
 	stream := cipher.NewCTR(block, iv)
 	outPut = make([]byte, len(inputText))

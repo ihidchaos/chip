@@ -37,103 +37,103 @@ type Provider interface {
 	EnsureNamespace(k string) error
 }
 
-var _ConfigProviderInstance *ConfigProviderImpl
+var _ConfigProviderInstance *ProviderImpl
 var _ConfigProviderInstanceOnce sync.Once
 
-func GetConfigProviderInstance() *ConfigProviderImpl {
+func GetConfigProviderInstance() *ProviderImpl {
 	_ConfigProviderInstanceOnce.Do(func() {
 		if _ConfigProviderInstance == nil {
-			_ConfigProviderInstance = &ConfigProviderImpl{}
+			_ConfigProviderInstance = &ProviderImpl{}
 		}
 	})
 	return _ConfigProviderInstance
 }
 
-type ConfigProviderImpl struct {
+type ProviderImpl struct {
 	mChipFactoryStorage  storage.ChipStorage
 	mChipConfigStorage   storage.ChipStorage
 	mChipCountersStorage storage.ChipStorage
 }
 
-func NewConfigProviderImpl() *ConfigProviderImpl {
+func NewConfigProviderImpl() *ProviderImpl {
 	return GetConfigProviderInstance()
 }
 
-func (conf *ConfigProviderImpl) ReadConfigValueBool(k Key) (bool, error) {
+func (conf *ProviderImpl) ReadConfigValueBool(k Key) (bool, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadValueBool(k.Name)
 }
 
-func (conf *ConfigProviderImpl) ReadConfigValueUint16(k Key) (uint16, error) {
+func (conf *ProviderImpl) ReadConfigValueUint16(k Key) (uint16, error) {
 	store := conf.GetStorageForNamespace(k)
 	v, err := store.ReadValueUint64(k.Name)
 	return uint16(v), err
 }
 
-func (conf *ConfigProviderImpl) ReadConfigValueUint32(k Key) (uint32, error) {
+func (conf *ProviderImpl) ReadConfigValueUint32(k Key) (uint32, error) {
 	store := conf.GetStorageForNamespace(k)
 	v, err := store.ReadValueUint64(k.Name)
 	return uint32(v), err
 }
 
-func (conf *ConfigProviderImpl) ReadConfigValueUint64(k Key) (uint64, error) {
+func (conf *ProviderImpl) ReadConfigValueUint64(k Key) (uint64, error) {
 	store := conf.GetStorageForNamespace(k)
 	return store.ReadValueUint64(k.Name)
 }
 
-func (conf *ConfigProviderImpl) ReadConfigValueStr(k Key) (string, error) {
+func (conf *ProviderImpl) ReadConfigValueStr(k Key) (string, error) {
 	store := conf.GetStorageForNamespace(k)
 	v, err := store.ReadValueString(k.Name)
 	return v, err
 }
 
-func (conf *ConfigProviderImpl) ReadConfigValueBin(k Key) ([]byte, error) {
+func (conf *ProviderImpl) ReadConfigValueBin(k Key) ([]byte, error) {
 	store := conf.GetStorageForNamespace(k)
 	v, err := store.ReadValueString(k.Name)
 	return []byte(v), err
 }
 
-func (conf *ConfigProviderImpl) WriteConfigValueBool(k Key, val bool) error {
+func (conf *ProviderImpl) WriteConfigValueBool(k Key, val bool) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.WriteValueBool(k.Name, val)
 }
 
-func (conf *ConfigProviderImpl) WriteConfigValueUint16(k Key, val uint16) error {
+func (conf *ProviderImpl) WriteConfigValueUint16(k Key, val uint16) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.WriteValueUint64(k.Name, uint64(val))
 }
 
-func (conf *ConfigProviderImpl) WriteConfigValueUint32(k Key, val uint32) error {
+func (conf *ProviderImpl) WriteConfigValueUint32(k Key, val uint32) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.WriteValueUint64(k.Name, uint64(val))
 }
 
-func (conf *ConfigProviderImpl) WriteConfigValueUint64(k Key, val uint64) error {
+func (conf *ProviderImpl) WriteConfigValueUint64(k Key, val uint64) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.WriteValueUint64(k.Name, val)
 }
 
-func (conf *ConfigProviderImpl) WriteConfigValueStr(k Key, val string) error {
+func (conf *ProviderImpl) WriteConfigValueStr(k Key, val string) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.WriteValueString(k.Name, val)
 }
 
-func (conf *ConfigProviderImpl) WriteConfigValueBin(k Key, val []byte) error {
+func (conf *ProviderImpl) WriteConfigValueBin(k Key, val []byte) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.WriteValueString(k.Name, string(val))
 }
 
-func (conf *ConfigProviderImpl) ClearConfigValue(k Key) error {
+func (conf *ProviderImpl) ClearConfigValue(k Key) error {
 	store := conf.GetStorageForNamespace(k)
 	return store.DeleteKeyValue(k.Name)
 }
 
-func (conf *ConfigProviderImpl) ConfigValueExists(k Key) bool {
+func (conf *ProviderImpl) ConfigValueExists(k Key) bool {
 	store := conf.GetStorageForNamespace(k)
 	return store.HasValue(k.Name)
 }
 
-func (conf *ConfigProviderImpl) FactoryResetConfig() error {
+func (conf *ProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
 		log.Info("storage get failed")
 		return lib.DeviceErrorConfigNotFound
@@ -146,7 +146,7 @@ func (conf *ConfigProviderImpl) FactoryResetConfig() error {
 	return nil
 }
 
-func (conf *ConfigProviderImpl) FactoryResetCounters() error {
+func (conf *ProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
 		log.Info("storage get failed")
 
@@ -160,7 +160,7 @@ func (conf *ConfigProviderImpl) FactoryResetCounters() error {
 	return nil
 }
 
-func (conf *ConfigProviderImpl) RunConfigUnitTest() {
+func (conf *ProviderImpl) RunConfigUnitTest() {
 	//TODO implement me
 	panic("implement me")
 }
@@ -170,7 +170,7 @@ type Key struct {
 	Name      string
 }
 
-func (conf *ConfigProviderImpl) GetStorageForNamespace(k Key) storage.ChipStorage {
+func (conf *ProviderImpl) GetStorageForNamespace(k Key) storage.ChipStorage {
 	if k.Namespace == KConfigNamespaceChipFactory {
 		if conf.mChipFactoryStorage == nil {
 			conf.mChipFactoryStorage = storage.NewPersistentStorageImpl()
@@ -192,7 +192,7 @@ func (conf *ConfigProviderImpl) GetStorageForNamespace(k Key) storage.ChipStorag
 	return nil
 }
 
-func (conf *ConfigProviderImpl) EnsureNamespace(k string) error {
+func (conf *ProviderImpl) EnsureNamespace(k string) error {
 	if k == KConfigNamespaceChipFactory {
 		if conf.mChipFactoryStorage == nil {
 			conf.mChipFactoryStorage = storage.NewPersistentStorageImpl()

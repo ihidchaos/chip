@@ -1,12 +1,14 @@
 package protocols
 
 import (
+	"fmt"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/protocols/bdx"
 	"github.com/galenliu/chip/protocols/echo"
 	"github.com/galenliu/chip/protocols/interaction_model"
 	"github.com/galenliu/chip/protocols/secure_channel"
 	"github.com/galenliu/chip/protocols/user_directed_commissioning"
+	log "golang.org/x/exp/slog"
 )
 
 var sUnknownTypeName = "----"
@@ -107,4 +109,11 @@ func (id *Id) MessageTypeName(messageType uint8) string {
 		return sUnknownTypeName
 
 	}
+}
+
+func (id *Id) LogValue() log.Value {
+	return log.GroupValue(
+		log.String("id", fmt.Sprintf("%04X", id.protocolId)),
+		log.String("name", id.ProtocolName()),
+	)
 }

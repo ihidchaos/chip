@@ -15,9 +15,8 @@ func NewOperationalAdvertisingParameters() *OperationalAdvertisingParameters {
 	}
 }
 
-func (o OperationalAdvertisingParameters) Init() *OperationalAdvertisingParameters {
+func (o *OperationalAdvertisingParameters) Init() {
 	o.BaseAdvertisingParams = BaseAdvertisingParams{}.Init()
-	return &o
 }
 
 func (o *OperationalAdvertisingParameters) SetPeerId(peerId PeerId) *OperationalAdvertisingParameters {

@@ -3,23 +3,23 @@ package access
 type DeviceTypeResolver struct {
 }
 
-type AccessControler interface {
+type Controler interface {
 	Init(delegate Delegate, resolver DeviceTypeResolver) error
 }
 
-type AccessControl struct {
+type Control struct {
 	mDelegate Delegate
 }
 
-func NewAccessControl() *AccessControl {
-	return &AccessControl{}
+func NewAccessControl() *Control {
+	return &Control{}
 }
 
-func (c *AccessControl) Init(delegate Delegate, d DeviceTypeResolver) error {
+func (c *Control) Init(delegate Delegate, d DeviceTypeResolver) error {
 	c.mDelegate = delegate
 	return nil
 }
 
-func SetAccessControl(a AccessControler) {
+func SetAccessControl(a Controler) {
 
 }

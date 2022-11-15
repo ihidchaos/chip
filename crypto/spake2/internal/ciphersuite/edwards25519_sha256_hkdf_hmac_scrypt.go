@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"io"
 
-	kyber "go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/encoding"
 	"golang.org/x/crypto/hkdf"

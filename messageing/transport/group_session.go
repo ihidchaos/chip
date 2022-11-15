@@ -94,7 +94,6 @@ func NewIncomingGroupSession(groupId lib.GroupId, index lib.FabricIndex, nodeId 
 		mPeerNodeId: nodeId,
 	}
 	session.SetFabricIndex(index)
-
 	session.SessionBaseImpl = NewSessionBaseImpl(1, kGroupIncoming, session)
 	return session
 }
@@ -104,6 +103,6 @@ func NewOutgoingGroupSession(groupId lib.GroupId, index lib.FabricIndex) *Outgoi
 		mGroupId: groupId,
 	}
 	session.SetFabricIndex(index)
-	session.SessionBaseImpl = NewSessionBaseImpl(1, kGroupIncoming, session)
+	session.SessionBaseImpl = NewSessionBaseImpl(1, kGroupOutgoing, session)
 	return session
 }

@@ -2,24 +2,26 @@ package secure_channel
 
 import "github.com/galenliu/chip/crypto"
 
+type state uint8
+
 const (
-	StateInitialized            = 0
-	StateSentSigma1             = 1
-	StateSentSigma2             = 2
-	StateSentSigma3             = 3
-	StateSentSigma1Resume       = 4
-	StateSentSigma2Resume       = 5
-	StateFinished               = 6
-	StateFinishedViaResume      = 7
+	stateInitialized       state = 0
+	stateSentSigma1        state = 1
+	stateSentSigma2        state = 2
+	stateSentSigma3        state = 3
+	stateSentSigma1Resume  state = 4
+	stateSentSigma2Resume  state = 5
+	stateFinished          state = 6
+	stateFinishedViaResume state = 7
+
 	kSigmaParamRandomNumberSize = 32
 	kIpkSize                    = crypto.SymmetricKeyLengthBytes
+	TagTBEDataSenderNOC         = 1
+	TagTBEDataSenderICAC        = 2
+	TagTBEDataSignature         = 3
+	TagTBEDataResumptionID      = 4
 
-	TagTBEDataSenderNOC    = 1
-	TagTBEDataSenderICAC   = 2
-	TagTBEDataSignature    = 3
-	TagTBEDataResumptionID = 4
-
-	ResumptionIdSize = 16
+	kResumptionIdSize = 16
 
 	ProtocolName = "SecureChannel"
 	/* "NCASE_Sigma2N" */

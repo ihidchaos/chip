@@ -40,17 +40,6 @@ type Session interface {
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
 	Released()
 	ClearValue()
-
-	//virtual void Retain()  = 0;
-	//virtual void Release() = 0;
-	//virtual bool IsActiveSession() const = 0;
-	//virtual ScopedNodeId GetPeer() const                                     = 0;
-	//virtual ScopedNodeId GetLocalScopedNodeId() const                        = 0;
-	//virtual Access::SubjectDescriptor GetSubjectDescriptor() const           = 0;
-	//virtual bool RequireMRP() const                                          = 0;
-	//virtual const ReliableMessageProtocolConfig & GetRemoteMRPConfig() const = 0;
-	//virtual System::Clock::Timestamp GetMRPBaseTimeout()                     = 0;
-	//virtual System::Clock::Milliseconds32 GetAckTimeout() const              = 0;
 }
 
 type SessionBaseImpl struct {
@@ -64,7 +53,6 @@ type SessionBaseImpl struct {
 func NewSessionBaseImpl(initCounter int, sessionType SessionType, releaseHandler lib.ReleasedHandler) *SessionBaseImpl {
 	return &SessionBaseImpl{
 		mFabricIndex:     lib.FabricIndexUndefined,
-		mHolders:         make([]*SessionHolder, 0),
 		locker:           sync.Mutex{},
 		mSessionType:     sessionType,
 		ReferenceCounted: lib.NewReferenceCounted(initCounter, releaseHandler),
@@ -93,12 +81,18 @@ func (s *SessionBaseImpl) DispatchSessionEvent(event SessionDelegate) {
 func (s *SessionBaseImpl) AddHolder(holder *SessionHolder) {
 	s.locker.Lock()
 	defer s.locker.Unlock()
+	if s.mHolders == nil {
+		s.mHolders = make([]*SessionHolder, 0)
+	}
 	s.mHolders = append(s.mHolders, holder)
 }
 
 func (s *SessionBaseImpl) RemoveHolder(holder *SessionHolder) {
 	s.locker.Lock()
 	defer s.locker.Unlock()
+	if s.mHolders == nil || len(s.mHolders) == 0 {
+		return
+	}
 	index := slices.Index(s.mHolders, holder)
 	if index >= 0 {
 		s.mHolders = slices.Delete(s.mHolders, index, index+1)

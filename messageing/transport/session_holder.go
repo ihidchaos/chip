@@ -33,6 +33,7 @@ func (s *SessionHolder) Release() {
 		s.Session.RemoveHolder(s)
 		s.Session.ClearValue()
 	}
+	s.Session = nil
 }
 
 func (s *SessionHolder) GrabPairingSession(session *SessionHandle) bool {
@@ -63,6 +64,7 @@ func (s *SessionHolder) Grad(session *SessionHandle) bool {
 }
 
 func (s *SessionHolder) GrabUnchecked(session *SessionHandle) {
+	s.Session = session.Session
 	session.AddHolder(s)
 }
 

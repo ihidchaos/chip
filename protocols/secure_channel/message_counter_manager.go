@@ -62,7 +62,7 @@ func (m *MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.Pac
 	panic("implement me")
 }
 
-func (m *MessageCounterManager) Init(mgr messageing.ExchangeManagerBase) error {
+func (m *MessageCounterManager) Init(mgr *messageing.ExchangeManager) error {
 	return nil
 }
 

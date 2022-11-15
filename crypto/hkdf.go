@@ -7,11 +7,11 @@ import (
 )
 
 func HKDFSha256(mSharedSecret, salt, kKDFSR2Info []byte) []byte {
-	buf := hkdf.New(sha256.New, mSharedSecret, salt, kKDFSR2Info)
+	hk := hkdf.New(sha256.New, mSharedSecret, salt, kKDFSR2Info)
 	data := make([]byte, SymmetricKeyLengthBytes)
-	_, err := io.ReadFull(buf, data)
+	_, err := io.ReadFull(hk, data)
 	if err != nil {
-		return data
+		return nil
 	}
-	return nil
+	return data
 }

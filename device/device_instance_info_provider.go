@@ -45,43 +45,43 @@ func GetDeviceInstanceInfoProvider() *InstanceInfo {
 	return _deviceInstanceInfo
 }
 
-func (c *InstanceInfo) Init(configMgr config.ConfigurationManager) (*InstanceInfo, error) {
-	c.mConfigManager = configMgr
-	return c, nil
+func (info *InstanceInfo) Init(configMgr config.ConfigurationManager) (*InstanceInfo, error) {
+	info.mConfigManager = configMgr
+	return info, nil
 }
 
 func NewInstanceInfo() *InstanceInfo {
 	return GetDeviceInstanceInfoProvider()
 }
 
-func (d *InstanceInfo) GetVendorId() (uint16, error) {
+func (info *InstanceInfo) GetVendorId() (uint16, error) {
 	return config.DeviceVendorId, nil
 }
 
-func (d *InstanceInfo) GetProductId() (uint16, error) {
+func (info *InstanceInfo) GetProductId() (uint16, error) {
 
 	return config.DeviceProductId, nil
 
 }
 
-func (d *InstanceInfo) ProductName() (string, error) {
+func (info *InstanceInfo) ProductName() (string, error) {
 	return config.DeviceProductName, nil
 }
 
-func (d *InstanceInfo) VendorName() (string, error) {
+func (info *InstanceInfo) VendorName() (string, error) {
 	return config.DeviceVendorName, nil
 }
 
-func (d *InstanceInfo) SerialNumber() (string, error) {
-	sn, err := d.mConfigManager.ReadConfigValueStr(config.KConfigKey_SerialNum)
+func (info *InstanceInfo) SerialNumber() (string, error) {
+	sn, err := info.mConfigManager.ReadConfigValueStr(config.KConfigKey_SerialNum)
 	if sn == "" || err != nil {
 		return config.TestSerialNumber, nil
 	}
 	return sn, nil
 }
 
-func (d *InstanceInfo) GetManufacturingDate() (time.Time, error) {
-	data, err := d.mConfigManager.ReadConfigValueStr(config.KConfigKey_ManufacturingDate)
+func (info *InstanceInfo) GetManufacturingDate() (time.Time, error) {
+	data, err := info.mConfigManager.ReadConfigValueStr(config.KConfigKey_ManufacturingDate)
 	if err != nil {
 		log.Panicf("invalid manufacturing date: %s", err.Error())
 	}
@@ -92,18 +92,18 @@ func (d *InstanceInfo) GetManufacturingDate() (time.Time, error) {
 	return t, nil
 }
 
-func (d *InstanceInfo) GetHardwareVersion() (uint16, error) {
-	version, err := d.mConfigManager.ReadConfigValueUint16(config.KConfigKey_HardwareVersion)
+func (info *InstanceInfo) GetHardwareVersion() (uint16, error) {
+	version, err := info.mConfigManager.ReadConfigValueUint16(config.KConfigKey_HardwareVersion)
 	if err != nil {
 		return config.DefaultDeviceHardwareVersion, nil
 	}
 	return version, nil
 }
 
-func (d *InstanceInfo) HardwareVersionString() (string, error) {
+func (info *InstanceInfo) HardwareVersionString() (string, error) {
 	return config.DefaultDeviceHardwareVersionString, nil
 }
 
-func (d *InstanceInfo) GetRotatingDeviceIdUniqueId() ([]byte, error) {
+func (info *InstanceInfo) GetRotatingDeviceIdUniqueId() ([]byte, error) {
 	return config.RotatingDeviceIdUniqueId, nil
 }

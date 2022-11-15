@@ -58,7 +58,7 @@ type Server struct {
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
 	mDeviceStorage                 storage.KvsPersistentStorageDelegate
-	mAccessControl                 access.AccessControler
+	mAccessControl                 access.Controler
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
 	mOperationalKeystore           storage2.OperationalKeystore
 	mCertificateValidityPolicy     credentials.CertificateValidityPolicy
@@ -75,7 +75,7 @@ type Server struct {
 
 	mDevicePool  OperationalDeviceProxyPool
 	mAclStorage  AclStorage
-	mExchangeMgr messageing.ExchangeManagerBase
+	mExchangeMgr *messageing.ExchangeManager
 
 	mListener    GroupDataProviderListener
 	mInitialized bool

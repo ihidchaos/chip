@@ -14,4 +14,5 @@ type ExchangeDelegate interface {
 	OnMessageReceived(context *ExchangeContext, header *raw.PayloadHeader, data *system.PacketBufferHandle) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
+	GetMessageDispatch() ExchangeMessageDispatchBase
 }

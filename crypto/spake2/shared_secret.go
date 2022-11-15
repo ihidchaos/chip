@@ -152,7 +152,7 @@ func (s *ClientSharedSecret) Verify(incomingConfirmation []byte) error {
 		s.generateConfirmations()
 	}
 	if !s.suite.MacEqual(incomingConfirmation, s.remoteConfirmation) {
-		return errors.New("Verification Failed")
+		return errors.New("verification failed")
 	}
 	return nil
 }
@@ -190,7 +190,7 @@ func (s *ServerSharedSecret) Verify(incomingConfirmation []byte) error {
 		s.generateConfirmations()
 	}
 	if !s.suite.MacEqual(incomingConfirmation, s.remoteConfirmation) {
-		return errors.New("Verification Failed")
+		return errors.New("verification failed")
 	}
 	return nil
 }
@@ -220,7 +220,7 @@ func (c Confirmations) Bytes() []byte {
 // Verify verifies an incoming confirmation message.
 func (c Confirmations) Verify(incomingConfirmation []byte) error {
 	if !c.suite.MacEqual(incomingConfirmation, c.remoteConfirmation) {
-		return errors.New("Verification Failed")
+		return errors.New("verification failed")
 	}
 	return nil
 }

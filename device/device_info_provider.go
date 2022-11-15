@@ -5,24 +5,24 @@ import (
 	"sync"
 )
 
-type DeviceInfoProvider interface {
+type InfoProvider interface {
 }
 
-type DeviceInfoProviderImpl struct {
+type InfoProviderImpl struct {
 	storage storage.KvsPersistentStorageDelegate
 }
 
-func (i *DeviceInfoProviderImpl) SetStorageDelegate(storage storage.KvsPersistentStorageDelegate) {
+func (i *InfoProviderImpl) SetStorageDelegate(storage storage.KvsPersistentStorageDelegate) {
 	i.storage = storage
 }
 
-var _deviceInfoProvider *DeviceInfoProviderImpl
+var _deviceInfoProvider *InfoProviderImpl
 var _deviceInfoProviderOnce sync.Once
 
-func GetDeviceInfoProvider() *DeviceInfoProviderImpl {
+func GetDeviceInfoProvider() *InfoProviderImpl {
 	_deviceInfoProviderOnce.Do(func() {
 		if _deviceInfoProvider == nil {
-			_deviceInfoProvider = &DeviceInfoProviderImpl{}
+			_deviceInfoProvider = &InfoProviderImpl{}
 		}
 	})
 	return _deviceInfoProvider

@@ -6,13 +6,13 @@ import (
 )
 
 func concat(bytesArray ...[]byte) []byte {
-	result := []byte{}
-	for _, bytes := range bytesArray {
-		if len(bytes) > 0 {
+	var result []byte
+	for _, b := range bytesArray {
+		if len(b) > 0 {
 			bytesLen := make([]byte, 8)
-			binary.LittleEndian.PutUint64(bytesLen, uint64(len(bytes)))
+			binary.LittleEndian.PutUint64(bytesLen, uint64(len(b)))
 			result = append(result, bytesLen...)
-			result = append(result, bytes...)
+			result = append(result, b...)
 		}
 	}
 	return result

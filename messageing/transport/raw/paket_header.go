@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	buffer "github.com/galenliu/chip/platform/system/buffer"
+	"github.com/galenliu/chip/platform/system/buffer"
 	"io"
 )
 

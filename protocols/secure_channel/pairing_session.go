@@ -8,7 +8,7 @@ import (
 	tlv2 "github.com/galenliu/chip/pkg/tlv"
 )
 
-type PairingSession interface {
+type PairingSessionBase interface {
 	transport.SessionDelegate
 	SecureSessionType() uint8
 	Peer() lib.ScopedNodeId
@@ -26,7 +26,7 @@ type PairingSession interface {
 	EncodeMRPParameters(tag tlv2.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig)
 }
 
-type PairingSessionImpl struct {
+type PairingSession struct {
 	mRole              uint8
 	mSecureSessionType transport.SecureSessionType
 	mPeerSessionId     uint16
@@ -39,16 +39,16 @@ type PairingSessionImpl struct {
 	mLocalMRPConfig      *transport.ReliableMessageProtocolConfig
 }
 
-func (p PairingSessionImpl) SecureSessionType() uint8 {
+func (p PairingSession) SecureSessionType() uint8 {
 	return uint8(p.mSecureSessionType)
 }
 
-func (p PairingSessionImpl) PeerCATs() lib.CATValues {
+func (p PairingSession) PeerCATs() lib.CATValues {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) LocalSessionId() (uint16, error) {
+func (p PairingSession) LocalSessionId() (uint16, error) {
 	//ss := p.mSecureSessionHolder.SessionHandle()
 	//if ss != nil {
 	//	return ss.
@@ -56,54 +56,54 @@ func (p PairingSessionImpl) LocalSessionId() (uint16, error) {
 	return 0, errors.New("secure session is not available")
 }
 
-func (p PairingSessionImpl) GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy {
+func (p PairingSession) GetNewSessionHandlingPolicy() transport.NewSessionHandlingPolicy {
 	return transport.KStayAtOldSession
 }
 
-func (p PairingSessionImpl) CopySecureSession() *transport.SessionHandle {
+func (p PairingSession) CopySecureSession() *transport.SessionHandle {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) PeerSessionId() uint16 {
+func (p PairingSession) PeerSessionId() uint16 {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) IsValidPeerSessionId() bool {
+func (p PairingSession) IsValidPeerSessionId() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) DeriveSecureSession(ctx transport.CryptoContext) error {
+func (p PairingSession) DeriveSecureSession(ctx transport.CryptoContext) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) RemoteMRPConfig() *transport.ReliableMessageProtocolConfig {
+func (p PairingSession) RemoteMRPConfig() *transport.ReliableMessageProtocolConfig {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) SetRemoteMRPConfig(mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
+func (p PairingSession) SetRemoteMRPConfig(mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) EncodeMRPParameters(tag tlv2.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
+func (p PairingSession) EncodeMRPParameters(tag tlv2.Tag, mrpLocalConfig *transport.ReliableMessageProtocolConfig) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p PairingSessionImpl) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *tlv2.ReaderImpl) error {
+func (p PairingSession) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *tlv2.ReaderImpl) error {
 	if reader.GetTag() != tag {
 		return nil
 	}
 	return nil
 }
 
-func NewPairingSessionImpl() *PairingSessionImpl {
-	return &PairingSessionImpl{
+func NewPairingSessionImpl() *PairingSession {
+	return &PairingSession{
 		mRole:                0,
 		mSecureSessionType:   transport.SecureSessionTypeCASE,
 		SessionManager:       nil,

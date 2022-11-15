@@ -48,7 +48,7 @@ func NewSecureSession(
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 	}
-	session.SessionBaseImpl = NewSessionBaseImpl(1, kSecure, session)
+	session.SessionBaseImpl = NewSessionBaseImpl(0, kSecure, session)
 	for _, option := range options {
 		option(session)
 	}

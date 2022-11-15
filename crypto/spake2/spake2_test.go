@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type MHFOptions struct {
@@ -307,7 +307,7 @@ func TestSPAKE2Vectors(t *testing.T) {
 	assert.NoError(t, err)
 
 	var testVectors []SPAKE2TestVector
-	err = yaml.Unmarshal([]byte(yamlFile), &testVectors)
+	err = yaml.Unmarshal(yamlFile, &testVectors)
 	assert.NoError(t, err)
 
 	for _, testVector := range testVectors {
@@ -630,7 +630,7 @@ func TestSPAKE2PlusVectors(t *testing.T) {
 	assert.NoError(t, err)
 
 	var testVectors []SPAKE2PlusTestVector
-	err = yaml.Unmarshal([]byte(yamlFile), &testVectors)
+	err = yaml.Unmarshal(yamlFile, &testVectors)
 	assert.NoError(t, err)
 
 	for _, testVector := range testVectors {

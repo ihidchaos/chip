@@ -15,7 +15,7 @@ import (
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
 	log "golang.org/x/exp/slog"
-	rand "math/rand"
+	"math/rand"
 )
 
 // SessionEstablishmentDelegate : CASEServer implementation
@@ -29,19 +29,19 @@ type CASESessionBase interface {
 	messageing.UnsolicitedMessageHandler
 	messageing.ExchangeDelegate
 	credentials.FabricTableDelegate
-	PairingSession
+	PairingSessionBase
 	GetPeerSessionId() uint16
 	GetPeer() lib.ScopedNodeId
 	GetLocalScopedNodeId() lib.ScopedNodeId
 }
 
-// CASESession impl
+// CASESession
 // UnsolicitedMessageHandler,
 // ExchangeDelegate,
 // FabricTable::Delegate,
-// PairingSession
+// PairingSessionBase
 type CASESession struct {
-	*PairingSessionImpl
+	*PairingSession
 	mCommissioningHash crypto.HashSha256Stream
 
 	mRemotePubKey      *crypto.P256PublicKey
@@ -66,12 +66,12 @@ type CASESession struct {
 	mResumeResumptionId []byte //会话恢复ID 16个字节
 	mNewResumptionId    []byte //会话恢复ID 16个字节
 
-	mState uint8
+	mState state
 }
 
 func NewCASESession() *CASESession {
 	return &CASESession{
-		PairingSessionImpl: NewPairingSessionImpl(),
+		PairingSession: NewPairingSessionImpl(),
 	}
 }
 
@@ -80,15 +80,15 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 	sha256.New()
 
 	switch s.mState {
-	case StateInitialized:
+	case stateInitialized:
 		if msgType == CASE_Sigma1 {
 			return s.HandleSigma1AndSendSigma2(buf)
 		}
-	case StateSentSigma1:
-	case StateSentSigma1Resume:
-	case StateSentSigma2:
-	case StateSentSigma3:
-	case StateSentSigma2Resume:
+	case stateSentSigma1:
+	case stateSentSigma1Resume:
+	case stateSentSigma2:
+	case stateSentSigma3:
+	case stateSentSigma2Resume:
 	default:
 		return lib.InvalidMessageType
 	}
@@ -260,7 +260,7 @@ func (s *CASESession) HandleSigma1(buf *system.PacketBufferHandle) error {
 	err = s.SendSigma2()
 	if err != nil {
 		//s.SendStatusReport()
-		s.mState = StateInitialized
+		s.mState = stateInitialized
 		return err
 	}
 	s.mDelegate.OnSessionEstablishmentStarted()
@@ -297,7 +297,6 @@ func (s *CASESession) SendSigma2() error {
 	s.mSharedSecret = s.mEphemeralKey.ECDHDeriveSecret(*s.mRemotePubKey)
 
 	//生成一个盐值
-
 	salt, err := s.ConstructSaltSigma2(msgRand, elliptic.Marshal(elliptic.P256(), s.mEphemeralKey.PublicKey.X, s.mEphemeralKey.Y), s.mIPK)
 	if err != nil || salt == nil {
 		return errors.New("sigma2 salt error")
@@ -336,7 +335,7 @@ func (s *CASESession) SendSigma2() error {
 		return err
 	}
 
-	s.mNewResumptionId = make([]byte, ResumptionIdSize)
+	s.mNewResumptionId = make([]byte, kResumptionIdSize)
 	err = crypto.DRBGBytes(s.mNewResumptionId)
 	if err != nil {
 		return err
@@ -407,7 +406,7 @@ func (s *CASESession) SendSigma2() error {
 		return err
 	}
 
-	s.mState = StateSentSigma2
+	s.mState = stateSentSigma2
 
 	log.Info("Sent sigma2 message")
 
@@ -415,9 +414,7 @@ func (s *CASESession) SendSigma2() error {
 }
 
 func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initiatorRandom []byte) error {
-
 	for _, fabricInfo := range s.mFabricsTable.Fabrics() {
-
 		fabriceId := fabricInfo.FabricId()
 		nodeId := fabricInfo.GetNodeId()
 		rootPubKey, err := s.mFabricsTable.FetchRootPubkey(fabricInfo.FabricIndex())

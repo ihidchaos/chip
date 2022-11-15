@@ -5,6 +5,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/platform/system/buffer"
 	"github.com/galenliu/chip/protocols"
+	"github.com/markphelps/optional"
 	log "golang.org/x/exp/slog"
 	"io"
 )
@@ -53,19 +54,18 @@ type PayloadHeader struct {
 	mExchangeId        uint16
 	mProtocolId        protocols.Id
 	mVendorId          lib.VendorId
-	mAckMessageCounter uint32
+	mAckMessageCounter optional.Uint32
 }
 
 type payloadHeaderOption func(header *PayloadHeader)
 
 func NewPayloadHeader(opts ...payloadHeaderOption) *PayloadHeader {
 	header := &PayloadHeader{
-		mExchangeFlags:     0,
-		mProtocolOpcode:    0,
-		mExchangeId:        0,
-		mProtocolId:        protocols.Id{},
-		mVendorId:          0,
-		mAckMessageCounter: 0,
+		mExchangeFlags:  0,
+		mProtocolOpcode: 0,
+		mExchangeId:     0,
+		mProtocolId:     protocols.Id{},
+		mVendorId:       0,
 	}
 	for _, opt := range opts {
 		opt(header)
@@ -116,12 +116,12 @@ func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
 		if err != nil {
 			return err
 		}
-		header.mAckMessageCounter = ackCounter
+		header.mAckMessageCounter = optional.NewUint32(ackCounter)
 	}
 	return nil
 }
 
-func (header *PayloadHeader) AckMessageCounter() uint32 {
+func (header *PayloadHeader) AckMessageCounter() optional.Uint32 {
 	return header.mAckMessageCounter
 }
 
@@ -135,10 +135,6 @@ func (header *PayloadHeader) MessageType() uint8 {
 
 func (header *PayloadHeader) ExchangeId() uint16 {
 	return header.mExchangeId
-}
-
-func (header *PayloadHeader) HasProtocol(id *protocols.Id) bool {
-	return header.mProtocolId.Equal(id)
 }
 
 func (header *PayloadHeader) LogValue() log.Value {
