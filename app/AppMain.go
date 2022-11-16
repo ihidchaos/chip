@@ -7,7 +7,7 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/pkg/storage"
-	log "github.com/sirupsen/logrus"
+	log "golang.org/x/exp/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,31 +25,29 @@ func Init(options *config.DeviceOptions) error {
 	}
 
 	if config.RendezvousMode {
-		log.Infof("RendezvousMode")
+		log.Info("RendezvousMode")
 	}
 
 	err := storage.KeyValueStoreMgr().Init(options.KVS)
 	if err != nil {
-		log.Panic(err.Error())
+		return err
 	}
 
 	err = storage.KeyValueStoreMgr().WriteValueString("Reboot", time.Now().String())
 	if err != nil {
-		log.Infof(err.Error())
-	}
-
-	commissionableDataProvider := device.NewCommissionableDataImpl()
-	commissionableDataProvider, err = commissionableDataProvider.Init(options)
-	if err != nil {
-		log.Infof(err.Error())
 		return err
 	}
 
-	configProvider := config.NewConfigProviderImpl()
-	configMgr := config.NewConfigurationManagerImpl()
-	configMgr, err = configMgr.Init(configProvider, options)
+	commissionableDataProvider := device.GetCommissionableDateProvider()
+	err = commissionableDataProvider.Init(options)
 	if err != nil {
-		log.Infof(err.Error())
+		return err
+	}
+	configProvider := config.DefaultProvider()
+
+	configManager := config.DefaultManager()
+	err = configManager.Init(configProvider, options)
+	if err != nil {
 		return err
 	}
 
@@ -69,10 +67,10 @@ func Init(options *config.DeviceOptions) error {
 
 	credentials.SetDeviceAttestationCredentialsProvider(options.DacProvider)
 
-	deviceInstanceInfo := device.NewInstanceInfo()
-	deviceInstanceInfo, err = deviceInstanceInfo.Init(configMgr)
+	deviceInstanceInfo := device.DefaultInstanceInfo()
+	err = deviceInstanceInfo.Init(configManager)
 	if err != nil {
-		log.Infof(err.Error())
+
 		return err
 	}
 
@@ -84,13 +82,13 @@ func MainLoop(options *config.DeviceOptions) error {
 	serverInitParams := core.NewServerInitParams()
 	_, err := serverInitParams.Init(options)
 	if err != nil {
-		log.Infof(err.Error())
+
 		return err
 	}
 
 	err = serverInitParams.InitializeStaticResourcesBeforeServerInit()
 	if err != nil {
-		log.Infof(err.Error())
+
 		return err
 	}
 	chipServer := core.NewCHIPServer()

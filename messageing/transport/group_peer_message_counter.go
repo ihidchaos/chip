@@ -2,6 +2,7 @@ package transport
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/pkg/storage"
 )
 
@@ -19,7 +20,7 @@ func NewGroupPeerTable(size int) *GroupPeerTable {
 	return &GroupPeerTable{mGroupFabrics: make([]*GroupFabric, size)}
 }
 
-func (g *GroupPeerTable) FindOrAddPeer(fabricIndex lib.FabricIndex, nodeId lib.NodeId, isControl bool) (*PeerMessageCounter, error) {
+func (g *GroupPeerTable) FindOrAddPeer(fabricIndex lib.FabricIndex, nodeId lib.NodeId, isControl bool) (*session.PeerMessageCounter, error) {
 	return nil, nil
 }
 

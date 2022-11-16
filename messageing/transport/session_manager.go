@@ -4,6 +4,7 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/pkg/storage"
 	"github.com/galenliu/chip/platform/system"
 	log "golang.org/x/exp/slog"
@@ -42,7 +43,7 @@ type SessionManagerBase interface {
 
 	PrepareMessage(session *SessionHandle, payloadHeader *raw.PayloadHeader, msgBuf *system.PacketBufferHandle, encryptedMessage *EncryptedPacketBufferHandle) error
 	SendPreparedMessage(session *SessionHandle, preparedMessage *EncryptedPacketBufferHandle) error
-	AllocateSession(sessionType SecureSessionType, sessionEvictionHint *lib.ScopedNodeId) *SessionHandle
+	AllocateSession(sessionType session.SecureSessionType, sessionEvictionHint *lib.ScopedNodeId) *SessionHandle
 
 	ExpireAllSessions(node *lib.ScopedNodeId)
 	ExpireAllSessionsForFabric(fabricIndex lib.FabricIndex)
@@ -50,8 +51,8 @@ type SessionManagerBase interface {
 
 	FabricTable() *credentials.FabricTable
 
-	CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *ReliableMessageProtocolConfig) *SessionHandle
-	FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType SecureSessionType) *SessionHandle
+	CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *session.ReliableMessageProtocolConfig) *SessionHandle
+	FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType session.SecureSessionType) *SessionHandle
 
 	SetMessageDelegate(cb SessionMessageDelegate)
 	SystemLayer() system.Layer
@@ -133,32 +134,32 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 
 	sourceNodeId := packetHeader.SourceNodeId
 	destinationNodeId := packetHeader.DestinationNodeId
-	if (sourceNodeId.HasValue() && destinationNodeId.HasValue()) || (!sourceNodeId.HasValue() && !destinationNodeId.HasValue()) {
+	if (sourceNodeId.IsSome() && destinationNodeId.IsSome()) || (sourceNodeId.IsNone() && destinationNodeId.IsNone()) {
 		log.Info("received malformed unsecure packet", "SourceNodeId", sourceNodeId, "DestinationNodeId", destinationNodeId, "Tag", "SessionManager")
 		return
 		//ephemeral node id is only assigned to the initiator, there should be one and only one node id exists.
 	}
 	var optionalSession *SessionHandle = nil
 	var err error = nil
-	if sourceNodeId.HasValue() {
+	if sourceNodeId.IsSome() {
 		// Assume peer is the initiator, we are the responder.
 		// 对方是发起人，我们是响应者
-		optionalSession, err = s.mUnauthenticatedSessions.FindOrAllocateResponder(sourceNodeId, GetLocalMRPConfig())
+		optionalSession, err = s.mUnauthenticatedSessions.FindOrAllocateResponder(sourceNodeId.Unwrap(), session.GetLocalMRPConfig())
 		if err != nil {
-			log.Error("UnauthenticatedSession exhausted", err)
+			log.Error("Unauthenticated exhausted", err)
 			return
 		}
 	} else {
 		// Assume peer is the responder, we are the initiator.
 		// 对方为响应，我们是发起人
-		optionalSession = s.mUnauthenticatedSessions.FindInitiator(destinationNodeId)
+		optionalSession = s.mUnauthenticatedSessions.FindInitiator(destinationNodeId.Unwrap())
 		if optionalSession == nil {
 			log.Info("Received unknown unsecure packet for initiator", "DestinationNodeId", destinationNodeId, "Tag", "SessionManager")
 			return
 		}
 	}
-	var unsecuredSession *UnauthenticatedSession
-	unsecuredSession = optionalSession.Session.(*UnauthenticatedSession)
+	var unsecuredSession *session.Unauthenticated
+	unsecuredSession = optionalSession.Session.(*session.Unauthenticated)
 	unsecuredSession.SetPeerAddress(peerAddress)
 	isDuplicate := false
 	// 更新Session
@@ -200,18 +201,18 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 		return
 	}
 
-	secureSession := sessionHandle.Session.(*SecureSession)
+	secureSession := sessionHandle.Session.(*session.Secure)
 
 	if secureSession.IsDefunct() && !secureSession.IsActiveSession() && !secureSession.IsPendingEviction() {
 		log.Info("kSecure transport received message on a session in an invalid state", "stata", secureSession.State())
 		return
 	}
 
-	nonce := BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, func() lib.NodeId {
-		if secureSession.SecureSessionType() == SecureSessionTypeCASE {
-			return secureSession.GetPeerNodeId()
+	nonce := session.BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, func() lib.NodeId {
+		if secureSession.SecureSessionType() == session.SecureSessionTypeCASE {
+			return secureSession.PeerNodeId()
 		}
-		return lib.UndefinedNodeId
+		return lib.UndefinedNodeId()
 	}())
 
 	payloadHeader, err := Decrypt(secureSession.GetCryptoContext(), nonce, packetHeader, msg)
@@ -256,8 +257,7 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 		return
 	}
 
-	var groupId = packetHeader.DestinationGroupId
-	if !groupId.HasValue() {
+	if packetHeader.DestinationGroupId.IsNone() {
 		return
 	}
 	if msg.IsNull() {
@@ -272,14 +272,14 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 	// Trial decryption with GroupDataProvider
 	var err error
 	var payloadHeader *raw.PayloadHeader
-	var nonce NonceStorage
+	var nonce session.NonceStorage
 	var groupContext *credentials.GroupSession
 	for _, groupContext = range groups.GroupSessions(packetHeader.SessionId) {
-		if groupId != groupContext.GroupId {
+		if packetHeader.DestinationGroupId.Unwrap() != groupContext.GroupId {
 			continue
 		}
-		nonce = BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, packetHeader.SourceNodeId)
-		payloadHeader, err = Decrypt(NewCryptoContext(groupContext.Key), nonce, packetHeader, msg)
+		nonce = session.BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, packetHeader.SourceNodeId.Unwrap())
+		payloadHeader, err = Decrypt(session.NewCryptoContext(groupContext.Key), nonce, packetHeader, msg)
 	}
 	if err != nil {
 		log.Error("Failed to retrieve Key. Discarding everything", err)
@@ -293,7 +293,7 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 		log.Info("Unexpected ACK requested for group message")
 		return
 	}
-	counter, err := mGroupPeerMsgCounter.FindOrAddPeer(groupContext.FabricIndex, packetHeader.SourceNodeId, packetHeader.IsSecureSessionControlMsg())
+	counter, err := mGroupPeerMsgCounter.FindOrAddPeer(groupContext.FabricIndex, packetHeader.SourceNodeId.Unwrap(), packetHeader.IsSecureSessionControlMsg())
 	if err == nil {
 		if groupContext.SecurityPolicy == credentials.TrustFirst {
 			err = counter.VerifyOrTrustFirstGroup(packetHeader.MessageCounter)
@@ -313,7 +313,7 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 	}
 	counter.CommitGroup(packetHeader.MessageCounter)
 	if s.mCB != nil {
-		groupSession := NewIncomingGroupSession(groupContext.GroupId, groupContext.FabricIndex, packetHeader.SourceNodeId)
+		groupSession := session.NewIncomingGroupSession(groupContext.GroupId, groupContext.FabricIndex, packetHeader.SourceNodeId.Unwrap())
 		log.Debug("Message Received", "PayloadHeader", payloadHeader, "packetHeader", packetHeader, "GroupSession", groupSession, "PeerAddress", peerAddress, "message", msg)
 		s.mCB.OnMessageReceived(packetHeader, payloadHeader, NewSessionHandle(groupSession), false, msg)
 	}
@@ -366,7 +366,7 @@ func (s *SessionManager) SendPreparedMessage(session *SessionHandle, preparedMes
 	return nil
 }
 
-func (s *SessionManager) AllocateSession(sessionType SecureSessionType, sessionEvictionHint *lib.ScopedNodeId) *SessionHandle {
+func (s *SessionManager) AllocateSession(sessionType session.SecureSessionType, sessionEvictionHint *lib.ScopedNodeId) *SessionHandle {
 	return nil
 }
 
@@ -381,11 +381,11 @@ func (s *SessionManager) ExpireAllSessionsOnLogicalFabric(node *lib.ScopedNodeId
 
 }
 
-func (s *SessionManager) CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *ReliableMessageProtocolConfig) *SessionHandle {
+func (s *SessionManager) CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *session.ReliableMessageProtocolConfig) *SessionHandle {
 	return nil
 }
 
-func (s *SessionManager) FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType SecureSessionType) *SessionHandle {
+func (s *SessionManager) FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType session.SecureSessionType) *SessionHandle {
 	return nil
 }
 

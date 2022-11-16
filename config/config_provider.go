@@ -4,12 +4,22 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/pkg/storage"
 	log "golang.org/x/exp/slog"
-	"sync"
+	"sync/atomic"
 )
 
 const KConfigNamespaceChipFactory = "chip-factory"
 const KConfigNamespaceChipConfig = "chip-config"
 const KConfigNamespaceChipCounters = "chip-counters"
+
+var defaultProvider atomic.Value
+
+func init() {
+	defaultProvider.Store(NewProviderImpl())
+}
+
+func DefaultProvider() *ProviderImpl {
+	return defaultProvider.Load().(*ProviderImpl)
+}
 
 type StorageDelegate interface {
 	ReadConfigValueBool(k Key) (bool, error)
@@ -37,26 +47,14 @@ type Provider interface {
 	EnsureNamespace(k string) error
 }
 
-var _ConfigProviderInstance *ProviderImpl
-var _ConfigProviderInstanceOnce sync.Once
-
-func GetConfigProviderInstance() *ProviderImpl {
-	_ConfigProviderInstanceOnce.Do(func() {
-		if _ConfigProviderInstance == nil {
-			_ConfigProviderInstance = &ProviderImpl{}
-		}
-	})
-	return _ConfigProviderInstance
-}
-
 type ProviderImpl struct {
 	mChipFactoryStorage  storage.ChipStorage
 	mChipConfigStorage   storage.ChipStorage
 	mChipCountersStorage storage.ChipStorage
 }
 
-func NewConfigProviderImpl() *ProviderImpl {
-	return GetConfigProviderInstance()
+func NewProviderImpl() *ProviderImpl {
+	return &ProviderImpl{}
 }
 
 func (conf *ProviderImpl) ReadConfigValueBool(k Key) (bool, error) {

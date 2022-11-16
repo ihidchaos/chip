@@ -460,7 +460,6 @@ var (
 	TooManyUnsolicitedMessageHandlers MatterError = " MATTER_ERROR_TOO_MANY_UNSOLICITED_MESSAGE_HANDLERS"
 	WrongEncryptionTypeFromPeer       MatterError = " MATTER_ERROR_WRONG_ENCRYPTION_TYPE_FROM_PEER"
 	InvalidMessageType                MatterError = " MATTER_ERROR_INVALID_MESSAGE_TYPE"
-	InvalidMessage                    MatterError = "INVALID MESSAGE"
 	WrongTlvType                      MatterError = " MATTER_ERROR_WRONG_TLV_TYPE"
 	UnexpectedTlvElement              MatterError = " MATTER_ERROR_UNEXPECTED_TLV_ELEMENT"
 	InvalidCaseParameter              MatterError = " MATTER_ERROR_INVALID_CASE_PARAMETER"

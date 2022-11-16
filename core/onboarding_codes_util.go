@@ -23,7 +23,7 @@ func GetPayloadContents(payload *config.PayloadContents, aRendezvousFlags uint8)
 	}
 	payload.Discriminator.SetLongValue(discriminator)
 
-	payload.ProductID, err = device.GetDeviceInstanceInfoProvider().GetProductId()
+	payload.ProductID, err = device.DefaultInstanceInfo().GetProductId()
 	if err != nil {
 		log.Printf("GetDeviceInstanceInfoProvider()->GetProductId() failed: %s", err.Error())
 	}

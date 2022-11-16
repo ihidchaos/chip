@@ -3,50 +3,27 @@ package transport
 import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"time"
 )
 
-type SessionRole uint8
-
-const (
-	RoleInitiator SessionRole = iota
-	RoleResponder
-)
-
-func (t SessionRole) Uint8() uint8 {
-	return uint8(t)
-}
-
-func (t SessionRole) String() string {
-	switch t {
-	case RoleResponder:
-		return "Responder"
-	case RoleInitiator:
-		return "Initiator"
-	default:
-		return "unknown"
-	}
-}
-
 type UnauthenticatedSessionTable struct {
-	mEntries []*UnauthenticatedSession
-	mMaxSize int
+	mEntries [config.SecureSessionPoolSize]*session.Unauthenticated
 }
 
 func NewUnauthenticatedSessionTable() *UnauthenticatedSessionTable {
 	return &UnauthenticatedSessionTable{
-		mEntries: make([]*UnauthenticatedSession, 0),
-		mMaxSize: config.SecureSessionPoolSize,
+		mEntries: [config.SecureSessionPoolSize]*session.Unauthenticated{},
 	}
 }
 
-func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeId lib.NodeId, config *ReliableMessageProtocolConfig) (*SessionHandle, error) {
+func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeId lib.NodeId, config *session.ReliableMessageProtocolConfig) (*SessionHandle, error) {
 	var err error = nil
-	result := t.findEntry(RoleResponder, ephemeralInitiatorNodeId)
+	result := t.findEntry(session.Responder, ephemeralInitiatorNodeId)
 	if result != nil {
 		return NewSessionHandle(result), nil
 	}
-	result, err = t.allocEntry(RoleResponder, ephemeralInitiatorNodeId, config)
+	result, err = t.allocEntry(session.Responder, ephemeralInitiatorNodeId, config)
 	if err != nil {
 		return nil, err
 	}
@@ -54,15 +31,15 @@ func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiator
 }
 
 func (t *UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *SessionHandle {
-	result := t.findEntry(RoleInitiator, ephemeralInitiatorNodeID)
+	result := t.findEntry(session.Initiator, ephemeralInitiatorNodeID)
 	if result != nil {
 		return NewSessionHandle(result)
 	}
 	return nil
 }
 
-func (t *UnauthenticatedSessionTable) findLeastRecentUsedEntry() *UnauthenticatedSession {
-	var result *UnauthenticatedSession = nil
+func (t *UnauthenticatedSessionTable) findLeastRecentUsedEntry() *session.Unauthenticated {
+	var result *session.Unauthenticated = nil
 	var oldTime = time.Now()
 	for _, e := range t.mEntries {
 		if e.ReferenceCount() == 0 && e.LastPeerActivityTime().After(oldTime) {
@@ -73,22 +50,17 @@ func (t *UnauthenticatedSessionTable) findLeastRecentUsedEntry() *Unauthenticate
 	return result
 }
 
-func (t *UnauthenticatedSessionTable) allocEntry(sessionRole SessionRole, ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) (*UnauthenticatedSession, error) {
-	var entry *UnauthenticatedSession
-	if len(t.mEntries) < t.mMaxSize {
-		entry = NewUnauthenticatedSession(sessionRole, ephemeralInitiatorNodeID, config)
-		t.mEntries = append(t.mEntries, entry)
-		return entry, nil
-	}
+func (t *UnauthenticatedSessionTable) allocEntry(sessionRole session.Role, ephemeralInitiatorNodeID lib.NodeId, config *session.ReliableMessageProtocolConfig) (*session.Unauthenticated, error) {
+	var entry *session.Unauthenticated
 	entry = t.findLeastRecentUsedEntry()
 	if entry == nil {
 		return nil, lib.NotMemory
 	}
-	entry = NewUnauthenticatedSession(sessionRole, ephemeralInitiatorNodeID, config)
+	entry = session.NewUnauthenticated(sessionRole, ephemeralInitiatorNodeID, config)
 	return entry, nil
 }
 
-func (t *UnauthenticatedSessionTable) findEntry(sessionRole SessionRole, ephemeralInitiatorNodeId lib.NodeId) *UnauthenticatedSession {
+func (t *UnauthenticatedSessionTable) findEntry(sessionRole session.Role, ephemeralInitiatorNodeId lib.NodeId) *session.Unauthenticated {
 	for _, entry := range t.mEntries {
 		if entry.SessionRole() == sessionRole && entry.EphemeralInitiatorNodeId() == ephemeralInitiatorNodeId {
 			return entry

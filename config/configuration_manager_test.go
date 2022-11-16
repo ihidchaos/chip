@@ -12,7 +12,7 @@ func GetPrimaryWiFiMACAddress() (i []net.Interface) {
 }
 
 func TestMac(t *testing.T) {
-	mgr := ConfigurationMgr()
+	mgr := DefaultManager()
 	for i := 0; i < 100; i++ {
 		t.Log(mgr.GetPrimaryMACAddress())
 	}

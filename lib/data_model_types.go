@@ -23,7 +23,6 @@ type InteractionModelRevision uint8
 type SubscriptionId uint32
 
 const InvalidKeysetId KeysetId = 0xFFFF
-const FabricIndexUndefined FabricIndex = 0
 
 const InvalidClusterId ClusterId = 0xFFFF_FFFF
 const InvalidAttributeId AttributeId = 0xFFFF_FFFF
@@ -39,4 +38,8 @@ func (f FabricId) String() string {
 func (f CompressedFabricId) String() string {
 	value := uint64(f)
 	return fmt.Sprintf("%016X", value)
+}
+
+func UndefinedFabricIndex() FabricIndex {
+	return kUndefinedFabricIndex
 }

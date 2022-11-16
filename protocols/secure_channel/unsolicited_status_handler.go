@@ -20,6 +20,11 @@ type UnsolicitedStatusHandlerImpl struct {
 	mExchangeManager messageing.ExchangeManagerBase
 }
 
+func (h UnsolicitedStatusHandlerImpl) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (h UnsolicitedStatusHandlerImpl) OnMessageReceived(context *messageing.ExchangeContext,
 	header *raw.PayloadHeader, data *system.PacketBufferHandle) error {
 	//TODO implement me

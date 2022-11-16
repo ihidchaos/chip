@@ -1,9 +1,12 @@
 package transport
 
-import "github.com/galenliu/chip/lib"
+import (
+	"github.com/galenliu/chip/lib"
+	session "github.com/galenliu/chip/messageing/transport/session"
+)
 
 type SessionHolder struct {
-	Session
+	session.Session
 	*lib.ReferenceCounted
 }
 
@@ -36,20 +39,20 @@ func (s *SessionHolder) Release() {
 	s.Session = nil
 }
 
-func (s *SessionHolder) GrabPairingSession(session *SessionHandle) bool {
+func (s *SessionHolder) GrabPairingSession(ss *SessionHandle) bool {
 	s.Release()
-	if !session.IsSecureSession() {
+	if !ss.IsSecureSession() {
 		return false
 	}
-	secureSession, ok := session.Session.(*SecureSession)
+	secureSession, ok := ss.Session.(*session.Secure)
 	if !ok || !secureSession.IsEstablishing() {
 		return false
 	}
-	s.GrabUnchecked(session)
+	s.GrabUnchecked(ss)
 	return true
 }
 
-func (s *SessionHolder) DispatchSessionEvent(delegate SessionDelegate) {
+func (s *SessionHolder) DispatchSessionEvent(delegate session.Delegate) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -70,10 +73,10 @@ func (s *SessionHolder) GrabUnchecked(session *SessionHandle) {
 
 type SessionHolderWithDelegate struct {
 	*SessionHolder
-	mDelegate SessionDelegate
+	mDelegate session.Delegate
 }
 
-func NewSessionHolderWithDelegateImpl(delegate SessionDelegate) *SessionHolderWithDelegate {
+func NewSessionHolderWithDelegateImpl(delegate session.Delegate) *SessionHolderWithDelegate {
 	return &SessionHolderWithDelegate{
 		SessionHolder: &SessionHolder{},
 		mDelegate:     delegate,
@@ -95,7 +98,7 @@ func (s *SessionHolderWithDelegate) Release() {
 	panic("implement me")
 }
 
-func (s *SessionHolderWithDelegate) DispatchSessionEvent(delegate SessionDelegate) {
+func (s *SessionHolderWithDelegate) DispatchSessionEvent(delegate session.Delegate) {
 	//TODO implement me
 	panic("implement me")
 }

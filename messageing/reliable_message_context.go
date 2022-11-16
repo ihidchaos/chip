@@ -1,7 +1,7 @@
 package messageing
 
 import (
-	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/bitflags"
 	"time"
 )
 
@@ -20,7 +20,7 @@ const (
 )
 
 type ReliableMessageContext struct {
-	mFlags                        uint16
+	mFlags                        bitflags.Flags[uint16]
 	mNextAckTime                  time.Time
 	mPendingPeerAckMessageCounter uint32
 }
@@ -30,6 +30,50 @@ func NewReliableMessageContext() ReliableMessageContext {
 		mNextAckTime:                  time.Time{},
 		mPendingPeerAckMessageCounter: 0,
 	}
+}
+
+func (c *ReliableMessageContext) AutoRequestAck() bool {
+	return c.mFlags.Has(kFlagAutoRequestAck)
+
+}
+
+func (c *ReliableMessageContext) IsAckPending() bool {
+
+	return c.mFlags.Has(kFlagAckPending)
+}
+
+func (c *ReliableMessageContext) IsMessageNotAcked() bool {
+	return c.mFlags.Has(kFlagEphemeralExchange)
+}
+
+func (c *ReliableMessageContext) HasPiggybackAckPending() bool {
+	return c.mFlags.Has(kFlagAckMessageCounterIsValid)
+}
+
+func (c *ReliableMessageContext) IsRequestingActiveMode() bool {
+
+	return c.mFlags.Has(kFlagActiveMode)
+}
+
+func (c *ReliableMessageContext) SetAutoRequestAck(autoReqAck bool) {
+	c.mFlags.Sets(autoReqAck, kFlagAutoRequestAck)
+}
+
+func (c *ReliableMessageContext) SetAckPending(inAckPending bool) {
+	c.mFlags.Sets(inAckPending, kFlagAckPending)
+}
+
+func (c *ReliableMessageContext) SetMessageNotAcked(messageNotAcked bool) {
+	c.mFlags.Sets(messageNotAcked, kFlagMessageNotAcked)
+}
+
+func (c *ReliableMessageContext) SetRequestingActiveMode(activeMode bool) {
+
+	c.mFlags.Sets(activeMode, kFlagActiveMode)
+}
+
+func (c *ReliableMessageContext) IsEphemeralExchange() bool {
+	return c.mFlags.Has(kFlagEphemeralExchange)
 }
 
 func (c *ReliableMessageContext) HandleRcvdAck(ackCounter uint32) {
@@ -47,34 +91,6 @@ func (c *ReliableMessageContext) FlushAcks() error {
 	panic("implement me")
 }
 
-func (c *ReliableMessageContext) IsEphemeralExchange() bool {
-	return lib.HasFlags(c.mFlags, kFlagMessageNotAcked)
-}
-
-func (c *ReliableMessageContext) IsMessageNotAcked() bool {
-	return lib.HasFlags(c.mFlags, kFlagEphemeralExchange)
-}
-
-func (c *ReliableMessageContext) HasPiggybackAckPending() bool {
-	return lib.HasFlags(c.mFlags, kFlagAckMessageCounterIsValid)
-}
-
-func (c *ReliableMessageContext) SetAckPending(b bool) {
-	c.mFlags = lib.SetFlag(b, c.mFlags, kFlagAckPending)
-}
-
-func (c *ReliableMessageContext) IsAckPending() bool {
-	return lib.HasFlags(c.mFlags, kFlagAckPending)
-}
-
-func (c *ReliableMessageContext) AutoRequestAck() bool {
-	return lib.HasFlags(c.mFlags, kFlagAutoRequestAck)
-}
-
-func (c *ReliableMessageContext) IsRequestingActiveMode() bool {
-	return lib.HasFlags(c.mFlags, kFlagActiveMode)
-}
-
 func (c *ReliableMessageContext) ShouldIgnoreSessionRelease() bool {
-	return lib.HasFlags(c.mFlags, kFlagIgnoreSessionRelease)
+	return c.mFlags.Has(kFlagIgnoreSessionRelease)
 }

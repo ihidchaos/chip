@@ -6,6 +6,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
 	log "github.com/sirupsen/logrus"
@@ -31,6 +32,11 @@ type CASEServer struct {
 
 	mFabrics           *credentials.FabricTable
 	mGroupDataProvider credentials.GroupDataProvider
+}
+
+func (s *CASEServer) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewCASEServer() *CASEServer {
@@ -78,7 +84,7 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 		s.mCertificateValidityPolicy,
 		s,
 		previouslyEstablishedPeer,
-		transport.GetLocalMRPConfig(),
+		session.GetLocalMRPConfig(),
 	)
 	if err != nil {
 		log.Panic(err.Error())

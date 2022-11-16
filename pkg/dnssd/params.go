@@ -2,7 +2,7 @@ package dnssd
 
 import (
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/messageing/transport"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"net"
 )
 
@@ -11,9 +11,9 @@ type BaseAdvertisingParams struct {
 	mMac            string
 	mEnableIPv4     bool
 	mInterfaceId    net.Interface
-	mMRPConfig      transport.ReliableMessageProtocolConfig
+	mMRPConfig      session.ReliableMessageProtocolConfig
 	mTcpSupported   *bool
-	mLocalMRPConfig transport.ReliableMessageProtocolConfig
+	mLocalMRPConfig session.ReliableMessageProtocolConfig
 }
 
 func NewBaseAdvertisingParams() BaseAdvertisingParams {
@@ -21,15 +21,15 @@ func NewBaseAdvertisingParams() BaseAdvertisingParams {
 }
 
 func (b BaseAdvertisingParams) Init() BaseAdvertisingParams {
-	b.mMRPConfig = transport.ReliableMessageProtocolConfig{}
+	b.mMRPConfig = session.ReliableMessageProtocolConfig{}
 	return b
 }
 
-func (b *BaseAdvertisingParams) GetLocalMRPConfig() *transport.ReliableMessageProtocolConfig {
+func (b *BaseAdvertisingParams) GetLocalMRPConfig() *session.ReliableMessageProtocolConfig {
 	return &b.mLocalMRPConfig
 }
 
-func (b *BaseAdvertisingParams) SetLocalMRPConfig(config *transport.ReliableMessageProtocolConfig) {
+func (b *BaseAdvertisingParams) SetLocalMRPConfig(config *session.ReliableMessageProtocolConfig) {
 	b.mLocalMRPConfig = *config
 }
 

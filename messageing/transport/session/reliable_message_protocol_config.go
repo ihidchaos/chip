@@ -1,4 +1,4 @@
-package transport
+package session
 
 import (
 	"sync"
@@ -11,6 +11,13 @@ var ConfigMrpDefaultActiveRetryInterval int64 = 300
 type ReliableMessageProtocolConfig struct {
 	IdleRetransTimeout   time.Duration
 	ActiveRetransTimeout time.Duration
+}
+
+func DefaultMRPConfig() *ReliableMessageProtocolConfig {
+	return &ReliableMessageProtocolConfig{
+		IdleRetransTimeout:   300 * time.Millisecond,
+		ActiveRetransTimeout: 300 * time.Millisecond,
+	}
 }
 
 func (c ReliableMessageProtocolConfig) Init() *ReliableMessageProtocolConfig {
@@ -35,4 +42,8 @@ func newReliableMessageProtocolConfig() *ReliableMessageProtocolConfig {
 	rmpc.IdleRetransTimeout = time.Duration(ConfigMrpDefaultIdleRetryInterval)
 	rmpc.ActiveRetransTimeout = time.Duration(ConfigMrpDefaultActiveRetryInterval)
 	return rmpc
+}
+
+func GetRetransmissionTimeout(activeRetransTimeout time.Duration, idleRetransTimeout time.Duration, lastActivityTime time.Time, activeTime time.Duration) time.Duration {
+	return time.Duration(0)
 }

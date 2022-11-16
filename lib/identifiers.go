@@ -5,9 +5,9 @@ type ProductId uint16
 const ProductIdAnonymous ProductId = 0x0000
 
 const (
-	UndefinedFabricIndex FabricIndex = 0x0
-	MinValidFabricIndex  FabricIndex = 0x1
-	kMaxValidFabricIndex FabricIndex = 0xFE
+	kUndefinedFabricIndex FabricIndex = 0x0
+	MinValidFabricIndex   FabricIndex = 0x1
+	kMaxValidFabricIndex  FabricIndex = 0xFE
 )
 
 //Range Type
@@ -26,15 +26,11 @@ const (
 //0x0000_0000_0000_0000 Unspecified Node ID
 
 func NodeIdFromPAKEKeyId(aPAKEKeyId PasscodeId) NodeId {
-	return NodeId(uint64(minPAKEKeyId) | uint64(aPAKEKeyId))
+	return NodeId(uint64(kMinPAKEKeyId) | uint64(aPAKEKeyId))
 }
 
 func PAKEKeyIdFromNodeId(aNodeId NodeId) PasscodeId {
-	return PasscodeId(aNodeId & maskPAKEKeyId)
-}
-
-func NodeIdFromGroupId(aGroupId GroupId) NodeId {
-	return NodeId(uint64(minGroupNodeId) | uint64(aGroupId))
+	return PasscodeId(aNodeId & kMaskPAKEKeyId)
 }
 
 func (index FabricIndex) IsValidFabricIndex() bool {

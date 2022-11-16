@@ -3,7 +3,7 @@ package access
 type DeviceTypeResolver struct {
 }
 
-type Controler interface {
+type Controller interface {
 	Init(delegate Delegate, resolver DeviceTypeResolver) error
 }
 
@@ -20,6 +20,6 @@ func (c *Control) Init(delegate Delegate, d DeviceTypeResolver) error {
 	return nil
 }
 
-func SetAccessControl(a Controler) {
+func SetAccessControl(a Controller) {
 
 }

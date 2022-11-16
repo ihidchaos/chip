@@ -2,7 +2,7 @@ package dnssd
 
 import (
 	"fmt"
-	"github.com/galenliu/chip/messageing/transport"
+	"github.com/galenliu/chip/messageing/transport/session"
 )
 
 type Mac struct {
@@ -87,7 +87,7 @@ func (c *CommissionAdvertisingParameters) SetPairingInstruction(ist string) {
 	c.mPairingInstr = ist
 }
 
-func (c *CommissionAdvertisingParameters) SetMRPConfig(config *transport.ReliableMessageProtocolConfig) {
+func (c *CommissionAdvertisingParameters) SetMRPConfig(config *session.ReliableMessageProtocolConfig) {
 	c.mMRPConfig = *config
 }
 
@@ -148,7 +148,7 @@ func (c *CommissionAdvertisingParameters) SetShortDiscriminator(discriminator ui
 	return c
 }
 
-func (c *CommissionAdvertisingParameters) SetLocalMRPConfig(config *transport.ReliableMessageProtocolConfig) *CommissionAdvertisingParameters {
+func (c *CommissionAdvertisingParameters) SetLocalMRPConfig(config *session.ReliableMessageProtocolConfig) *CommissionAdvertisingParameters {
 	c.mLocalMRPConfig = *config
 	return c
 }

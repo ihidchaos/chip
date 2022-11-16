@@ -111,7 +111,7 @@ func NewFabricData(index lib.FabricIndex) *FabricData {
 func fabricData() *FabricData {
 	return &FabricData{
 		fabricIndex: lib.UndefinedFabricIndex,
-		firstGroup:  lib.UndefinedGroupId,
+		firstGroup:  lib.UndefinedGroupId(),
 		groupCount:  0,
 		firstMap:    0,
 		mapCount:    0,

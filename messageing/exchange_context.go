@@ -3,6 +3,7 @@ package messageing
 import (
 	"fmt"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/platform/system"
@@ -18,7 +19,7 @@ type ExchangeSessionHolder struct {
 
 // GrabExpiredSession 抓取过期会话
 func (s *ExchangeSessionHolder) GrabExpiredSession(session *transport.SessionHandle) {
-	secureSession, ok := session.Session.(*transport.SecureSession)
+	secureSession, ok := session.Session.(*session.SecureSession)
 	if ok {
 		if secureSession.IsPendingEviction() {
 			s.GrabUnchecked(session)
@@ -39,7 +40,7 @@ type ExchangeContext struct {
 	mDispatch        ExchangeMessageDispatchBase
 	mSession         *ExchangeSessionHolder
 	mDelegate        ExchangeDelegate
-	mFlags           uint16
+	mFlags           bitflags.Flags[uint16]
 	mResponseTimeout time.Duration
 	*lib.ReferenceCounted
 }
@@ -52,16 +53,15 @@ func NewExchangeContext(
 	delegate ExchangeDelegate,
 	isEphemeralExchange bool,
 ) *ExchangeContext {
-	var flags uint16 = 0
-	flags = lib.SetFlag(initiator, flags, kFlagInitiator)
-	flags = lib.SetFlag(isEphemeralExchange, flags, kFlagEphemeralExchange)
 	ec := &ExchangeContext{
 		ReliableMessageContext: NewReliableMessageContext(),
 		mExchangeId:            exchangeId,
 		mExchangeMgr:           em,
 		mDelegate:              delegate,
-		mFlags:                 flags,
+		mFlags:                 bitflags.Flags[uint16]{},
 	}
+	ec.mFlags.Sets(initiator, kFlagInitiator)
+	ec.mFlags.Sets(isEphemeralExchange, kFlagEphemeralExchange)
 	ec.mDispatch = ec.GetMessageDispatch(isEphemeralExchange, delegate)
 	ec.ReferenceCounted = lib.NewReferenceCounted(1, ec)
 	ec.mSession = NewExchangeSessionHolder(ec)
@@ -78,7 +78,16 @@ func NewExchangeContext(
 
 // IsInitiator 是否是通信的发起方
 func (c *ExchangeContext) IsInitiator() bool {
-	return c.mFlags&kFlagInitiator != 0
+	return c.mFlags.Has(kFlagInitiator)
+}
+
+func (c *ExchangeContext) IsResponseExpected() bool {
+	return c.mFlags.Has(kFlagResponseExpected)
+}
+
+func (c *ExchangeContext) SetResponseExpected(inResponseExpected bool) {
+	c.mFlags.Sets(inResponseExpected, kFlagResponseExpected)
+
 }
 
 func (c *ExchangeContext) IsEncryptionRequired() bool {
@@ -89,7 +98,15 @@ func (c *ExchangeContext) IsGroupExchangeContext() bool {
 	return c.mSession.IsGroupSession()
 }
 
-func (c *ExchangeContext) SendMessage(protocolId *protocols.Id, msgType uint8, r2 []byte, response uint16) error {
+func (c *ExchangeContext) UseSuggestedResponseTimeout(applicationProcessingTimeout time.Time) {
+
+}
+
+func (c *ExchangeContext) SetResponseTimeout(timeout time.Duration) {
+	c.mResponseTimeout = timeout
+}
+
+func (c *ExchangeContext) SendMessage(protocolId protocols.Id, msgType uint8, r2 []byte, response uint16) error {
 
 	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
 
@@ -107,7 +124,8 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 
 	c.Retain()
 	isStandaloneAck := payloadHeader.HasMessageType(uint8(secure_channel.StandaloneAck))
-	isDuplicate := lib.HasFlags(flags, fDuplicateMessage)
+	f := bitflags.Some(flags)
+	isDuplicate := f.Has(fDuplicateMessage)
 
 	defer func() {
 		if (isDuplicate || isStandaloneAck) && c.mDelegate != nil {
@@ -117,10 +135,10 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 	}()
 
 	if c.mDispatch.IsReliableTransmissionAllowed() && !c.IsGroupExchangeContext() {
-		if lib.HasFlags(flags, fDuplicateMessage) &&
+		if f.Has(fDuplicateMessage) &&
 			payloadHeader.IsAckMsg() &&
-			payloadHeader.AckMessageCounter().Present() {
-			c.HandleRcvdAck(payloadHeader.AckMessageCounter().MustGet())
+			payloadHeader.AckMessageCounter().IsSome() {
+			c.HandleRcvdAck(payloadHeader.AckMessageCounter().Unwrap())
 		}
 		if payloadHeader.NeedsAck() {
 			c.HandleNeedsAck(messageCounter, flags)
@@ -165,19 +183,16 @@ func (c *ExchangeContext) Delegate() ExchangeDelegate {
 	return c.mDelegate
 }
 
-func (c *ExchangeContext) SetResponseTimeout(timeout time.Duration) {
-	c.mResponseTimeout = timeout
-}
-
 func (c *ExchangeContext) Released() {
 	c.mExchangeMgr.ReleaseContext(c)
 }
 
 func (c *ExchangeContext) DoClose(clearRetransTable bool) {
-	if lib.HasFlags(c.mFlags, kFlagClosed) {
+
+	if c.mFlags.Has(kFlagClosed) {
 		return
 	}
-	c.mFlags = lib.SetFlags(c.mFlags, kFlagClosed)
+	c.mFlags.Sets(true, kFlagClosed)
 
 	if c.mDelegate != nil {
 		c.mDelegate.OnExchangeClosing(c)
@@ -186,7 +201,7 @@ func (c *ExchangeContext) DoClose(clearRetransTable bool) {
 	_ = c.FlushAcks()
 
 	if clearRetransTable {
-		c.mExchangeMgr.ReliableMessageMgr().ClearRetransTable(c)
+		c.mExchangeMgr.ReliableMessageMgr().ClearRetransTable(c.ReliableMessageContext)
 	}
 	c.CancelResponseTimer()
 }
@@ -247,30 +262,23 @@ func (c *ExchangeContext) LogValue() log.Value {
 }
 
 func (c *ExchangeContext) messageHandled() {
-	if lib.HasFlags(c.mFlags, kFlagClosed) || c.isResponseExpected() || c.isSendExpected() {
+	if c.mFlags.Has(kFlagClosed) || c.IsResponseExpected() || c.isSendExpected() {
 		return
 	}
 	c.Close()
 }
 
-func (c *ExchangeContext) isResponseExpected() bool {
-	return lib.HasFlags(c.mFlags, kFlagResponseExpected)
-}
-
 func (c *ExchangeContext) isSendExpected() bool {
-	return lib.HasFlags(c.mFlags, kFlagWillSendMessage)
+	return c.mFlags.Has(kFlagWillSendMessage)
 }
 
 func (c *ExchangeContext) isAckPending() bool {
-	return lib.HasFlags(c.mFlags, kFlagAckPending)
-}
+	return c.mFlags.Has(kFlagAckPending)
 
-func (c *ExchangeContext) SetResponseExpected(b bool) {
-	c.mFlags = lib.SetFlag(b, c.mFlags, kFlagResponseExpected)
 }
 
 func (c *ExchangeContext) WillSendMessage() {
-	c.mFlags = lib.SetFlag(true, c.mFlags, kFlagWillSendMessage)
+	c.mFlags.Sets(true, kFlagWillSendMessage)
 }
 
 func DefaultOnMessageReceived(c *ExchangeContext, id *protocols.Id, messageType uint8, messageCounter uint32, payload *system.PacketBufferHandle) {

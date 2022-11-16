@@ -46,11 +46,7 @@ func GetCommissionableDateProvider() *CommissionableDataImpl {
 	return _instance
 }
 
-func NewCommissionableDataImpl() *CommissionableDataImpl {
-	return GetCommissionableDateProvider()
-}
-
-func (c *CommissionableDataImpl) Init(options *config.DeviceOptions) (*CommissionableDataImpl, error) {
+func (c *CommissionableDataImpl) Init(options *config.DeviceOptions) error {
 	var setupPasscode uint32
 	if options.Payload.SetUpPINCode != 0 {
 		setupPasscode = options.Payload.SetUpPINCode
@@ -83,9 +79,9 @@ func (c *CommissionableDataImpl) Init(options *config.DeviceOptions) (*Commissio
 
 	err := c.initCommissionableData(options.Spake2pVerifier, options.Spake2pSalt, spake2pIterationCount, setupPasscode, options.Discriminator)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return c, nil
+	return nil
 }
 
 func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifier, spake2pSalt []byte,
@@ -223,7 +219,7 @@ func (c *CommissionableDataImpl) GetSpake2pVerifier() ([]byte, error) {
 	return c.mSerializedPaseVerifier, nil
 }
 
-func (c CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
+func (c *CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
 	if !c.mIsInitialized {
 		return 0, lib.IncorrectState
 	}
@@ -233,7 +229,7 @@ func (c CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
 	return c.mSetupPasscode, nil
 }
 
-func (c CommissionableDataImpl) SetSetupPasscode(uint322 uint32) error {
+func (c *CommissionableDataImpl) SetSetupPasscode(uint322 uint32) error {
 	return lib.NotImplemented
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"net/netip"
 )
@@ -48,14 +49,14 @@ func (m *MessageCounterManager) OnExchangeCreationFailed(delegate messageing.Exc
 	panic("implement me")
 }
 
-func (m *MessageCounterManager) StartSync(handle *transport.SessionHandle, session *transport.SecureSession) error {
+func (m *MessageCounterManager) StartSync(handle *transport.SessionHandle, session *session.Secure) error {
 	//TODO implement me
 	panic("implement me")
 }
 
 func (m *MessageCounterManager) QueueReceivedMessageAndStartSync(header *raw.PacketHeader,
 	handle *transport.SessionHandle,
-	state *transport.SecureSession,
+	state *session.Secure,
 	peerAdders netip.AddrPort,
 	buf *system.PacketBufferHandle) error {
 	//TODO implement me

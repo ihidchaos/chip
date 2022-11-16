@@ -10,6 +10,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/pkg/dnssd"
 	"github.com/galenliu/chip/pkg/storage"
 	DeviceLayer "github.com/galenliu/chip/platform/device_layer"
@@ -58,7 +59,7 @@ type Server struct {
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
 	mDeviceStorage                 storage.KvsPersistentStorageDelegate
-	mAccessControl                 access.Controler
+	mAccessControl                 access.Controller
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
 	mOperationalKeystore           storage2.OperationalKeystore
 	mCertificateValidityPolicy     credentials.CertificateValidityPolicy
@@ -312,7 +313,7 @@ func (s *Server) Init(initParams *InitParams) error {
 			FabricTable:               s.mFabrics,
 			ClientPool:                s.mCASEClientPool,
 			GroupDataProvider:         s.mGroupsProvider,
-			MrpLocalConfig:            transport.GetLocalMRPConfig(),
+			MrpLocalConfig:            session.GetLocalMRPConfig(),
 		},
 		DevicePool: s.mDevicePool,
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/galenliu/chip/clusters"
 	log "golang.org/x/exp/slog"
 	"math/rand"
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -53,7 +53,7 @@ type ConfigurationManager interface {
 	GenerateUniqueId() error
 	GetFailSafeArmed() bool
 	SetFailSafeArmed(val bool) error
-	//
+
 	GetBLEDeviceIdentificationInfo() (ble.DeviceIdentificationInfo, error)
 
 	IsFullyProvisioned() bool
@@ -92,18 +92,18 @@ type ConfigurationManagerImpl struct {
 	Provider
 }
 
-var managerImpl *ConfigurationManagerImpl
-var _cmOnce sync.Once
+var defaultManager atomic.Value
 
-func ConfigurationMgr() *ConfigurationManagerImpl {
-	_cmOnce.Do(func() {
-		managerImpl = &ConfigurationManagerImpl{}
-	})
-	return managerImpl
+func init() {
+	defaultManager.Store(NewConfigurationManagerImpl())
+}
+
+func DefaultManager() *ConfigurationManagerImpl {
+	return defaultManager.Load().(*ConfigurationManagerImpl)
 }
 
 func NewConfigurationManagerImpl() *ConfigurationManagerImpl {
-	return ConfigurationMgr()
+	return &ConfigurationManagerImpl{}
 }
 
 func (c *ConfigurationManagerImpl) GetRegulatoryLocation() (location uint8, err error) {
@@ -237,7 +237,7 @@ func (c *ConfigurationManagerImpl) GetLocationCapability() (uint8, error) {
 	panic("implement me")
 }
 
-func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *DeviceOptions) (*ConfigurationManagerImpl, error) {
+func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *DeviceOptions) error {
 	err := configProvider.EnsureNamespace(KConfigNamespaceChipConfig)
 	if err != nil {
 		log.Warn(err.Error())
@@ -257,13 +257,13 @@ func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *Device
 	if options.Payload.VendorID != 0 {
 		err := c.StoreVendorId(options.Payload.VendorID)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		if !configProvider.ConfigValueExists(KConfigKey_VendorId) {
 			err := c.StoreVendorId(DeviceVendorId)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -271,7 +271,7 @@ func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *Device
 	if options.Payload.ProductID != 0 {
 		err := c.StoreVendorId(options.Payload.VendorID)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		if !configProvider.ConfigValueExists(KConfigKey_ProductId) {
@@ -285,47 +285,47 @@ func (c *ConfigurationManagerImpl) Init(configProvider Provider, options *Device
 	if configProvider.ConfigValueExists(KCounterKey_RebootCount) {
 		rebootCount, err := c.GetRebootCount()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		err = c.StoreRebootCount(rebootCount + 1)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		err := c.StoreRebootCount(1)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if !configProvider.ConfigValueExists(KCounterKey_TotalOperationalHours) {
 		err := c.StoreTotalOperationalHours(0)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if !configProvider.ConfigValueExists(KCounterKey_BootReason) {
 		err := c.StoreBootReason(clusters.BootreasontypeKunspecified)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if !configProvider.ConfigValueExists(KConfigKey_RegulatoryLocation) {
 		err := configProvider.WriteConfigValueUint32(KConfigKey_RegulatoryLocation, clusters.RegulatorylocationtypeKindoor)
 		if err != nil {
-			log.Warn(err.Error())
+			return err
 		}
 	}
 
 	if !configProvider.ConfigValueExists(KConfigKey_LocationCapability) {
 		err := configProvider.WriteConfigValueUint32(KConfigKey_LocationCapability, clusters.RegulatorylocationtypeKindooroutdoor)
 		if err != nil {
-			log.Warn(err.Error())
+			return err
 		}
 	}
-	return c, nil
+	return nil
 }
 
 func (c *ConfigurationManagerImpl) StoreBootReason(bootReason uint32) error {

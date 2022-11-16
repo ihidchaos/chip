@@ -22,51 +22,51 @@ const (
 )
 
 type Id struct {
-	vendorId   lib.VendorId
-	protocolId uint16
+	mVendorId   lib.VendorId
+	mProtocolId uint16
 }
 
-var SecureChannelId = &Id{
-	vendorId:   lib.VidCommon,
-	protocolId: 0x0000,
+var SecureChannelId = Id{
+	mVendorId:   lib.VidCommon,
+	mProtocolId: 0x0000,
 }
 
-var NotSpecifiedProtocolId = &Id{
-	vendorId:   lib.VidNotSpecified,
-	protocolId: 0xFFFF,
+var NotSpecifiedProtocolId = Id{
+	mVendorId:   lib.VidNotSpecified,
+	mProtocolId: 0xFFFF,
 }
 
 func NewProtocolId(vendorId lib.VendorId, protocolId uint16) Id {
 	return Id{
-		vendorId:   vendorId,
-		protocolId: protocolId,
+		mVendorId:   vendorId,
+		mProtocolId: protocolId,
 	}
 }
 
-//var StandardSecureChannel = &Id{vendorId: lib.VendorIdMatterStandard, protocolId: 0x0000}
+//var StandardSecureChannel = &Id{mVendorId: lib.VendorIdMatterStandard, mProtocolId: 0x0000}
 
 func FromFullyQualifiedSpecForm(aSpecForm uint32) Id {
-	return Id{vendorId: lib.VendorId(aSpecForm >> 16), protocolId: uint16(aSpecForm&(1<<16) - 1)}
+	return Id{mVendorId: lib.VendorId(aSpecForm >> 16), mProtocolId: uint16(aSpecForm & 0x0000FFFF)}
 }
 
 func (id *Id) ToFullyQualifiedSpecForm() uint32 {
 	return id.toUint32()
 }
 
-func (id *Id) VendorId() lib.VendorId { return id.vendorId }
+func (id *Id) VendorId() lib.VendorId { return id.mVendorId }
 
 func (id *Id) toUint32() uint32 {
-	return (uint32(id.vendorId) << 16) | uint32(id.protocolId)
+	return (uint32(id.mVendorId) << 16) | uint32(id.mProtocolId)
 }
 
-func (id *Id) ProtocolId() uint16 { return id.protocolId }
+func (id *Id) ProtocolId() uint16 { return id.mProtocolId }
 
-func (id *Id) Equal(other *Id) bool {
-	return id.vendorId == other.vendorId && id.protocolId == other.protocolId
+func (id *Id) Equal(other Id) bool {
+	return id.mVendorId == other.mVendorId && id.mProtocolId == other.mProtocolId
 }
 
 func (id *Id) ProtocolName() string {
-	if id.vendorId != lib.VidCommon {
+	if id.mVendorId != lib.VidCommon {
 		return sUnknownTypeName
 	}
 	switch id.ProtocolId() {
@@ -86,7 +86,7 @@ func (id *Id) ProtocolName() string {
 }
 
 func (id *Id) MessageTypeName(messageType uint8) string {
-	if id.vendorId != lib.VidCommon {
+	if id.mVendorId != lib.VidCommon {
 		return sUnknownTypeName
 	}
 	switch id.ProtocolId() {
@@ -107,13 +107,12 @@ func (id *Id) MessageTypeName(messageType uint8) string {
 		return msg.String()
 	default:
 		return sUnknownTypeName
-
 	}
 }
 
 func (id *Id) LogValue() log.Value {
 	return log.GroupValue(
-		log.String("id", fmt.Sprintf("%04X", id.protocolId)),
+		log.String("id", fmt.Sprintf("%04X", id.mProtocolId)),
 		log.String("name", id.ProtocolName()),
 	)
 }

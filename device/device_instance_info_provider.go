@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/galenliu/chip/config"
 	"log"
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -25,54 +25,48 @@ type InstanceInfoProvider interface {
 	GetRotatingDeviceIdUniqueId() ([]byte, error)
 }
 
-type InstanceInfo struct {
+type InstanceInfoImpl struct {
 	mConfigManager config.ConfigurationManager
 }
 
-func NewDeviceInstanceInfoImpl() *InstanceInfo {
-	return GetDeviceInstanceInfoProvider()
+var defaultInstanceInfoProvider atomic.Value
+
+func init() {
+	defaultInstanceInfoProvider.Store(NewInstanceInfo())
 }
 
-var _deviceInstanceInfo *InstanceInfo
-var _deviceInstanceInfoOnce sync.Once
-
-func GetDeviceInstanceInfoProvider() *InstanceInfo {
-	_deviceInstanceInfoOnce.Do(func() {
-		if _deviceInstanceInfo == nil {
-			_deviceInstanceInfo = &InstanceInfo{}
-		}
-	})
-	return _deviceInstanceInfo
+func DefaultInstanceInfo() *InstanceInfoImpl {
+	return defaultInstanceInfoProvider.Load().(*InstanceInfoImpl)
 }
 
-func (info *InstanceInfo) Init(configMgr config.ConfigurationManager) (*InstanceInfo, error) {
+func NewInstanceInfo() *InstanceInfoImpl {
+	return &InstanceInfoImpl{}
+}
+
+func (info *InstanceInfoImpl) Init(configMgr config.ConfigurationManager) error {
 	info.mConfigManager = configMgr
-	return info, nil
+	return nil
 }
 
-func NewInstanceInfo() *InstanceInfo {
-	return GetDeviceInstanceInfoProvider()
-}
-
-func (info *InstanceInfo) GetVendorId() (uint16, error) {
+func (info *InstanceInfoImpl) GetVendorId() (uint16, error) {
 	return config.DeviceVendorId, nil
 }
 
-func (info *InstanceInfo) GetProductId() (uint16, error) {
+func (info *InstanceInfoImpl) GetProductId() (uint16, error) {
 
 	return config.DeviceProductId, nil
 
 }
 
-func (info *InstanceInfo) ProductName() (string, error) {
+func (info *InstanceInfoImpl) ProductName() (string, error) {
 	return config.DeviceProductName, nil
 }
 
-func (info *InstanceInfo) VendorName() (string, error) {
+func (info *InstanceInfoImpl) VendorName() (string, error) {
 	return config.DeviceVendorName, nil
 }
 
-func (info *InstanceInfo) SerialNumber() (string, error) {
+func (info *InstanceInfoImpl) SerialNumber() (string, error) {
 	sn, err := info.mConfigManager.ReadConfigValueStr(config.KConfigKey_SerialNum)
 	if sn == "" || err != nil {
 		return config.TestSerialNumber, nil
@@ -80,7 +74,7 @@ func (info *InstanceInfo) SerialNumber() (string, error) {
 	return sn, nil
 }
 
-func (info *InstanceInfo) GetManufacturingDate() (time.Time, error) {
+func (info *InstanceInfoImpl) GetManufacturingDate() (time.Time, error) {
 	data, err := info.mConfigManager.ReadConfigValueStr(config.KConfigKey_ManufacturingDate)
 	if err != nil {
 		log.Panicf("invalid manufacturing date: %s", err.Error())
@@ -92,7 +86,7 @@ func (info *InstanceInfo) GetManufacturingDate() (time.Time, error) {
 	return t, nil
 }
 
-func (info *InstanceInfo) GetHardwareVersion() (uint16, error) {
+func (info *InstanceInfoImpl) GetHardwareVersion() (uint16, error) {
 	version, err := info.mConfigManager.ReadConfigValueUint16(config.KConfigKey_HardwareVersion)
 	if err != nil {
 		return config.DefaultDeviceHardwareVersion, nil
@@ -100,10 +94,10 @@ func (info *InstanceInfo) GetHardwareVersion() (uint16, error) {
 	return version, nil
 }
 
-func (info *InstanceInfo) HardwareVersionString() (string, error) {
+func (info *InstanceInfoImpl) HardwareVersionString() (string, error) {
 	return config.DefaultDeviceHardwareVersionString, nil
 }
 
-func (info *InstanceInfo) GetRotatingDeviceIdUniqueId() ([]byte, error) {
+func (info *InstanceInfoImpl) GetRotatingDeviceIdUniqueId() ([]byte, error) {
 	return config.RotatingDeviceIdUniqueId, nil
 }

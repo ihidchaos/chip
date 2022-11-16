@@ -6,7 +6,7 @@ type ScopedNodeId struct {
 }
 
 var UndefinedScopedNodeId = &ScopedNodeId{
-	mNodeId:      UndefinedNodeId,
+	mNodeId:      UndefinedNodeId(),
 	mFabricIndex: FabricIndexUndefined,
 }
 

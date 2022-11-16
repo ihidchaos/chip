@@ -1,4 +1,4 @@
-package transport
+package session
 
 import (
 	"encoding/binary"
@@ -27,7 +27,6 @@ func (c *CryptoContext) Decrypt(msg *system.PacketBufferHandle, nonce []byte, he
 	_ = mac.Tag()
 
 	//header.Ecode()
-
 }
 
 // BuildNonce 使用SecFlags,messageCounter,nodeId三个字段生成Nonce(用于AES加解密的初始化向量)，Len == 13

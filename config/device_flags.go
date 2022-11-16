@@ -21,7 +21,7 @@ var (
 
 	DiscoveryDisabled      uint8 = 0
 	DiscoveryDisabledName        = "discovery-disabled"
-	DiscoveryDisabledUsage       = "Matter Device Config Discovery Disabled Name"
+	DiscoveryDisabledUsage       = "Matter Device Config Discovery Disabled ProtocolName"
 
 	DiscoveryNoTimeout      int8 = -1
 	DiscoveryNoTimeoutName       = "discover-no-timeout"

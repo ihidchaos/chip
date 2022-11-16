@@ -4,6 +4,6 @@ import (
 	"testing"
 )
 
-func TestDnssdServer(t *testing.T) {
+func TestDNSSDServer(t *testing.T) {
 
 }

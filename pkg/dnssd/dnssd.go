@@ -6,7 +6,7 @@ import (
 	"github.com/galenliu/chip/credentials"
 	DeviceLayer "github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/messageing/transport"
+	"github.com/galenliu/chip/messageing/transport/session"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net"
@@ -92,7 +92,7 @@ func (d *Dnssd) AdvertiseOperational() error {
 		return lib.IncorrectState
 	}
 	for _, info := range d.mFabricTable.Fabrics() {
-		mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()
+		mac, err := config.DefaultManager().GetPrimaryMACAddress()
 		if mac == "" || err != nil {
 			mac = fmt.Sprintf("%016X", rand.Uint64())
 		}
@@ -101,7 +101,7 @@ func (d *Dnssd) AdvertiseOperational() error {
 		advertiseParameters.SetMaC(mac)
 		advertiseParameters.SetPort(d.mSecuredPort)
 		advertiseParameters.SetInterfaceId(d.mInterfaceId)
-		advertiseParameters.SetLocalMRPConfig(transport.GetLocalMRPConfig())
+		advertiseParameters.SetLocalMRPConfig(session.GetLocalMRPConfig())
 		advertiseParameters.SetTcpSupported(config.InetConfigEnableTcpEndpoint)
 		advertiseParameters.EnableIpV4(true)
 		if d.mdnsAdvertiser == nil {
@@ -135,14 +135,14 @@ func (d *Dnssd) Advertise(commissionableNode bool, mode int) error {
 	advertiseParameters.EnableIpV4(true)
 
 	//set  mac
-	mac, err := config.ConfigurationMgr().GetPrimaryMACAddress()
+	mac, err := config.DefaultManager().GetPrimaryMACAddress()
 	if err != nil || mac == "" {
 		mac = fmt.Sprintf("%016X", rand.Uint64())
 	}
 	advertiseParameters.SetMaC(mac)
 
 	//Set device vendor id
-	vid, err := DeviceLayer.GetDeviceInstanceInfoProvider().GetVendorId()
+	vid, err := DeviceLayer.DefaultInstanceInfo().GetVendorId()
 	if err != nil {
 		log.Infof("Vendor ID not known")
 	} else {
@@ -150,7 +150,7 @@ func (d *Dnssd) Advertise(commissionableNode bool, mode int) error {
 	}
 
 	// set  productId
-	pid, err := DeviceLayer.GetDeviceInstanceInfoProvider().GetProductId()
+	pid, err := DeviceLayer.DefaultInstanceInfo().GetProductId()
 	if err != nil {
 		log.Infof("Product ID not known")
 	} else {
@@ -173,45 +173,45 @@ func (d *Dnssd) Advertise(commissionableNode bool, mode int) error {
 		SetLongDiscriminator(discriminator)
 
 	// set device type id
-	deviceTypeId, err := config.ConfigurationMgr().GetDeviceTypeId()
-	if config.ConfigurationMgr().IsCommissionableDeviceTypeEnabled() && err == nil {
+	deviceTypeId, err := config.DefaultManager().GetDeviceTypeId()
+	if config.DefaultManager().IsCommissionableDeviceTypeEnabled() && err == nil {
 		if err != nil {
 			advertiseParameters.SetDeviceType(deviceTypeId)
 		}
 	}
 
 	//set device name
-	if config.ConfigurationMgr().IsCommissionableDeviceNameEnabled() {
-		deviceName, err := config.ConfigurationMgr().GetCommissionableDeviceName()
+	if config.DefaultManager().IsCommissionableDeviceNameEnabled() {
+		deviceName, err := config.DefaultManager().GetCommissionableDeviceName()
 		if err != nil {
 			advertiseParameters.SetDeviceName(deviceName)
 		}
 	}
 
-	advertiseParameters.SetLocalMRPConfig(transport.GetLocalMRPConfig()).SetTcpSupported(config.InetConfigEnableTcpEndpoint)
+	advertiseParameters.SetLocalMRPConfig(session.GetLocalMRPConfig()).SetTcpSupported(config.InetConfigEnableTcpEndpoint)
 
 	if !d.haveOperationalCredentials() {
-		value, err := config.ConfigurationMgr().GetInitialPairingHint()
+		value, err := config.DefaultManager().GetInitialPairingHint()
 		if value != 0 && err == nil {
 			advertiseParameters.SetPairingHint(value)
 		} else {
 			log.Infof("DNS-SD Pairing Hint not set")
 		}
-		str, err := config.ConfigurationMgr().GetInitialPairingInstruction()
+		str, err := config.DefaultManager().GetInitialPairingInstruction()
 		if err != nil {
 			log.Infof("DNS-SD Pairing Instruction not set")
 		} else {
 			advertiseParameters.SetPairingInstruction(str)
 		}
 	} else {
-		hint, err := config.ConfigurationMgr().GetSecondaryPairingHint()
+		hint, err := config.DefaultManager().GetSecondaryPairingHint()
 		if err != nil {
 			log.Infof("DNS-SD Pairing Hint not set")
 		} else {
 			advertiseParameters.SetPairingHint(hint)
 		}
 
-		str, err := config.ConfigurationMgr().GetSecondaryPairingInstruction()
+		str, err := config.DefaultManager().GetSecondaryPairingInstruction()
 		if err != nil {
 			log.Infof("DNS-SD Pairing Instruction not set")
 		} else {

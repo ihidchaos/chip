@@ -11,6 +11,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	tlv2 "github.com/galenliu/chip/pkg/tlv"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
@@ -67,6 +68,11 @@ type CASESession struct {
 	mNewResumptionId    []byte //会话恢复ID 16个字节
 
 	mState state
+}
+
+func (s *CASESession) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewCASESession() *CASESession {
@@ -131,12 +137,12 @@ func (s *CASESession) OnSessionEstablished() {
 	panic("implement me")
 }
 
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId *protocols.Id, handler messageing.UnsolicitedMessageHandler) error {
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId protocols.Id, handler messageing.UnsolicitedMessageHandler) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId *protocols.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
+func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId protocols.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -202,14 +208,14 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	policy credentials.CertificateValidityPolicy,
 	delegate *CASEServer,
 	previouslyEstablishedPeer *lib.ScopedNodeId,
-	config *transport.ReliableMessageProtocolConfig,
+	config *session.ReliableMessageProtocolConfig,
 ) error {
 	err := s.Init(sessionManger, policy, delegate, previouslyEstablishedPeer)
 	if err != nil {
 		return err
 	}
 	s.mFabricsTable = fabrics
-	s.mRole = transport.KSessionRoleResponder
+	s.mRole = session.KSessionRoleResponder
 	s.mSessionResumptionStorage = storage
 	s.mLocalMRPConfig = config
 
