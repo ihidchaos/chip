@@ -3,12 +3,12 @@ package credentials
 import (
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 	"time"
 )
 
 type FabricTableInitParams struct {
-	Storage             storage.KvsPersistentStorageDelegate
+	Storage             store.KvsPersistentStorageBase
 	OperationalKeystore crypto.OperationalKeystore
 	OpCertStore         PersistentStorageOpCertStore
 }
@@ -51,7 +51,7 @@ type FabricTable struct {
 	mStates                   []*FabricInfo
 	mPendingFabric            *FabricInfo
 	mFabricLabel              string
-	mStorage                  storage.KvsPersistentStorageDelegate
+	mStorage                  store.KvsPersistentStorageBase
 	operationalKeystore       crypto.OperationalKeystore
 	mOpCertStore              PersistentStorageOpCertStore
 	mFabricCount              uint8

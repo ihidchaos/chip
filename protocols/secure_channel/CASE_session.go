@@ -70,15 +70,15 @@ type CASESession struct {
 	mState state
 }
 
-func (s *CASESession) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
-	//TODO implement me
-	panic("implement me")
-}
-
 func NewCASESession() *CASESession {
 	return &CASESession{
 		PairingSession: NewPairingSessionImpl(),
 	}
+}
+
+func (s *CASESession) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *system.PacketBufferHandle) error {
@@ -86,15 +86,15 @@ func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, pay
 	sha256.New()
 
 	switch s.mState {
-	case stateInitialized:
+	case initialized:
 		if msgType == CASE_Sigma1 {
 			return s.HandleSigma1AndSendSigma2(buf)
 		}
-	case stateSentSigma1:
-	case stateSentSigma1Resume:
-	case stateSentSigma2:
-	case stateSentSigma3:
-	case stateSentSigma2Resume:
+	case sentSigma1:
+	case sentSigma1Resume:
+	case sentSigma2:
+	case sentSigma3:
+	case sentSigma2Resume:
 	default:
 		return lib.InvalidMessageType
 	}
@@ -266,7 +266,7 @@ func (s *CASESession) HandleSigma1(buf *system.PacketBufferHandle) error {
 	err = s.SendSigma2()
 	if err != nil {
 		//s.SendStatusReport()
-		s.mState = stateInitialized
+		s.mState = initialized
 		return err
 	}
 	s.mDelegate.OnSessionEstablishmentStarted()
@@ -412,7 +412,7 @@ func (s *CASESession) SendSigma2() error {
 		return err
 	}
 
-	s.mState = stateSentSigma2
+	s.mState = sentSigma2
 
 	log.Info("Sent sigma2 message")
 

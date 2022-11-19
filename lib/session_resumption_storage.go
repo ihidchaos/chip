@@ -1,18 +1,18 @@
 package lib
 
 import (
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 )
 
 type SessionResumptionStorage interface {
-	Init(delegate storage.KvsPersistentStorageDelegate) error
+	Init(delegate store.KvsPersistentStorageBase) error
 }
 
 type SessionResumptionStorageImpl struct {
-	mStorage storage.KvsPersistentStorageDelegate
+	mStorage store.KvsPersistentStorageBase
 }
 
-func (s *SessionResumptionStorageImpl) Init(delegate storage.KvsPersistentStorageDelegate) error {
+func (s *SessionResumptionStorageImpl) Init(delegate store.KvsPersistentStorageBase) error {
 	s.mStorage = delegate
 	return nil
 }

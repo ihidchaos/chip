@@ -128,5 +128,6 @@ func (s *BaseImpl) SessionType() Type {
 func (s *BaseImpl) LogValue() log.Value {
 	return log.GroupValue(
 		log.String("Type", s.mSessionType.String()),
+		log.Int("ReferenceCounted", s.ReferenceCount()),
 	)
 }

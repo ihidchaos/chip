@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 	"github.com/galenliu/chip/pkg/tlv"
 )
 
@@ -93,7 +93,7 @@ func (f *FabricData) deserialize(tlvReader tlv.Reader) (err error) {
 	return tlvReader.ExitContainer(container)
 }
 
-func (f *FabricData) Load(storage storage.KvsPersistentStorageDelegate) error {
+func (f *FabricData) Load(storage store.KvsPersistentStorageBase) error {
 	data, err := storage.GetBytes(f.key)
 	if err != nil {
 		return err
@@ -163,7 +163,7 @@ type KeySetData struct {
 	operationalKeys []crypto.GroupOperationalCredentials
 }
 
-func (d *KeySetData) Find(mStorage storage.KvsPersistentStorageDelegate, fabric *FabricData, targetId lib.KeysetId) bool {
+func (d *KeySetData) Find(mStorage store.KvsPersistentStorageBase, fabric *FabricData, targetId lib.KeysetId) bool {
 	d.fabricIndex = fabric.fabricIndex
 	d.keysetId = fabric.firstKeyset
 	d.first = true
@@ -182,6 +182,6 @@ func (d *KeySetData) Find(mStorage storage.KvsPersistentStorageDelegate, fabric 
 	return false
 }
 
-func (d *KeySetData) load(mStorage storage.KvsPersistentStorageDelegate) interface{} {
+func (d *KeySetData) load(mStorage store.KvsPersistentStorageBase) interface{} {
 	return nil
 }

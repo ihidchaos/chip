@@ -1,15 +1,15 @@
 package lib
 
 import (
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 )
 
 type AttributePersistenceProvider interface {
-	Init(storage storage.KvsPersistentStorageDelegate) error
+	Init(storage store.KvsPersistentStorageBase) error
 }
 
 type AttributePersistence struct {
-	mStorage storage.KvsPersistentStorageDelegate
+	mStorage store.KvsPersistentStorageBase
 }
 
 func NewAttributePersistence() *AttributePersistence {
@@ -17,7 +17,7 @@ func NewAttributePersistence() *AttributePersistence {
 	return &AttributePersistence{}
 }
 
-func (p AttributePersistence) Init(storage storage.KvsPersistentStorageDelegate) (err error) {
+func (p AttributePersistence) Init(storage store.KvsPersistentStorageBase) (err error) {
 	p.mStorage = storage
 	return
 }

@@ -11,12 +11,12 @@ func GetPayloadContents(payload *config.PayloadContents, aRendezvousFlags uint8)
 	payload.RendezvousInformation = aRendezvousFlags
 
 	var err error
-	payload.SetUpPINCode, err = device.GetCommissionableDateProvider().GetSetupPasscode()
+	payload.SetUpPINCode, err = device.DefaultCommissionableDateProvider().GetSetupPasscode()
 	if err != nil {
 		log.Infof("*** Using default EXAMPLE passcode %d ***", config.UseTestSetupPinCode)
 		payload.SetUpPINCode = config.UseTestSetupPinCode
 	}
-	discriminator, err := device.GetCommissionableDateProvider().GetSetupDiscriminator()
+	discriminator, err := device.DefaultCommissionableDateProvider().GetSetupDiscriminator()
 	if err != nil {
 		log.Infof("GetCommissionableDataProvider()->GetSetupDiscriminator() failed: %s", err.Error())
 		return err

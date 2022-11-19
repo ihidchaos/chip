@@ -5,7 +5,7 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/messageing/transport/session"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 	"github.com/galenliu/chip/platform/system"
 	log "golang.org/x/exp/slog"
 	"net/netip"
@@ -101,7 +101,7 @@ func (s *SessionManager) SetMessageDelegate(delegate SessionMessageDelegate) {
 	s.mCB = delegate
 }
 
-func (s *SessionManager) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManagerBase, storage storage.KvsPersistentStorageDelegate, table *credentials.FabricTable) error {
+func (s *SessionManager) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManagerBase, storage store.KvsPersistentStorageBase, table *credentials.FabricTable) error {
 
 	s.mState = kInitialized
 	s.mSystemLayer = systemLay

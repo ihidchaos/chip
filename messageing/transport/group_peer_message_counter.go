@@ -3,7 +3,7 @@ package transport
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport/session"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 )
 
 type GroupSender struct {
@@ -45,7 +45,7 @@ func (g *GroupPeerTable) removeAndCompactFabric(tableIndex int) {
 }
 
 type GroupOutgoingCounters struct {
-	mStorage             storage.KvsPersistentStorageDelegate
+	mStorage             store.KvsPersistentStorageBase
 	mGroupDataCounter    uint32
 	mGroupControlCounter uint32
 }
@@ -54,7 +54,7 @@ func NewGroupOutgoingCounters() *GroupOutgoingCounters {
 	return &GroupOutgoingCounters{}
 }
 
-func (g *GroupOutgoingCounters) Init(storage storage.KvsPersistentStorageDelegate) error {
+func (g *GroupOutgoingCounters) Init(storage store.KvsPersistentStorageBase) error {
 	g.mStorage = storage
 	return nil
 }

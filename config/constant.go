@@ -13,4 +13,6 @@ const (
 	RMPRetransTableSize = 16
 
 	Sha256ContextSize = (4 * (8 + 2 + 16 + 2)) + 8
+
+	DeviceMaxActiveCASEClients = 2
 )

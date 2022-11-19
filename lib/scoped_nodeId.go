@@ -5,9 +5,11 @@ type ScopedNodeId struct {
 	mFabricIndex FabricIndex
 }
 
-var UndefinedScopedNodeId = &ScopedNodeId{
-	mNodeId:      UndefinedNodeId(),
-	mFabricIndex: FabricIndexUndefined,
+func UndefinedScopedNodeId() *ScopedNodeId {
+	return &ScopedNodeId{
+		mNodeId:      UndefinedNodeId(),
+		mFabricIndex: UndefinedFabricIndex(),
+	}
 }
 
 func NewScopedNodeId(id NodeId, index FabricIndex) ScopedNodeId {
@@ -26,5 +28,5 @@ func (s ScopedNodeId) FabricIndex() FabricIndex {
 }
 
 func (s ScopedNodeId) IsOperational() bool {
-	return s.mFabricIndex != FabricIndexUndefined && s.mNodeId.IsOperationalNodeId()
+	return s.mFabricIndex != UndefinedFabricIndex() && s.mNodeId.IsOperationalNodeId()
 }

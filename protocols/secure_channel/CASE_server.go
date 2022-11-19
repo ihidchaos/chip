@@ -28,10 +28,19 @@ type CASEServer struct {
 
 	mPairingSession *CASESession
 
-	mSessionManager transport.SessionManagerBase
+	mSessionManager *transport.SessionManager
 
 	mFabrics           *credentials.FabricTable
 	mGroupDataProvider credentials.GroupDataProvider
+}
+
+func NewCASEServer() *CASEServer {
+	return &CASEServer{
+		mPairingSession:    NewCASESession(),
+		mSessionManager:    transport.NewSessionManager(),
+		mFabrics:           credentials.NewFabricTable(),
+		mGroupDataProvider: nil,
+	}
 }
 
 func (s *CASEServer) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
@@ -39,18 +48,9 @@ func (s *CASEServer) GetMessageDispatch() messageing.ExchangeMessageDispatchBase
 	panic("implement me")
 }
 
-func NewCASEServer() *CASEServer {
-	return &CASEServer{
-		mPairingSession:    NewCASESession(),
-		mSessionManager:    nil,
-		mFabrics:           nil,
-		mGroupDataProvider: nil,
-	}
-}
-
 func (s *CASEServer) ListenForSessionEstablishment(
 	mgr messageing.ExchangeManagerBase,
-	sessionManager transport.SessionManagerBase,
+	sessionManager *transport.SessionManager,
 	fabrics *credentials.FabricTable,
 	storage lib.SessionResumptionStorage,
 	policy credentials.CertificateValidityPolicy,
@@ -63,7 +63,7 @@ func (s *CASEServer) ListenForSessionEstablishment(
 	s.mExchangeManager = mgr
 	s.mGroupDataProvider = responderGroupDataProvider
 	s.GetSession().SetGroupDataProvider(s.mGroupDataProvider)
-	s.PrepareForSessionEstablishment(lib.UndefinedScopedNodeId)
+	s.PrepareForSessionEstablishment(lib.UndefinedScopedNodeId())
 	return nil
 }
 

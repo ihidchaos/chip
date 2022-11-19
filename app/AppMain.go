@@ -6,8 +6,7 @@ import (
 	"github.com/galenliu/chip/core"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/pkg/storage"
-	log "golang.org/x/exp/slog"
+	"github.com/galenliu/chip/pkg/store"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,21 +23,17 @@ func Init(options *config.DeviceOptions) error {
 		rendezvousFlags = config.RendezvousInformationFlagOnNetwork
 	}
 
-	if config.RendezvousMode {
-		log.Info("RendezvousMode")
-	}
-
-	err := storage.KeyValueStoreMgr().Init(options.KVS)
+	err := store.DefaultKeyValueMgr().Init(options.KVS)
 	if err != nil {
 		return err
 	}
 
-	err = storage.KeyValueStoreMgr().WriteValueString("Reboot", time.Now().String())
+	err = store.DefaultKeyValueMgr().WriteValueString("Reboot", time.Now().String())
 	if err != nil {
 		return err
 	}
 
-	commissionableDataProvider := device.GetCommissionableDateProvider()
+	commissionableDataProvider := device.DefaultCommissionableDateProvider()
 	err = commissionableDataProvider.Init(options)
 	if err != nil {
 		return err
@@ -91,7 +86,7 @@ func MainLoop(options *config.DeviceOptions) error {
 
 		return err
 	}
-	chipServer := core.NewCHIPServer()
+	chipServer := core.NewServer()
 	err = chipServer.Init(serverInitParams)
 	if err != nil {
 		return err

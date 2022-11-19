@@ -5,7 +5,7 @@ import (
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 	log "github.com/sirupsen/logrus"
-	"sync"
+	"sync/atomic"
 )
 
 const (
@@ -25,7 +25,7 @@ type CommissionableDataProvider interface {
 	SetSetupPasscode(uint32) error
 }
 
-type CommissionableDataImpl struct {
+type CommissionableData struct {
 	mIsInitialized          bool
 	mSerializedPaseVerifier []byte
 	mPaseSalt               []byte
@@ -34,19 +34,23 @@ type CommissionableDataImpl struct {
 	mDiscriminator          uint16
 }
 
-var _instance *CommissionableDataImpl
-var _once sync.Once
+var defaultDataProvider atomic.Value
 
-func GetCommissionableDateProvider() *CommissionableDataImpl {
-	_once.Do(func() {
-		if _instance == nil {
-			_instance = &CommissionableDataImpl{}
-		}
-	})
+func init() {
+	instance := &CommissionableData{}
+	defaultDataProvider.Store(instance)
+}
+
+func DefaultCommissionableDateProvider() *CommissionableData {
+	_instance := defaultDataProvider.Load().(*CommissionableData)
 	return _instance
 }
 
-func (c *CommissionableDataImpl) Init(options *config.DeviceOptions) error {
+func SetDefaultCommissionableDataProvider(provider *CommissionableData) {
+	defaultDataProvider.Store(provider)
+}
+
+func (c *CommissionableData) Init(options *config.DeviceOptions) error {
 	var setupPasscode uint32
 	if options.Payload.SetUpPINCode != 0 {
 		setupPasscode = options.Payload.SetUpPINCode
@@ -84,7 +88,7 @@ func (c *CommissionableDataImpl) Init(options *config.DeviceOptions) error {
 	return nil
 }
 
-func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifier, spake2pSalt []byte,
+func (c *CommissionableData) initCommissionableData(serializedSpake2pVerifier, spake2pSalt []byte,
 	spake2pIterationCount, setupPasscode uint32,
 	discriminator uint16) error {
 
@@ -184,32 +188,32 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	return nil
 }
 
-func (c *CommissionableDataImpl) GetSetupDiscriminator() (uint16, error) {
+func (c *CommissionableData) GetSetupDiscriminator() (uint16, error) {
 	if !c.mIsInitialized {
 		return 0, lib.IncorrectState
 	}
 	return c.mDiscriminator, nil
 }
 
-func (c *CommissionableDataImpl) SetSetupDiscriminator(uint16) error {
+func (c *CommissionableData) SetSetupDiscriminator(uint16) error {
 	return lib.NotImplemented
 }
 
-func (c *CommissionableDataImpl) GetSpake2pIterationCount() (uint32, error) {
+func (c *CommissionableData) GetSpake2pIterationCount() (uint32, error) {
 	if !c.mIsInitialized {
 		return 0, lib.IncorrectState
 	}
 	return c.mPaseIterationCount, nil
 }
 
-func (c *CommissionableDataImpl) GetSpake2pSalt() (bytes []byte, err error) {
+func (c *CommissionableData) GetSpake2pSalt() (bytes []byte, err error) {
 	if !c.mIsInitialized {
 		return nil, lib.IncorrectState
 	}
 	return c.mPaseSalt, nil
 }
 
-func (c *CommissionableDataImpl) GetSpake2pVerifier() ([]byte, error) {
+func (c *CommissionableData) GetSpake2pVerifier() ([]byte, error) {
 	if !c.mIsInitialized {
 		return nil, lib.IncorrectState
 	}
@@ -219,7 +223,7 @@ func (c *CommissionableDataImpl) GetSpake2pVerifier() ([]byte, error) {
 	return c.mSerializedPaseVerifier, nil
 }
 
-func (c *CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
+func (c *CommissionableData) GetSetupPasscode() (uint32, error) {
 	if !c.mIsInitialized {
 		return 0, lib.IncorrectState
 	}
@@ -229,7 +233,7 @@ func (c *CommissionableDataImpl) GetSetupPasscode() (uint32, error) {
 	return c.mSetupPasscode, nil
 }
 
-func (c *CommissionableDataImpl) SetSetupPasscode(uint322 uint32) error {
+func (c *CommissionableData) SetSetupPasscode(uint322 uint32) error {
 	return lib.NotImplemented
 }
 

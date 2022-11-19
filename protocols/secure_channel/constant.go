@@ -5,14 +5,14 @@ import "github.com/galenliu/chip/crypto"
 type state uint8
 
 const (
-	stateInitialized       state = 0
-	stateSentSigma1        state = 1
-	stateSentSigma2        state = 2
-	stateSentSigma3        state = 3
-	stateSentSigma1Resume  state = 4
-	stateSentSigma2Resume  state = 5
-	stateFinished          state = 6
-	stateFinishedViaResume state = 7
+	initialized       state = 0
+	sentSigma1        state = 1
+	sentSigma2        state = 2
+	sentSigma3        state = 3
+	sentSigma1Resume  state = 4
+	sentSigma2Resume  state = 5
+	finished          state = 6
+	finishedViaResume state = 7
 
 	kSigmaParamRandomNumberSize = 32
 	kIpkSize                    = crypto.SymmetricKeyLengthBytes

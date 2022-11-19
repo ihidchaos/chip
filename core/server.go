@@ -4,7 +4,7 @@ import (
 	"github.com/galenliu/chip/access"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
-	storage2 "github.com/galenliu/chip/crypto"
+	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/device"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
@@ -12,20 +12,16 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/pkg/dnssd"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 	DeviceLayer "github.com/galenliu/chip/platform/device_layer"
 	sc "github.com/galenliu/chip/protocols/secure_channel"
 	log "golang.org/x/exp/slog"
 	"net"
 	"net/netip"
-	"sync"
+	"sync/atomic"
 )
 
 var sDeviceTypeResolver = access.DeviceTypeResolver{}
-
-const (
-	ConfigDeviceMaxActiveCaseClients = 2
-)
 
 type ServerTransportMgr struct {
 	*transport.Manager
@@ -58,10 +54,10 @@ type Server struct {
 	mDnssd                         dnssd.Base
 	mFabrics                       *credentials.FabricTable
 	mCommissioningWindowManager    dnssd.CommissioningWindowManager
-	mDeviceStorage                 storage.KvsPersistentStorageDelegate
+	mDeviceStorage                 store.KvsPersistentStorageBase
 	mAccessControl                 access.Controller
 	mOpCerStore                    credentials.PersistentStorageOpCertStore
-	mOperationalKeystore           storage2.OperationalKeystore
+	mOperationalKeystore           crypto.OperationalKeystore
 	mCertificateValidityPolicy     credentials.CertificateValidityPolicy
 
 	mGroupsProvider           credentials.GroupDataProvider
@@ -82,28 +78,28 @@ type Server struct {
 	mInitialized bool
 }
 
-var _chipServerInstance *Server
-var _chipServerOnce sync.Once
+var defaultServer atomic.Value
 
-func GetServerInstance() *Server {
-	_chipServerOnce.Do(func() {
-		if _chipServerInstance == nil {
-			_chipServerInstance = &Server{
-				mInterfaceId:              net.Interface{},
-				mTestEventTriggerDelegate: TestEventTriggerDelegate{},
-				mCASEClientPool:           NewCASEClientPool(ConfigDeviceMaxActiveCaseClients),
-				mCASEServer:               sc.NewCASEServer(),
-				mMessageCounterManager:    sc.NewMessageCounterManager(),
-				mCASESessionManager:       NewCASESessionManager(),
-				mDevicePool:               OperationalDeviceProxyPool{},
-			}
-		}
-	})
-	return _chipServerInstance
+func DefaultServer() *Server {
+	server := defaultServer.Load().(*Server)
+	return server
 }
 
-func NewCHIPServer() *Server {
-	return GetServerInstance()
+func init() {
+	sev := NewServer()
+	defaultServer.Store(sev)
+}
+
+func NewServer() *Server {
+	return &Server{
+		mInterfaceId:              net.Interface{},
+		mTestEventTriggerDelegate: TestEventTriggerDelegate{},
+		mCASEClientPool:           NewCASEClientPool(config.DeviceMaxActiveCASEClients),
+		mCASEServer:               sc.NewCASEServer(),
+		mMessageCounterManager:    sc.NewMessageCounterManager(),
+		mCASESessionManager:       NewCASESessionManager(),
+		mDevicePool:               OperationalDeviceProxyPool{},
+	}
 }
 
 func (s *Server) Init(initParams *InitParams) error {
@@ -171,7 +167,7 @@ func (s *Server) Init(initParams *InitParams) error {
 
 	s.mTestEventTriggerDelegate = initParams.TestEventTriggerDelegate
 
-	deviceInfoProvider := device.GetDeviceInfoProvider()
+	deviceInfoProvider := device.DefaultInfoProvider()
 	if deviceInfoProvider != nil {
 		deviceInfoProvider.SetStorageDelegate(s.mDeviceStorage)
 	}
@@ -196,12 +192,12 @@ func (s *Server) Init(initParams *InitParams) error {
 	}
 
 	{
-		session := transport.NewSessionManager()
-		err = session.Init(DeviceLayer.SystemLayer(), s.mTransports, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
+		sessionManager := transport.NewSessionManager()
+		err = sessionManager.Init(DeviceLayer.SystemLayer(), s.mTransports, s.mMessageCounterManager, s.mDeviceStorage, s.GetFabricTable())
 		if err != nil {
 			return err
 		}
-		s.mSessions = session
+		s.mSessions = sessionManager
 	}
 
 	{

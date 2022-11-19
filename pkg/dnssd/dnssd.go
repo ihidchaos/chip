@@ -159,7 +159,7 @@ func (d *Dnssd) Advertise(commissionableNode bool, mode int) error {
 
 	// set discriminator
 	var discriminator uint16 = 0
-	discriminator, err = DeviceLayer.GetCommissionableDateProvider().GetSetupDiscriminator()
+	discriminator, err = DeviceLayer.DefaultCommissionableDateProvider().GetSetupDiscriminator()
 	if err != nil {
 		log.Infof(
 			"Setup discriminator read error: (%s )! Critical error, will not be commissionable.",

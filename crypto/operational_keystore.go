@@ -3,11 +3,11 @@ package crypto
 import (
 	"crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 )
 
 type OperationalKeystore interface {
-	Init(persistentStorage storage.KvsPersistentStorageDelegate) error
+	Init(persistentStorage store.KvsPersistentStorageBase) error
 	HasPendingOpKeypair() bool
 	HasOpKeypairForFabric(fabricIndex lib.FabricIndex) bool
 	NewOpKeypairForFabric(fabricIndex lib.FabricIndex) ([]byte, error)
@@ -25,10 +25,10 @@ func NewOperationalKeystoreImpl() *OperationalKeystoreImpl {
 }
 
 type OperationalKeystoreImpl struct {
-	mPersistentStorage storage.KvsPersistentStorageDelegate
+	mPersistentStorage store.KvsPersistentStorageBase
 }
 
-func (p *OperationalKeystoreImpl) Init(persistentStorage storage.KvsPersistentStorageDelegate) error {
+func (p *OperationalKeystoreImpl) Init(persistentStorage store.KvsPersistentStorageBase) error {
 	p.mPersistentStorage = persistentStorage
 	return nil
 }

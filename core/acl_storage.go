@@ -2,11 +2,11 @@ package core
 
 import (
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 )
 
 type AclStorage interface {
-	Init(storage storage.KvsPersistentStorageDelegate, fabrics *credentials.FabricTable) error
+	Init(storage store.KvsPersistentStorageBase, fabrics *credentials.FabricTable) error
 }
 
 type AclStorageImpl struct {
@@ -16,6 +16,6 @@ func NewAclStorageImpl() *AclStorageImpl {
 	return &AclStorageImpl{}
 }
 
-func (d AclStorageImpl) Init(storage storage.KvsPersistentStorageDelegate, fabrics *credentials.FabricTable) error {
+func (d AclStorageImpl) Init(storage store.KvsPersistentStorageBase, fabrics *credentials.FabricTable) error {
 	return nil
 }

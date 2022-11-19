@@ -1,6 +1,6 @@
 package credentials
 
-import "github.com/galenliu/chip/pkg/storage"
+import "github.com/galenliu/chip/pkg/store"
 
 const (
 	CertChainElement_Rcac uint8 = 0
@@ -9,18 +9,18 @@ const (
 )
 
 type OperationalCertificateStore interface {
-	Init(persistentStorage storage.KvsPersistentStorageDelegate) error
+	Init(persistentStorage store.KvsPersistentStorageBase) error
 }
 
 type OperationalCertificateStoreImpl struct {
-	mStorage storage.KvsPersistentStorageDelegate
+	mStorage store.KvsPersistentStorageBase
 }
 
 func NewOperationalCertificateStoreImpl() *OperationalCertificateStoreImpl {
 	return &OperationalCertificateStoreImpl{}
 }
 
-func (o OperationalCertificateStoreImpl) Init(persistentStorage storage.KvsPersistentStorageDelegate) error {
+func (o OperationalCertificateStoreImpl) Init(persistentStorage store.KvsPersistentStorageBase) error {
 	o.mStorage = persistentStorage
 	return nil
 }

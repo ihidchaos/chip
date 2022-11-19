@@ -1,4 +1,4 @@
-package storage
+package store
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type ChipStorage interface {
+type Storage interface {
 	Init(mConfigPath string) error
 
 	WriteValue(key string, val any) error
@@ -27,14 +27,14 @@ type ChipStorage interface {
 	ReadValueString(key string) (string, error)
 	WriteValueString(string, string) error
 
-	HasValue(string2 string) bool
+	HasValue(key string) bool
 
-	DeleteKeyValue(string2 string) error
+	Delete(key string) error
 
 	DeleteAll() error
 }
 
-type ChipStorageImpl struct {
+type PersistentStorageImpl struct {
 	storage      ini
 	mConfigFile  string
 	mLock        sync.Locker
@@ -42,8 +42,8 @@ type ChipStorageImpl struct {
 	mInitialized bool
 }
 
-func NewPersistentStorageImpl() *ChipStorageImpl {
-	return &ChipStorageImpl{
+func NewPersistentStorageImpl() *PersistentStorageImpl {
+	return &PersistentStorageImpl{
 		storage:      newIniStorage(),
 		mConfigFile:  "",
 		mLock:        &sync.Mutex{},
@@ -52,11 +52,11 @@ func NewPersistentStorageImpl() *ChipStorageImpl {
 	}
 }
 
-func (s *ChipStorageImpl) ReadValueFloat(key string) (float64, error) {
+func (s *PersistentStorageImpl) ReadValueFloat(key string) (float64, error) {
 	return s.storage.readFloatValue(key)
 }
 
-func (s *ChipStorageImpl) WriteValueFloat(key string, v float64) error {
+func (s *PersistentStorageImpl) WriteValueFloat(key string, v float64) error {
 	err := s.storage.addEntry(key, strconv.FormatFloat(v, 'f', 10, 64))
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (s *ChipStorageImpl) WriteValueFloat(key string, v float64) error {
 	return s.commit()
 }
 
-func (s *ChipStorageImpl) ReadValueBool(key string) (bool, error) {
+func (s *PersistentStorageImpl) ReadValueBool(key string) (bool, error) {
 	value, err := s.storage.readUintValue(key)
 	if value == 0 {
 		return false, err
@@ -73,7 +73,7 @@ func (s *ChipStorageImpl) ReadValueBool(key string) (bool, error) {
 	return true, err
 }
 
-func (s *ChipStorageImpl) ReadValueInt(key string) (int64, error) {
+func (s *PersistentStorageImpl) ReadValueInt(key string) (int64, error) {
 	s.mLock.Lock()
 	defer s.mLock.Unlock()
 	value, err := s.storage.readUint64Value(key)
@@ -81,7 +81,7 @@ func (s *ChipStorageImpl) ReadValueInt(key string) (int64, error) {
 
 }
 
-func (s *ChipStorageImpl) WriteValue(k string, v any) error {
+func (s *PersistentStorageImpl) WriteValue(k string, v any) error {
 	switch v.(type) {
 	case int, int8, int16, int32, int64:
 		val := cast.ToInt64(v)
@@ -120,7 +120,7 @@ func (s *ChipStorageImpl) WriteValue(k string, v any) error {
 	return s.commit()
 }
 
-func (s *ChipStorageImpl) WriteValueInt(k string, v int64) error {
+func (s *PersistentStorageImpl) WriteValueInt(k string, v int64) error {
 	err := s.storage.addEntry(k, strconv.FormatInt(v, 10))
 	if err != nil {
 		return err
@@ -129,11 +129,11 @@ func (s *ChipStorageImpl) WriteValueInt(k string, v int64) error {
 	return s.commit()
 }
 
-func (s *ChipStorageImpl) ReadValueString(key string) (string, error) {
+func (s *PersistentStorageImpl) ReadValueString(key string) (string, error) {
 	return s.storage.readStringValue(key)
 }
 
-func (s *ChipStorageImpl) WriteValueString(key string, v string) error {
+func (s *PersistentStorageImpl) WriteValueString(key string, v string) error {
 	err := s.storage.addEntry(key, v)
 	if err != nil {
 		return err
@@ -142,7 +142,7 @@ func (s *ChipStorageImpl) WriteValueString(key string, v string) error {
 	return s.commit()
 }
 
-func (s *ChipStorageImpl) DeleteKeyValue(key string) error {
+func (s *PersistentStorageImpl) Delete(key string) error {
 	err := s.storage.removeEntry(key)
 	if err != nil {
 		return err
@@ -151,7 +151,7 @@ func (s *ChipStorageImpl) DeleteKeyValue(key string) error {
 	return s.commit()
 }
 
-func (s *ChipStorageImpl) DeleteAll() error {
+func (s *PersistentStorageImpl) DeleteAll() error {
 	err := s.storage.init()
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (s *ChipStorageImpl) DeleteAll() error {
 	return s.commit()
 }
 
-func (s *ChipStorageImpl) Init(mConfigPath string) error {
+func (s *PersistentStorageImpl) Init(mConfigPath string) error {
 
 	s.mConfigFile = mConfigPath
 	if s.storage == nil {
@@ -175,25 +175,25 @@ func (s *ChipStorageImpl) Init(mConfigPath string) error {
 	return nil
 }
 
-func (s *ChipStorageImpl) ReadValueUint16(key string) (uint16, error) {
+func (s *PersistentStorageImpl) ReadValueUint16(key string) (uint16, error) {
 	s.mLock.Lock()
 	defer s.mLock.Unlock()
 	return s.storage.readUInt16Value(key)
 }
 
-func (s *ChipStorageImpl) ReadValueUint64(key string) (uint64, error) {
+func (s *PersistentStorageImpl) ReadValueUint64(key string) (uint64, error) {
 	return s.storage.readUint64Value(key)
 }
 
-func (s *ChipStorageImpl) ReadValueStr(key string) (string, error) {
+func (s *PersistentStorageImpl) ReadValueStr(key string) (string, error) {
 	return s.storage.readStringValue(key)
 }
 
-func (s *ChipStorageImpl) ReadValueBin(key string) ([]byte, error) {
+func (s *PersistentStorageImpl) ReadValueBin(key string) ([]byte, error) {
 	return s.storage.readBinaryValue(key)
 }
 
-func (s *ChipStorageImpl) WriteValueBool(key string, v bool) error {
+func (s *PersistentStorageImpl) WriteValueBool(key string, v bool) error {
 	if v {
 		return s.WriteValueUint16(key, 1)
 	}
@@ -202,25 +202,25 @@ func (s *ChipStorageImpl) WriteValueBool(key string, v bool) error {
 	return err
 }
 
-func (s *ChipStorageImpl) WriteValueUint16(key string, v uint16) error {
+func (s *PersistentStorageImpl) WriteValueUint16(key string, v uint16) error {
 	err := s.storage.addEntry(key, strconv.FormatUint(uint64(v), 10))
 	s.mDirty = true
 	return err
 }
 
-func (s *ChipStorageImpl) WriteValueUint32(key string, v uint32) error {
+func (s *PersistentStorageImpl) WriteValueUint32(key string, v uint32) error {
 	err := s.storage.addEntry(key, strconv.FormatUint(uint64(v), 10))
 	s.mDirty = true
 	return err
 }
 
-func (s *ChipStorageImpl) WriteValueUint64(key string, v uint64) error {
+func (s *PersistentStorageImpl) WriteValueUint64(key string, v uint64) error {
 	err := s.storage.addEntry(key, strconv.FormatUint(v, 10))
 	s.mDirty = true
 	return err
 }
 
-func (s *ChipStorageImpl) commit() error {
+func (s *PersistentStorageImpl) commit() error {
 	if s.mConfigFile != "" && s.mDirty && s.mInitialized {
 		err := s.storage.commitConfig(s.mConfigFile)
 		if err != nil {
@@ -233,6 +233,6 @@ func (s *ChipStorageImpl) commit() error {
 	return nil
 }
 
-func (s *ChipStorageImpl) HasValue(key string) bool {
+func (s *PersistentStorageImpl) HasValue(key string) bool {
 	return s.storage.hasValue(key)
 }

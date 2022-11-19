@@ -3,7 +3,7 @@ package credentials
 import (
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 	"time"
 )
 
@@ -66,7 +66,7 @@ func NewEpochKey() *EpochKey {
 }
 
 type GroupDataProvider interface {
-	SetStorageDelegate(delegate storage.KvsPersistentStorageDelegate)
+	SetStorageDelegate(delegate store.KvsPersistentStorageBase)
 	Init() error
 	SetListener(listener GroupListener)
 	GetIpkKeySet(index lib.FabricIndex) (*KeySet, error)
@@ -74,7 +74,7 @@ type GroupDataProvider interface {
 }
 
 type GroupDataProviderImpl struct {
-	mStorage       storage.KvsPersistentStorageDelegate
+	mStorage       store.KvsPersistentStorageBase
 	mGroupListener GroupListener
 }
 
@@ -113,7 +113,7 @@ func (g *GroupDataProviderImpl) SetListener(listener GroupListener) {
 	g.mGroupListener = listener
 }
 
-func (g *GroupDataProviderImpl) SetStorageDelegate(delegate storage.KvsPersistentStorageDelegate) {
+func (g *GroupDataProviderImpl) SetStorageDelegate(delegate store.KvsPersistentStorageBase) {
 	g.mStorage = delegate
 }
 

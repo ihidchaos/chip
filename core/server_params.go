@@ -6,7 +6,7 @@ import (
 	"github.com/galenliu/chip/credentials"
 	crypto2 "github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/storage"
+	"github.com/galenliu/chip/pkg/store"
 	"net"
 )
 
@@ -30,7 +30,7 @@ type InitParams struct {
 
 	// Persistent storage delegate: MUST be injected. Used to maintain storage by much common code.
 	// Must be initialized before being provided.
-	PersistentStorageDelegate storage.KvsPersistentStorageDelegate
+	PersistentStorageDelegate store.KvsPersistentStorageBase
 	// Session resumption storage: Optional. Support session resumption when provided.
 	// Must be initialized before being provided.
 	SessionResumptionStorage lib.SessionResumptionStorage
@@ -91,7 +91,7 @@ func NewCommonCaseDeviceServerInitParams() *CommonCaseDeviceServerInitParams {
 
 func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 
-	var sKvsPersistentStorageDelegate storage.KvsPersistentStorageDelegate
+	var sKvsPersistentStorageDelegate store.KvsPersistentStorageBase
 	var sPersistentStorageOperationalKeystore = crypto2.NewPersistentStorageOperationalKeystoreImpl()
 	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
 	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
@@ -100,8 +100,8 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 	var sSessionResumptionStorage = lib.NewSimpleSessionResumptionStorage()
 
 	if params.PersistentStorageDelegate == nil {
-		sKvsPersistentStorageDelegate = storage.NewKvsPersistentStorageDelegateImpl()
-		sKvsPersistentStorageDelegate.Init(storage.KeyValueStoreMgr())
+		sKvsPersistentStorageDelegate = store.NewKvsPersistentStorageImpl()
+		sKvsPersistentStorageDelegate.Init(store.DefaultKeyValueMgr())
 		params.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 

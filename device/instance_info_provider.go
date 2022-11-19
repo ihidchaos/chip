@@ -53,9 +53,7 @@ func (info *InstanceInfoImpl) GetVendorId() (uint16, error) {
 }
 
 func (info *InstanceInfoImpl) GetProductId() (uint16, error) {
-
 	return config.DeviceProductId, nil
-
 }
 
 func (info *InstanceInfoImpl) ProductName() (string, error) {
