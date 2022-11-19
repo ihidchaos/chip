@@ -14,31 +14,31 @@ const (
 	finished          state = 6
 	finishedViaResume state = 7
 
-	kSigmaParamRandomNumberSize = 32
-	kIpkSize                    = crypto.SymmetricKeyLengthBytes
-	TagTBEDataSenderNOC         = 1
-	TagTBEDataSenderICAC        = 2
-	TagTBEDataSignature         = 3
-	TagTBEDataResumptionID      = 4
+	sigmaParamRandomNumberSize = 32
+	ipkSize                    = crypto.SymmetricKeyLengthBytes
 
-	kResumptionIdSize = 16
+	TagTBEDataSenderNOC    = 1
+	TagTBEDataSenderICAC   = 2
+	TagTBEDataSignature    = 3
+	TagTBEDataResumptionID = 4
 
-	ProtocolName        = "SecureChannel"
-	ProtocolId   uint16 = 0x0000
+	resumptionIdSize        = 16
+	ProtocolName            = "SecureChannel"
+	ProtocolId       uint16 = 0x0000
 	/* "NCASE_Sigma2N" */
 )
 
 type MsgType uint8
 
 const (
-	// Message Counter Synchronization Protocol Message Types
+	// MsgCounterSyncReq Message Counter Synchronization Protocol Message Types
 	MsgCounterSyncReq MsgType = 0x00
 	MsgCounterSyncRsp MsgType = 0x01
 
-	// Reliable Messaging Protocol Message Types
+	// StandaloneAck Reliable Messaging Protocol Message Types
 	StandaloneAck MsgType = 0x10
 
-	// Password-based session establishment Message Types
+	// PBKDFParamRequest Password-based session establishment Message Types
 	PBKDFParamRequest  MsgType = 0x20
 	PBKDFParamResponse MsgType = 0x21
 	PASE_Pake1         MsgType = 0x22

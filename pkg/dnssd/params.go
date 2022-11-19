@@ -25,7 +25,7 @@ func (b BaseAdvertisingParams) Init() BaseAdvertisingParams {
 	return b
 }
 
-func (b *BaseAdvertisingParams) GetLocalMRPConfig() *session.ReliableMessageProtocolConfig {
+func (b *BaseAdvertisingParams) LocalMRPConfig() *session.ReliableMessageProtocolConfig {
 	return &b.mLocalMRPConfig
 }
 

@@ -46,8 +46,8 @@ func (o *OutgoingGroup) ClearValue() {
 	panic("implement me")
 }
 
-func (s *OutgoingGroup) GetPeer() lib.ScopedNodeId {
-	return lib.NewScopedNodeId(lib.UndefinedNodeId(), s.FabricIndex())
+func (o *OutgoingGroup) GetPeer() lib.ScopedNodeId {
+	return lib.NewScopedNodeId(lib.UndefinedNodeId(), o.FabricIndex())
 }
 
 func (o *OutgoingGroup) GroupId() lib.GroupId {

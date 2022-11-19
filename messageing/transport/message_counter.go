@@ -2,6 +2,7 @@ package transport
 
 import (
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"net/netip"
 )
@@ -32,7 +33,7 @@ func (g *GlobalUnencryptedMessageCounter) Init() {
 
 }
 
-func (g *GlobalUnencryptedMessageCounter) StartSync(handle *SessionHandle, session SecureSessionBase) error {
+func (g *GlobalUnencryptedMessageCounter) StartSync(handle *SessionHandle, session *session.Secure) error {
 	//TODO implement me
 	panic("implement me")
 }

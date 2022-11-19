@@ -18,11 +18,6 @@ type Id struct {
 	mProtocolId uint16
 }
 
-var SecureChannelId = Id{
-	mVendorId:   lib.VidCommon,
-	mProtocolId: 0x0000,
-}
-
 type MessageType interface {
 	bdx.MsgType | interaction_model.MsgType | secure_channel.MsgType | echo.MsgType
 }

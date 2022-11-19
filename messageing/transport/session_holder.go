@@ -2,7 +2,7 @@ package transport
 
 import (
 	"github.com/galenliu/chip/lib"
-	session "github.com/galenliu/chip/messageing/transport/session"
+	"github.com/galenliu/chip/messageing/transport/session"
 )
 
 type SessionHolder struct {

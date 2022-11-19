@@ -9,7 +9,3 @@ import (
 func SystemLayer() system.Layer {
 	return nil
 }
-
-func SystemLayer() system.Layer {
-	return nil
-}

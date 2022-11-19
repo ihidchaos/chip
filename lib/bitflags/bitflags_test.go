@@ -10,10 +10,10 @@ func TestFlags_Has(t *testing.T) {
 	var value uint64 = 0b01010101010101
 	var ff = Some(value)
 	assert.Equal(t, value, ff.Value())
-	assert.True(t, ff.Has(0b01))
-	assert.True(t, ff.Has(0b01, 0b0101))
-	assert.True(t, ff.Has(0b01, 0b0101, 0b01010101))
-	assert.True(t, ff.Has(0b01, 0b0101, 0b01010101, 0b01010101010101))
+	assert.True(t, ff.HasAll(0b01))
+	assert.True(t, ff.HasAll(0b01, 0b0101))
+	assert.True(t, ff.HasAll(0b01, 0b0101, 0b01010101))
+	assert.True(t, ff.HasAll(0b01, 0b0101, 0b01010101, 0b01010101010101))
 
 	ff.Sets(0b101010101)
 	assert.Equal(t, value, ff.Value())

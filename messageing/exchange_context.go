@@ -110,7 +110,7 @@ func (c *ExchangeContext) SetResponseTimeout(timeout time.Duration) {
 	c.mResponseTimeout = timeout
 }
 
-func (c *ExchangeContext) SendMessage(protocolId protocols.Id, msgType uint8, r2 []byte, response uint16) error {
+func (c *ExchangeContext) SendMessage(protocolId uint16, msgType uint8, r2 []byte, response uint16) error {
 
 	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
 
@@ -213,7 +213,7 @@ func (c *ExchangeContext) DoClose(clearRetransTable bool) {
 	_ = c.FlushAcks()
 
 	if clearRetransTable {
-		c.mExchangeMgr.ReliableMessageMgr().ClearRetransTable(c.ReliableMessageContext)
+		c.mExchangeMgr.ReliableMessageMgr().clearRetransTable(c.ReliableMessageContext)
 	}
 	c.cancelResponseTimer()
 }

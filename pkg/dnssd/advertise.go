@@ -340,7 +340,7 @@ func (a *AdvertiseImpl) GetOperationalTxtEntries(params *OperationalAdvertisingP
 func (a *AdvertiseImpl) AddCommonTxtEntries(params BaseAdvertisingParams) []string {
 
 	var list []string
-	if mrp := params.GetLocalMRPConfig(); mrp != nil {
+	if mrp := params.LocalMRPConfig(); mrp != nil {
 		if mrp.IdleRetransTimeout > kMaxRetryInterval {
 			log.Infof("MRP retry interval idle value exceeds allowed range of 1 hour, using maximum available")
 			mrp.IdleRetransTimeout = kMaxRetryInterval
