@@ -41,7 +41,7 @@ type InitParams struct {
 
 	// Group data provider: MUST be injected. Used to maintain critical keys such as the Identity
 	// Protection Key (IPK) for CASE. Must be initialized before being provided.
-	GroupDataProvider credentials.GroupDataProvider
+	GroupDataProvider *credentials.GroupDataProvider
 	// Access control delegate: MUST be injected. Used to look up access control rules. Must be
 	// initialized before being provided.
 	AccessDelegate access.Delegate
@@ -94,14 +94,13 @@ func (params *InitParams) InitializeStaticResourcesBeforeServerInit() error {
 	var sKvsPersistentStorageDelegate store.KvsPersistentStorageBase
 	var sPersistentStorageOperationalKeystore = crypto2.NewPersistentStorageOperationalKeystoreImpl()
 	var sPersistentStorageOpCertStore = credentials.NewPersistentStorageOpCertStoreImpl()
-	var sGroupDataProvider = credentials.NewGroupDataProviderImpl()
+	var sGroupDataProvider = credentials.NewGroupDataProvider()
 	var sDefaultCertValidityPolicy = NewIgnoreCertificateValidityPolicy()
 
 	var sSessionResumptionStorage = lib.NewSimpleSessionResumptionStorage()
 
 	if params.PersistentStorageDelegate == nil {
 		sKvsPersistentStorageDelegate = store.NewKvsPersistentStorageImpl()
-		sKvsPersistentStorageDelegate.Init(store.DefaultKeyValueMgr())
 		params.PersistentStorageDelegate = sKvsPersistentStorageDelegate
 	}
 

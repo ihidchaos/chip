@@ -28,7 +28,7 @@ func Init(options *config.DeviceOptions) error {
 		return err
 	}
 
-	err = store.DefaultKeyValueMgr().WriteValueString("Reboot", time.Now().String())
+	err = store.DefaultKeyValueMgr().SetString("Reboot", time.Now().String())
 	if err != nil {
 		return err
 	}

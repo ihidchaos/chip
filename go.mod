@@ -9,7 +9,6 @@ require (
 	github.com/frankban/quicktest v1.14.3
 	github.com/miekg/dns v1.1.50
 	github.com/moznion/go-optional v0.7.0
-	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0

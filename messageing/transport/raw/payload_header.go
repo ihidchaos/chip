@@ -113,7 +113,7 @@ func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
 		vendorId = lib.VendorId(vid)
 		header.mVendorId = optional.Some(vendorId)
 	}
-	header.mProtocolId = protocols.NewProtocolId(vendorId, protocolId)
+	header.mProtocolId = protocols.NewProtocolId(protocolId, vendorId)
 	if header.IsAckMsg() {
 		ackCounter, err := buffer.LittleEndianRead32(buf)
 		if err != nil {

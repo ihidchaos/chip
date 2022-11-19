@@ -49,7 +49,7 @@ type CASESession struct {
 	mEphemeralKey      *crypto.P256Keypair
 	mSharedSecret      []byte //crypto.P256ECDHDerivedSecret
 	mValidContext      credentials.ValidationContext
-	mGroupDataProvider credentials.GroupDataProvider
+	mGroupDataProvider *credentials.GroupDataProvider
 
 	mMessageDigest []byte
 	mIPK           []byte
@@ -189,7 +189,7 @@ func (s *CASESession) OnFabricUpdated(table credentials.FabricTable, index lib.F
 	panic("implement me")
 }
 
-func (s *CASESession) SetGroupDataProvider(provider credentials.GroupDataProvider) {
+func (s *CASESession) SetGroupDataProvider(provider *credentials.GroupDataProvider) {
 	s.mGroupDataProvider = provider
 }
 

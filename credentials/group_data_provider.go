@@ -65,7 +65,7 @@ func NewEpochKey() *EpochKey {
 	}
 }
 
-type GroupDataProvider interface {
+type GroupDataProviderBase interface {
 	SetStorageDelegate(delegate store.KvsPersistentStorageBase)
 	Init() error
 	SetListener(listener GroupListener)
@@ -73,16 +73,16 @@ type GroupDataProvider interface {
 	GroupSessions(sessionId uint16) []*GroupSession
 }
 
-type GroupDataProviderImpl struct {
+type GroupDataProvider struct {
 	mStorage       store.KvsPersistentStorageBase
 	mGroupListener GroupListener
 }
 
-func NewGroupDataProviderImpl() *GroupDataProviderImpl {
-	return &GroupDataProviderImpl{}
+func NewGroupDataProvider() *GroupDataProvider {
+	return &GroupDataProvider{}
 }
 
-func (g *GroupDataProviderImpl) GetIpkKeySet(index lib.FabricIndex) (outKeyset *KeySet, err error) {
+func (g *GroupDataProvider) GetIpkKeySet(index lib.FabricIndex) (outKeyset *KeySet, err error) {
 	outKeyset = &KeySet{}
 	fabric := NewFabricData(index)
 	err = fabric.Load(g.mStorage)
@@ -109,29 +109,29 @@ func (g *GroupDataProviderImpl) GetIpkKeySet(index lib.FabricIndex) (outKeyset *
 	return
 }
 
-func (g *GroupDataProviderImpl) SetListener(listener GroupListener) {
+func (g *GroupDataProvider) SetListener(listener GroupListener) {
 	g.mGroupListener = listener
 }
 
-func (g *GroupDataProviderImpl) SetStorageDelegate(delegate store.KvsPersistentStorageBase) {
+func (g *GroupDataProvider) SetStorageDelegate(delegate store.KvsPersistentStorageBase) {
 	g.mStorage = delegate
 }
 
-func (g *GroupDataProviderImpl) GroupSessions(sessionId uint16) []*GroupSession {
+func (g *GroupDataProvider) GroupSessions(sessionId uint16) []*GroupSession {
 	return nil
 }
 
-func (g *GroupDataProviderImpl) Init() error {
+func (g *GroupDataProvider) Init() error {
 	return nil
 }
 
-var gGroupDataProvider GroupDataProvider
+var gGroupDataProvider GroupDataProviderBase
 
-func GetGroupDataProvider() GroupDataProvider {
+func GetGroupDataProvider() GroupDataProviderBase {
 	return gGroupDataProvider
 }
 
-func SetGroupDataProvider(g GroupDataProvider) {
+func SetGroupDataProvider(g GroupDataProviderBase) {
 	gGroupDataProvider = g
 }
 

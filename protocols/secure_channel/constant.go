@@ -23,7 +23,8 @@ const (
 
 	kResumptionIdSize = 16
 
-	ProtocolName = "SecureChannel"
+	ProtocolName        = "SecureChannel"
+	ProtocolId   uint16 = 0x0000
 	/* "NCASE_Sigma2N" */
 )
 

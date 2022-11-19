@@ -9,7 +9,7 @@ import (
 	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
-	log "github.com/sirupsen/logrus"
+	log "golang.org/x/exp/slog"
 )
 
 type CASEServerBase interface {
@@ -31,7 +31,7 @@ type CASEServer struct {
 	mSessionManager *transport.SessionManager
 
 	mFabrics           *credentials.FabricTable
-	mGroupDataProvider credentials.GroupDataProvider
+	mGroupDataProvider *credentials.GroupDataProvider
 }
 
 func NewCASEServer() *CASEServer {
@@ -39,7 +39,7 @@ func NewCASEServer() *CASEServer {
 		mPairingSession:    NewCASESession(),
 		mSessionManager:    transport.NewSessionManager(),
 		mFabrics:           credentials.NewFabricTable(),
-		mGroupDataProvider: nil,
+		mGroupDataProvider: &credentials.GroupDataProvider{},
 	}
 }
 
@@ -49,12 +49,12 @@ func (s *CASEServer) GetMessageDispatch() messageing.ExchangeMessageDispatchBase
 }
 
 func (s *CASEServer) ListenForSessionEstablishment(
-	mgr messageing.ExchangeManagerBase,
+	mgr *messageing.ExchangeManager,
 	sessionManager *transport.SessionManager,
 	fabrics *credentials.FabricTable,
 	storage lib.SessionResumptionStorage,
 	policy credentials.CertificateValidityPolicy,
-	responderGroupDataProvider credentials.GroupDataProvider,
+	responderGroupDataProvider *credentials.GroupDataProvider,
 ) error {
 	s.mSessionManager = sessionManager
 	s.mSessionResumptionStorage = storage
@@ -62,22 +62,23 @@ func (s *CASEServer) ListenForSessionEstablishment(
 	s.mFabrics = fabrics
 	s.mExchangeManager = mgr
 	s.mGroupDataProvider = responderGroupDataProvider
-	s.GetSession().SetGroupDataProvider(s.mGroupDataProvider)
+	s.Session().SetGroupDataProvider(s.mGroupDataProvider)
 	s.PrepareForSessionEstablishment(lib.UndefinedScopedNodeId())
 	return nil
 }
 
 func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *lib.ScopedNodeId) {
-	log.Printf("CASE Server enabling CASE session setups")
-	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(protocols.SecureChannelId, uint8(CASE_Sigma1), s)
+
+	log.Info("CASE Server enabling CASE session setups")
+	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(ProtocolId, uint8(CASE_Sigma1), s)
 	if err != nil {
-		log.Printf(err.Error())
+		log.Info(err.Error())
 	}
-	s.GetSession().Clear()
+	s.Session().Clear()
 	if s.mPinnedSecureSession != nil {
 		s.mPinnedSecureSession.ClearValue()
 	}
-	err = s.GetSession().PrepareForSessionEstablishment(
+	err = s.Session().PrepareForSessionEstablishment(
 		s.mSessionManager,
 		s.mFabrics,
 		s.mSessionResumptionStorage,
@@ -87,13 +88,13 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 		session.GetLocalMRPConfig(),
 	)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Info(err.Error())
 	}
-	s.mPinnedSecureSession = s.GetSession().CopySecureSession()
+	s.mPinnedSecureSession = s.Session().CopySecureSession()
 }
 
 func (s *CASEServer) InitCASEHandshake(ec *messageing.ExchangeContext) {
-	ec.SetDelegate(s.GetSession())
+	ec.SetDelegate(s.Session())
 }
 
 func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
@@ -106,7 +107,7 @@ func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, head
 	if err != nil {
 		return err
 	}
-	return s.GetSession().OnMessageReceived(context, header, buf)
+	return s.Session().OnMessageReceived(context, header, buf)
 }
 
 func (s *CASEServer) OnResponseTimeout(ec *messageing.ExchangeContext) {
@@ -124,7 +125,7 @@ func (s *CASEServer) OnExchangeCreationFailed(delegate messageing.ExchangeDelega
 	panic("implement me")
 }
 
-func (s *CASEServer) GetSession() *CASESession {
+func (s *CASEServer) Session() *CASESession {
 	return s.mPairingSession
 }
 

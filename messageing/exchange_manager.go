@@ -18,6 +18,7 @@ const (
 	kStateNotInitialized = 0
 	kStateInitialized    = 1
 )
+
 const KAnyMessageType int16 = -1
 
 type UnsolicitedMessageHandlerSlot struct {
@@ -43,7 +44,7 @@ type ExchangeManagerBase interface {
 	transport.SessionMessageDelegate
 	SessionManager() *transport.SessionManager
 	RegisterUnsolicitedMessageHandlerForProtocol(protocolId protocols.Id, handler UnsolicitedMessageHandler) error
-	RegisterUnsolicitedMessageHandlerForType(protocolId protocols.Id, msgType uint8, handler UnsolicitedMessageHandler) error
+	RegisterUnsolicitedMessageHandlerForType(protocolId uint16, msgType uint8, handler UnsolicitedMessageHandler) error
 	UnregisterUnsolicitedMessageHandlerForType(id protocols.Id, messageType uint8) error
 	UnregisterUnsolicitedMessageHandlerForProtocol(id protocols.Id) error
 	OnResponseTimeout(ec *ExchangeContext)
@@ -224,12 +225,9 @@ func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForProtocol(
 	return e.registerUMH(protocolId, KAnyMessageType, handler)
 }
 
-func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForType(
-	protocolId protocols.Id,
-	msgType uint8,
-	handler UnsolicitedMessageHandler,
-) error {
-	return e.registerUMH(protocolId, int16(msgType), handler)
+func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForType(protocolId uint16, msgType uint8, handler UnsolicitedMessageHandler) error {
+	p := protocols.NewProtocolId(protocolId)
+	return e.registerUMH(p, int16(msgType), handler)
 }
 
 func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForType(id protocols.Id, messageType uint8) error {

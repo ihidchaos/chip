@@ -60,7 +60,7 @@ type Server struct {
 	mOperationalKeystore           crypto.OperationalKeystore
 	mCertificateValidityPolicy     credentials.CertificateValidityPolicy
 
-	mGroupsProvider           credentials.GroupDataProvider
+	mGroupsProvider           *credentials.GroupDataProvider
 	mTestEventTriggerDelegate TestEventTriggerDelegate
 	mFabricDelegate           credentials.FabricTableDelegate
 

@@ -1,7 +1,5 @@
 package interaction_model
 
-const ProtocolName = "IM"
-
 type MsgType uint8
 
 const (
@@ -15,6 +13,9 @@ const (
 	InvokeCommandRequest  MsgType = 0x08
 	InvokeCommandResponse MsgType = 0x09
 	TimedRequest          MsgType = 0x0a
+
+	ProtocolName        = "IM"
+	ProtocolId   uint16 = 0x0001
 )
 
 func (m MsgType) String() string {

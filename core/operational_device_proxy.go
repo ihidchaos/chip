@@ -15,7 +15,7 @@ type DeviceProxyInitParams struct {
 	ExchangeMgr               messageing.ExchangeManagerBase
 	FabricTable               *credentials.FabricTable
 	ClientPool                CASEClientPoolDelegate
-	GroupDataProvider         credentials.GroupDataProvider
+	GroupDataProvider         *credentials.GroupDataProvider
 
 	MrpLocalConfig *session.ReliableMessageProtocolConfig
 }

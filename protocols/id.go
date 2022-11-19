@@ -13,14 +13,6 @@ import (
 
 var sUnknownTypeName = "----"
 
-const (
-	SecureChannel             uint16 = 0x0000
-	InteractionModel          uint16 = 0x0001
-	BDX                       uint16 = 0x0002
-	UserDirectedCommissioning uint16 = 0x0003
-	Echo                      uint16 = 0x0004
-)
-
 type Id struct {
 	mVendorId   lib.VendorId
 	mProtocolId uint16
@@ -31,16 +23,24 @@ var SecureChannelId = Id{
 	mProtocolId: 0x0000,
 }
 
+type MessageType interface {
+	bdx.MsgType | interaction_model.MsgType | secure_channel.MsgType | echo.MsgType
+}
+
 var NotSpecifiedProtocolId = Id{
 	mVendorId:   lib.VidNotSpecified,
 	mProtocolId: 0xFFFF,
 }
 
-func NewProtocolId(vendorId lib.VendorId, protocolId uint16) Id {
-	return Id{
-		mVendorId:   vendorId,
+func NewProtocolId(protocolId uint16, vid ...lib.VendorId) Id {
+	id := Id{
+		mVendorId:   lib.VidCommon,
 		mProtocolId: protocolId,
 	}
+	if len(vid) > 0 {
+		id.mVendorId = vid[0]
+	}
+	return id
 }
 
 //var StandardSecureChannel = &Id{mVendorId: lib.VendorIdMatterStandard, mProtocolId: 0x0000}
@@ -70,15 +70,15 @@ func (id *Id) ProtocolName() string {
 		return sUnknownTypeName
 	}
 	switch id.ProtocolId() {
-	case SecureChannel:
+	case secure_channel.ProtocolId:
 		return secure_channel.ProtocolName
-	case InteractionModel:
+	case interaction_model.ProtocolId:
 		return interaction_model.ProtocolName
-	case BDX:
+	case bdx.ProtocolId:
 		return bdx.ProtocolName
-	case UserDirectedCommissioning:
+	case user_directed_commissioning.ProtocolId:
 		return user_directed_commissioning.ProtocolName
-	case Echo:
+	case echo.ProtocolId:
 		return echo.ProtocolName
 	default:
 		return sUnknownTypeName
@@ -90,19 +90,19 @@ func (id *Id) MessageTypeName(messageType uint8) string {
 		return sUnknownTypeName
 	}
 	switch id.ProtocolId() {
-	case SecureChannel:
+	case secure_channel.ProtocolId:
 		msg := secure_channel.MsgType(messageType)
 		return msg.String()
-	case InteractionModel:
+	case interaction_model.ProtocolId:
 		msg := interaction_model.MsgType(messageType)
 		return msg.String()
-	case BDX:
+	case bdx.ProtocolId:
 		msg := bdx.MsgType(messageType)
 		return msg.String()
-	case UserDirectedCommissioning:
+	case user_directed_commissioning.ProtocolId:
 		msg := user_directed_commissioning.MsgType(messageType)
 		return msg.String()
-	case Echo:
+	case echo.ProtocolId:
 		msg := echo.MsgType(messageType)
 		return msg.String()
 	default:
