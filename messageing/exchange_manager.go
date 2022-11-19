@@ -1,13 +1,13 @@
 package messageing
 
 import (
-	"errors"
 	"fmt"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
 	log "golang.org/x/exp/slog"
@@ -110,7 +110,7 @@ func (e *ExchangeManager) SessionManager() *transport.SessionManager {
 func (e *ExchangeManager) OnMessageReceived(
 	packetHeader *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader,
-	session *transport.SessionHandle,
+	ss *transport.SessionHandle,
 	isDuplicate bool,
 	msg *system.PacketBufferHandle,
 ) {
@@ -120,8 +120,8 @@ func (e *ExchangeManager) OnMessageReceived(
 	{
 		//logging
 		var compressedFabricId lib.CompressedFabricId = 0
-		if session.IsSecureSession() && e.mSessionManager.FabricTable() != nil {
-			secureSession := session.Session.(*session.SecureSession)
+		if ss.IsSecureSession() && e.mSessionManager.FabricTable() != nil {
+			secureSession := ss.Session.(*session.Secure)
 			fabricInfo := e.mSessionManager.FabricTable().FindFabricWithIndex(secureSession.FabricIndex())
 			if fabricInfo != nil {
 				compressedFabricId = fabricInfo.CompressedFabricId()
@@ -131,10 +131,10 @@ func (e *ExchangeManager) OnMessageReceived(
 			"E", fmt.Sprintf("%04X", payloadHeader.ExchangeId()),
 			"M", fmt.Sprintf("%08X", packetHeader.MessageCounter),
 			"Ack", fmt.Sprintf("%04X", payloadHeader.AckMessageCounter()),
-			"S", session.SessionType(),
+			"S", ss.SessionType(),
 			"From", log.GroupValue(
-				log.Any("FabricIndex", session.FabricIndex()),
-				log.Any("NodeId", session.GetPeer().NodeId()),
+				log.Any("FabricIndex", ss.FabricIndex()),
+				log.Any("NodeId", ss.GetPeer().NodeId()),
 				log.Any("FabricId", compressedFabricId),
 			),
 			"Type", log.GroupValue(
@@ -146,32 +146,31 @@ func (e *ExchangeManager) OnMessageReceived(
 	}
 
 	var msgFlags = bitflags.Some(uint32(0))
-	msgFlags.Sets(isDuplicate, fDuplicateMessage)
+	msgFlags.Set(isDuplicate, fDuplicateMessage)
 
 	if !packetHeader.IsGroupSession() {
-		ec := e.mContextPool.MatchExchange(session, packetHeader, payloadHeader)
+		ec := e.mContextPool.MatchExchange(ss, packetHeader, payloadHeader)
 		if ec != nil {
 			log.Info("Found matching",
 				"Exchange", ec)
-			_ = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Unwrap(), msg)
+			_ = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Value(), msg)
 			return
 		}
 	} else {
 		log.Info("Received Group Cast Message", "GroupId", packetHeader.DestinationGroupId)
 	}
 
-	if !session.IsActiveSession() {
+	if !ss.IsActiveSession() {
 		log.Info("Dropping message on inactive session that does not match an existing exchange")
 		return
 	}
 
 	//如果不是重复的消息，而且如果消息是对方发起
 	if msgFlags.Has(fDuplicateMessage) && payloadHeader.IsInitiator() {
-		matchingUMH = nil
-		for _, umh := range e.mUMHandlerPool {
+		for i, umh := range e.mUMHandlerPool {
 			if umh.IsInUse() && payloadHeader.ProtocolID().Equal(umh.protocolId) {
 				if umh.messageType == int16(payloadHeader.MessageType()) {
-					matchingUMH = umh
+					matchingUMH = e.mUMHandlerPool[i]
 					break
 				}
 				if umh.messageType == KAnyMessageType {
@@ -185,37 +184,37 @@ func (e *ExchangeManager) OnMessageReceived(
 	}
 
 	if matchingUMH != nil {
-
 		var delegate ExchangeDelegate = nil
 		err := matchingUMH.handler.OnUnsolicitedMessageReceived(payloadHeader, delegate)
 		if err != nil {
 			log.Error("ExchangeManager OnMessageReceived", err)
-			e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags.Unwrap(), msg)
+			e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
 			return
 		}
-		var ec = e.mContextPool.Create(e, payloadHeader.ExchangeId(), session, false, delegate, false)
+		var ec = e.mContextPool.create(e, payloadHeader.ExchangeId(), ss, false, delegate, false)
 		if ec == nil {
-			if delegate == nil {
+			if delegate != nil {
 				matchingUMH.handler.OnExchangeCreationFailed(delegate)
 			}
 			log.Error("ExchangeManager OnMessageReceived failed", err)
 			return
 		}
-		log.Info("ExchangeManager Handling", "exchange", ec, "delegate", ec.Delegate(), "Tag", "ExchangeManager")
+		log.Info("ExchangeManager Handling", "exchange", ec, "delegate", ec.Delegate())
 
 		if ec.IsEncryptionRequired() != packetHeader.IsEncrypted() {
-			log.Info("OnMessageReceived", errors.New("invalid message type"), "Tag", "ExchangeManager")
-			ec.Close()
-			e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags.Unwrap(), msg)
+			log.Info("ExchangeManager OnMessageReceived", lib.MATTER_ERROR_INVALID_MESSAGE_TYPE)
+			ec.close()
+			e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
+			return
 		}
 
-		err = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Unwrap(), msg)
+		err = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Value(), msg)
 		if err != nil {
 			log.Error("ExchangeManager OnMessageReceived failed", err)
 		}
 		return
 	}
-	e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, session, msgFlags.Unwrap(), msg)
+	e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
 }
 
 func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForProtocol(
@@ -284,7 +283,7 @@ func (e *ExchangeManager) sendStandaloneAckIfNeeded(
 	if !payloadHeader.NeedsAck() {
 		return
 	}
-	ec := e.mContextPool.Create(e, payloadHeader.ExchangeId(), session, !payloadHeader.IsInitiator(), nil, true)
+	ec := e.mContextPool.create(e, payloadHeader.ExchangeId(), session, !payloadHeader.IsInitiator(), nil, true)
 	if ec == nil {
 		log.Error("ExchangeManager OnMessageReceived failed", lib.MATTER_ERROR_NO_MEMORY)
 		return
@@ -306,7 +305,7 @@ func (e *ExchangeManager) GetNumActiveExchanges() int {
 
 func (e *ExchangeManager) NewContext(session *transport.SessionHandle, delegate ExchangeDelegate, isInitiator bool) *ExchangeContext {
 	e.mNextExchangeId = e.mNextExchangeId + 1
-	return e.mContextPool.Create(e, e.mNextExchangeId, session, isInitiator, delegate, false)
+	return e.mContextPool.create(e, e.mNextExchangeId, session, isInitiator, delegate, false)
 }
 
 func (e *ExchangeManager) ReleaseContext(ctx *ExchangeContext) {

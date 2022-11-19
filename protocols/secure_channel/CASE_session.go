@@ -314,7 +314,7 @@ func (s *CASESession) SendSigma2() error {
 		return errors.New("sigma2 hkdfSha256 error")
 	}
 
-	//msgR2SignedLen := tlv.EstimateStructOverhead(credentials.MaxCHIPCertLength, credentials.MaxCHIPCertLength, crypto.KP256PublicKeyLength, crypto.KP256PublicKeyLength)
+	//msgR2SignedLen := tlv.EstimateStructOverhead(credentials.MaxCHIPCertLength, credentials.MaxCHIPCertLength, crypto.P256PublicKeyLength, crypto.P256PublicKeyLength)
 
 	//msgR2Signed := s.ConstructTBSData(nocCert, icaCert, s.mEphemeralKey.MarshalPublicKey(), s.mRemotePubKey.Marshal())
 
@@ -445,8 +445,8 @@ func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initi
 }
 
 func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []byte) (saltSpan []byte, err error) {
-	//md := make([]byte, crypto.KSha256HashLength)
-	saltSpan = make([]byte, kIpkSize+kSigmaParamRandomNumberSize+crypto.KP256PublicKeyLength+crypto.KSha256HashLength)
+	//md := make([]byte, crypto.Sha256HashLength)
+	saltSpan = make([]byte, kIpkSize+kSigmaParamRandomNumberSize+crypto.P256PublicKeyLength+crypto.Sha256HashLength)
 	buf := bytes.NewBuffer(saltSpan)
 	_, err = buf.Write(ipk)
 	_, err = buf.Write(rand)

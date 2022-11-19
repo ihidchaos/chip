@@ -141,7 +141,7 @@ func (d *Dnssd) Advertise(commissionableNode bool, mode int) error {
 	}
 	advertiseParameters.SetMaC(mac)
 
-	//Set device vendor id
+	//Sets device vendor id
 	vid, err := DeviceLayer.DefaultInstanceInfo().GetVendorId()
 	if err != nil {
 		log.Infof("Vendor ID not known")

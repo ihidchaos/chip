@@ -29,6 +29,19 @@ type EncryptedPacketBufferHandle struct {
 	*system.PacketBufferHandle
 }
 
+func (e *EncryptedPacketBufferHandle) MarkEncrypted() *system.PacketBufferHandle {
+	return e.PacketBufferHandle
+}
+
+func (e *EncryptedPacketBufferHandle) MessageCounter() uint32 {
+	header := raw.NewPacketHeader()
+	err := header.Decode([]byte{})
+	if err != nil {
+		return 0
+	}
+	return header.MessageCounter
+}
+
 // SessionManagerBase The delegate for TransportManager and FabricTable
 // TransportBaseDelegate is the indirect delegate for TransportManager
 type SessionManagerBase interface {

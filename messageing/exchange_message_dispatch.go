@@ -12,16 +12,16 @@ type ExchangeMessageDispatchBase interface {
 	MessagePermitted(id *protocols.Id, messageType uint8) bool
 }
 
-type ExchangeMessageDispatchImpl struct {
+type ExchangeMessageDispatch struct {
 	delegate ExchangeDelegate
 }
 
-func (d ExchangeMessageDispatchImpl) MessagePermitted(id *protocols.Id, messageType uint8) bool {
+func (d ExchangeMessageDispatch) MessagePermitted(id *protocols.Id, messageType uint8) bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (d ExchangeMessageDispatchImpl) IsReliableTransmissionAllowed() bool {
+func (d ExchangeMessageDispatch) IsReliableTransmissionAllowed() bool {
 	//TODO implement me
 	panic("implement me")
 }
@@ -49,7 +49,7 @@ func (d EphemeralExchangeDispatch) IsReliableTransmissionAllowed() bool {
 	panic("implement me")
 }
 
-func (d ExchangeMessageDispatchImpl) IsEncryptionRequired() bool {
+func (d ExchangeMessageDispatch) IsEncryptionRequired() bool {
 	return true
 }
 
@@ -57,7 +57,7 @@ func (d EphemeralExchangeDispatch) IsEncryptionRequired() bool {
 	return false
 }
 
-func (d ExchangeMessageDispatchImpl) SendMessage(mgr transport.SessionManagerBase, handle *transport.SessionHandle) {
+func (d ExchangeMessageDispatch) SendMessage(mgr transport.SessionManagerBase, handle *transport.SessionHandle) {
 
 }
 

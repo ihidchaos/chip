@@ -6,6 +6,7 @@ import (
 	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
 	"github.com/galenliu/chip/protocols/secure_channel"
@@ -13,16 +14,20 @@ import (
 	"time"
 )
 
+type ExchangeHandle struct {
+	ExchangeContext
+}
+
 type ExchangeSessionHolder struct {
 	*transport.SessionHolderWithDelegate
 }
 
 // GrabExpiredSession 抓取过期会话
-func (s *ExchangeSessionHolder) GrabExpiredSession(session *transport.SessionHandle) {
-	secureSession, ok := session.Session.(*session.SecureSession)
+func (s *ExchangeSessionHolder) GrabExpiredSession(ss *transport.SessionHandle) {
+	secureSession, ok := ss.Session.(*session.Secure)
 	if ok {
 		if secureSession.IsPendingEviction() {
-			s.GrabUnchecked(session)
+			s.GrabUnchecked(ss)
 		}
 	}
 }
@@ -34,7 +39,7 @@ func NewExchangeSessionHolder(delegate *ExchangeContext) *ExchangeSessionHolder 
 }
 
 type ExchangeContext struct {
-	ReliableMessageContext
+	*ReliableMessageContext
 	mExchangeId      uint16
 	mExchangeMgr     *ExchangeManager
 	mDispatch        ExchangeMessageDispatchBase
@@ -54,39 +59,38 @@ func NewExchangeContext(
 	isEphemeralExchange bool,
 ) *ExchangeContext {
 	ec := &ExchangeContext{
-		ReliableMessageContext: NewReliableMessageContext(),
-		mExchangeId:            exchangeId,
-		mExchangeMgr:           em,
-		mDelegate:              delegate,
-		mFlags:                 bitflags.Flags[uint16]{},
+		mExchangeId:  exchangeId,
+		mExchangeMgr: em,
+		mDelegate:    delegate,
+		mFlags:       bitflags.Flags[uint16]{},
 	}
-	ec.mFlags.Sets(initiator, kFlagInitiator)
-	ec.mFlags.Sets(isEphemeralExchange, kFlagEphemeralExchange)
+	ec.ReliableMessageContext = NewReliableMessageContext(ec)
+	ec.mFlags.Set(initiator, fInitiator)
+	ec.mFlags.Set(isEphemeralExchange, fEphemeralExchange)
 	ec.mDispatch = ec.GetMessageDispatch(isEphemeralExchange, delegate)
 	ec.ReferenceCounted = lib.NewReferenceCounted(1, ec)
 	ec.mSession = NewExchangeSessionHolder(ec)
 	ec.mSession.Grad(session)
 	ec.SetResponseTimeout(time.Duration(0))
-
 	if ec.IsInitiator() && !isEphemeralExchange {
 		ec.WillSendMessage()
 	}
 	ec.SetAckPending(false)
-
+	ec.SetAutoRequestAck(!session.IsGroupSession())
 	return ec
 }
 
 // IsInitiator 是否是通信的发起方
 func (c *ExchangeContext) IsInitiator() bool {
-	return c.mFlags.Has(kFlagInitiator)
+	return c.mFlags.Has(fInitiator)
 }
 
 func (c *ExchangeContext) IsResponseExpected() bool {
-	return c.mFlags.Has(kFlagResponseExpected)
+	return c.mFlags.Has(fResponseExpected)
 }
 
-func (c *ExchangeContext) SetResponseExpected(inResponseExpected bool) {
-	c.mFlags.Sets(inResponseExpected, kFlagResponseExpected)
+func (c *ExchangeContext) setResponseExpected(inResponseExpected bool) {
+	c.mFlags.Set(inResponseExpected, fResponseExpected)
 
 }
 
@@ -113,19 +117,22 @@ func (c *ExchangeContext) SendMessage(protocolId protocols.Id, msgType uint8, r2
 	return nil
 }
 
-func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle, packetHeader *raw.PacketHeader, payloadHeader *raw.PayloadHeader) bool {
+func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle,
+	packetHeader *raw.PacketHeader,
+	payloadHeader *raw.PayloadHeader) bool {
 	return (c.mExchangeId == payloadHeader.ExchangeId()) &&
 		(c.mSession.Contains(session)) &&
 		(c.IsEncryptionRequired() == packetHeader.IsEncrypted()) &&
 		(payloadHeader.IsInitiator() != c.IsInitiator())
 }
 
-func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *raw.PayloadHeader, flags uint32, buf *system.PacketBufferHandle) error {
+func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *raw.PayloadHeader, f uint32, buf *system.PacketBufferHandle) error {
 
 	c.Retain()
+	msgFlags := bitflags.Some(f)
+
 	isStandaloneAck := payloadHeader.HasMessageType(uint8(secure_channel.StandaloneAck))
-	f := bitflags.Some(flags)
-	isDuplicate := f.Has(fDuplicateMessage)
+	isDuplicate := msgFlags.Has(fDuplicateMessage)
 
 	defer func() {
 		if (isDuplicate || isStandaloneAck) && c.mDelegate != nil {
@@ -135,29 +142,33 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 	}()
 
 	if c.mDispatch.IsReliableTransmissionAllowed() && !c.IsGroupExchangeContext() {
-		if f.Has(fDuplicateMessage) &&
+		if !msgFlags.Has(fDuplicateMessage) &&
 			payloadHeader.IsAckMsg() &&
 			payloadHeader.AckMessageCounter().IsSome() {
 			c.HandleRcvdAck(payloadHeader.AckMessageCounter().Unwrap())
 		}
 		if payloadHeader.NeedsAck() {
-			c.HandleNeedsAck(messageCounter, flags)
+			c.HandleNeedsAck(messageCounter, f)
 		}
 	}
 	if c.isAckPending() && c.mDelegate != nil {
-		return c.FlushAcks()
+		err := c.FlushAcks()
+		if err != nil {
+			return err
+		}
 	}
 
 	if isStandaloneAck || isDuplicate || c.IsEphemeralExchange() {
 		return nil
 	}
 
-	if c.IsMessageNotAcked() {
+	if c.isMessageNotAcked() {
 		log.Info("ExchangeManager Dropping message without piggyback ack when we are waiting for an ack.")
 		return lib.MATTER_ERROR_INCORRECT_STATE
 	}
-	c.CancelResponseTimer()
-	c.SetResponseExpected(false)
+
+	c.cancelResponseTimer()
+	c.setResponseExpected(false)
 	if c.mDelegate != nil && c.mDispatch.MessagePermitted(payloadHeader.ProtocolID(), payloadHeader.MessageType()) {
 		return c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 	}
@@ -169,7 +180,8 @@ func (c *ExchangeContext) SetDelegate(delegate ExchangeDelegate) {
 	c.mDelegate = delegate
 }
 
-func (c *ExchangeContext) GetMessageDispatch(isEphemeralExchange bool, delegate ExchangeDelegate) ExchangeMessageDispatchBase {
+func (c *ExchangeContext) GetMessageDispatch(isEphemeralExchange bool,
+	delegate ExchangeDelegate) ExchangeMessageDispatchBase {
 	if isEphemeralExchange {
 		return EphemeralExchangeDispatchInstance()
 	}
@@ -189,10 +201,10 @@ func (c *ExchangeContext) Released() {
 
 func (c *ExchangeContext) DoClose(clearRetransTable bool) {
 
-	if c.mFlags.Has(kFlagClosed) {
+	if c.mFlags.Has(fClosed) {
 		return
 	}
-	c.mFlags.Sets(true, kFlagClosed)
+	c.mFlags.Set(true, fClosed)
 
 	if c.mDelegate != nil {
 		c.mDelegate.OnExchangeClosing(c)
@@ -203,10 +215,10 @@ func (c *ExchangeContext) DoClose(clearRetransTable bool) {
 	if clearRetransTable {
 		c.mExchangeMgr.ReliableMessageMgr().ClearRetransTable(c.ReliableMessageContext)
 	}
-	c.CancelResponseTimer()
+	c.cancelResponseTimer()
 }
 
-func (c *ExchangeContext) Close() {
+func (c *ExchangeContext) close() {
 	c.DoClose(false)
 	c.Release()
 }
@@ -234,12 +246,20 @@ func (c *ExchangeContext) GetSessionHandle() *transport.SessionHandle {
 	return c.mSession.Get()
 }
 
-func (c *ExchangeContext) CancelResponseTimer() {
+func (c *ExchangeContext) cancelResponseTimer() {
 	systemLayer := c.mExchangeMgr.SessionManager().SystemLayer()
 	if systemLayer == nil {
 		return
 	}
 	systemLayer.CancelTimer(c.HandleResponseTimeout, c)
+}
+
+func (c *ExchangeContext) startResponseTimer() {
+	systemLayer := c.mExchangeMgr.SessionManager().SystemLayer()
+	if systemLayer == nil {
+		return
+	}
+	systemLayer.StartTimer(c.mResponseTimeout, c.HandleResponseTimeout, c)
 }
 
 func (c *ExchangeContext) HandleResponseTimeout(layer system.Layer, aAppState any) {
@@ -262,23 +282,23 @@ func (c *ExchangeContext) LogValue() log.Value {
 }
 
 func (c *ExchangeContext) messageHandled() {
-	if c.mFlags.Has(kFlagClosed) || c.IsResponseExpected() || c.isSendExpected() {
+	if c.mFlags.Has(fClosed) || c.IsResponseExpected() || c.isSendExpected() {
 		return
 	}
-	c.Close()
+	c.close()
 }
 
 func (c *ExchangeContext) isSendExpected() bool {
-	return c.mFlags.Has(kFlagWillSendMessage)
+	return c.mFlags.Has(fWillSendMessage)
 }
 
 func (c *ExchangeContext) isAckPending() bool {
-	return c.mFlags.Has(kFlagAckPending)
+	return c.mFlags.Has(fAckPending)
 
 }
 
 func (c *ExchangeContext) WillSendMessage() {
-	c.mFlags.Sets(true, kFlagWillSendMessage)
+	c.mFlags.Set(true, fWillSendMessage)
 }
 
 func DefaultOnMessageReceived(c *ExchangeContext, id *protocols.Id, messageType uint8, messageCounter uint32, payload *system.PacketBufferHandle) {

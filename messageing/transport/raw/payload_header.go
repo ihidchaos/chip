@@ -13,15 +13,15 @@ import (
 
 const (
 	fInitiator uint8 = 0b1
-	// fAckMsg / Set when current message is an acknowledgment for a previously received message.
+	// fAckMsg / Sets when current message is an acknowledgment for a previously received message.
 	fAckMsg uint8 = 0b10
-	// fNeedsAck / Set when current message is requesting an acknowledgment from the recipient.
+	// fNeedsAck / Sets when current message is requesting an acknowledgment from the recipient.
 	fNeedsAck uint8 = 0b100
 
 	// FSecuredExtension / Secured Extension block is present.
 	//FSecuredExtension uint8 = 0b1000
 
-	// fVendorIdPresent / Set when a vendor id is prepended to the Message Protocol Id field.
+	// fVendorIdPresent / Sets when a vendor id is prepended to the Message Protocol Id field.
 	fVendorIdPresent uint8 = 0b10000
 )
 

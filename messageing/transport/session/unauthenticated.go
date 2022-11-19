@@ -91,7 +91,7 @@ func (s *Unauthenticated) SessionReleased() {
 	panic("implement me")
 }
 
-func (s *Unauthenticated) DispatchSessionEvent(delegate Delegate) {
+func (s *Unauthenticated) DispatchSessionEvent(delegate DelegateEvent) {
 	//TODO implement me
 	panic("implement me")
 }

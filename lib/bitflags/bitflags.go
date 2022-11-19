@@ -12,28 +12,34 @@ func Some[T constraints.Unsigned](f T) Flags[T] {
 	return Flags[T]{mFlags: f}
 }
 
-func (b *Flags[T]) Has(flags ...T) bool {
+func (b *Flags[T]) Has(f T) bool {
+	if f != b.mFlags&f {
+		return false
+	}
+	return true
+}
+
+func (b *Flags[T]) HasAll(flags ...T) bool {
 	for _, flag := range flags {
-		if flag != b.mFlags&flag {
+		if !b.Has(flag) {
 			return false
 		}
 	}
 	return true
 }
 
-func (b *Flags[T]) Sets(isSet bool, flags ...T) {
+func (b *Flags[T]) Set(isSet bool, f T) {
 	if !isSet {
-		return
+		b.Sets(f)
 	}
+}
+
+func (b *Flags[T]) Sets(flags ...T) {
 	for _, flag := range flags {
-		b.Set(flag)
+		b.mFlags = b.mFlags | flag
 	}
 }
 
-func (b *Flags[T]) Set(f T) {
-	b.mFlags = b.mFlags | f
-}
-
-func (b *Flags[T]) Unwrap() T {
+func (b *Flags[T]) Value() T {
 	return b.mFlags
 }

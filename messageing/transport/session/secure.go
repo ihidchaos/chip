@@ -10,14 +10,14 @@ import (
 
 type OptionalFunc func(*Secure)
 
-type Deleter interface {
-	Delete(secure *Secure)
+type SecureDelegate interface {
+	ReleaseSession(secure *Secure)
 }
 
 type Secure struct {
 	*BaseImpl
 	mState                 SecureState
-	mTable                 Deleter //
+	mDelegate              SecureDelegate //
 	mSecureSessionType     SecureSessionType
 	mLocalSessionId        uint16
 	mPeerSessionId         uint16
@@ -34,13 +34,13 @@ type Secure struct {
 }
 
 func NewSecure(
-	table Deleter,
+	table SecureDelegate,
 	secureSessionType SecureSessionType,
 	localSessionId uint16,
 	options ...OptionalFunc,
 ) *Secure {
 	session := &Secure{
-		mTable:             table,
+		mDelegate:          table,
 		mState:             kEstablishing,
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
@@ -69,7 +69,7 @@ func (s *Secure) ComputeRoundTripTimeout(upperlayerProcessingTimeout time.Durati
 }
 
 func (s *Secure) Released() {
-	s.mTable.Delete(s)
+	s.mDelegate.ReleaseSession(s)
 }
 
 func (s *Secure) MoveToState(targetState SecureState) {

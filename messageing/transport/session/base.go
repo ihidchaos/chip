@@ -17,12 +17,14 @@ const (
 	kMinActiveTime     time.Duration            = time.Duration(4 * time.Second)
 )
 
+type DelegateEvent func()
+
 type Delegate interface {
 	OnSessionReleased()
 }
 
 type Holder interface {
-	DispatchSessionEvent(Delegate)
+	DispatchSessionEvent(DelegateEvent)
 }
 
 type Base interface {
@@ -31,7 +33,7 @@ type Base interface {
 	SetFabricIndex(index lib.FabricIndex)
 	FabricIndex() lib.FabricIndex
 	NotifySessionReleased()
-	DispatchSessionEvent(delegate Delegate)
+	DispatchSessionEvent(delegate DelegateEvent)
 	IsSecureSession() bool
 	IsGroupSession() bool
 	SessionType() Type
@@ -84,7 +86,7 @@ func (s *BaseImpl) SetFabricIndex(index lib.FabricIndex) {
 	s.mFabricIndex = index
 }
 
-func (s *BaseImpl) DispatchSessionEvent(event Delegate) {
+func (s *BaseImpl) DispatchSessionEvent(event DelegateEvent) {
 	for _, holder := range s.mHolders {
 		holder.DispatchSessionEvent(event)
 	}

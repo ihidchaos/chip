@@ -6,79 +6,82 @@ import (
 )
 
 const (
-	kFlagInitiator                uint16 = 1 << iota
-	kFlagResponseExpected         uint16 = 1 << 1
-	kFlagAutoRequestAck           uint16 = 1 << 2
-	kFlagMessageNotAcked          uint16 = 1 << 3
-	kFlagAckPending               uint16 = 1 << 4
-	kFlagAckMessageCounterIsValid uint16 = 1 << 5
-	kFlagWillSendMessage          uint16 = 1 << 6
-	kFlagClosed                   uint16 = 1 << 7
-	kFlagActiveMode               uint16 = 1 << 8
-	kFlagEphemeralExchange        uint16 = 1 << 9
-	kFlagIgnoreSessionRelease     uint16 = 1 << 10
+	fInitiator                uint16 = 1 << iota
+	fResponseExpected         uint16 = 1 << 1
+	fAutoRequestAck           uint16 = 1 << 2
+	fMessageNotAcked          uint16 = 1 << 3
+	fAckPending               uint16 = 1 << 4
+	fAckMessageCounterIsValid uint16 = 1 << 5
+	fWillSendMessage          uint16 = 1 << 6
+	fClosed                   uint16 = 1 << 7
+	fActiveMode               uint16 = 1 << 8
+	fEphemeralExchange        uint16 = 1 << 9
+	fIgnoreSessionRelease     uint16 = 1 << 10
 )
 
 type ReliableMessageContext struct {
 	mFlags                        bitflags.Flags[uint16]
 	mNextAckTime                  time.Time
 	mPendingPeerAckMessageCounter uint32
+	mExchangeContext              *ExchangeContext
 }
 
-func NewReliableMessageContext() ReliableMessageContext {
-	return ReliableMessageContext{
+func NewReliableMessageContext(ec *ExchangeContext) *ReliableMessageContext {
+	return &ReliableMessageContext{
 		mNextAckTime:                  time.Time{},
 		mPendingPeerAckMessageCounter: 0,
+		mExchangeContext:              ec,
 	}
 }
 
 func (c *ReliableMessageContext) AutoRequestAck() bool {
-	return c.mFlags.Has(kFlagAutoRequestAck)
+	return c.mFlags.Has(fAutoRequestAck)
 
 }
 
 func (c *ReliableMessageContext) IsAckPending() bool {
 
-	return c.mFlags.Has(kFlagAckPending)
+	return c.mFlags.Has(fAckPending)
 }
 
-func (c *ReliableMessageContext) IsMessageNotAcked() bool {
-	return c.mFlags.Has(kFlagEphemeralExchange)
+func (c *ReliableMessageContext) isMessageNotAcked() bool {
+	return c.mFlags.Has(fEphemeralExchange)
 }
 
 func (c *ReliableMessageContext) HasPiggybackAckPending() bool {
-	return c.mFlags.Has(kFlagAckMessageCounterIsValid)
+	return c.mFlags.Has(fAckMessageCounterIsValid)
 }
 
 func (c *ReliableMessageContext) IsRequestingActiveMode() bool {
 
-	return c.mFlags.Has(kFlagActiveMode)
+	return c.mFlags.Has(fActiveMode)
 }
 
 func (c *ReliableMessageContext) SetAutoRequestAck(autoReqAck bool) {
-	c.mFlags.Sets(autoReqAck, kFlagAutoRequestAck)
+	c.mFlags.Set(autoReqAck, fAutoRequestAck)
 }
 
 func (c *ReliableMessageContext) SetAckPending(inAckPending bool) {
-	c.mFlags.Sets(inAckPending, kFlagAckPending)
+	c.mFlags.Set(inAckPending, fAckPending)
 }
 
 func (c *ReliableMessageContext) SetMessageNotAcked(messageNotAcked bool) {
-	c.mFlags.Sets(messageNotAcked, kFlagMessageNotAcked)
+	c.mFlags.Set(messageNotAcked, fMessageNotAcked)
 }
 
 func (c *ReliableMessageContext) SetRequestingActiveMode(activeMode bool) {
 
-	c.mFlags.Sets(activeMode, kFlagActiveMode)
+	c.mFlags.Set(activeMode, fActiveMode)
 }
 
 func (c *ReliableMessageContext) IsEphemeralExchange() bool {
-	return c.mFlags.Has(kFlagEphemeralExchange)
+	return c.mFlags.Has(fEphemeralExchange)
 }
 
-func (c *ReliableMessageContext) HandleRcvdAck(ackCounter uint32) {
-	//TODO implement me
-	panic("implement me")
+func (c *ReliableMessageContext) HandleRcvdAck(ackMessageCounter uint32) {
+	if !c.ReliableMessageMgr().CheckAndRemRetransTable(c, ackMessageCounter) {
+
+	}
 }
 
 func (c *ReliableMessageContext) HandleNeedsAck(messageCounter, flags uint32) {
@@ -92,5 +95,9 @@ func (c *ReliableMessageContext) FlushAcks() error {
 }
 
 func (c *ReliableMessageContext) ShouldIgnoreSessionRelease() bool {
-	return c.mFlags.Has(kFlagIgnoreSessionRelease)
+	return c.mFlags.Has(fIgnoreSessionRelease)
+}
+
+func (c *ReliableMessageContext) ReliableMessageMgr() *ReliableMessageMgr {
+	return c.mExchangeContext.mExchangeMgr.mReliableMessageMgr
 }

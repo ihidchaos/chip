@@ -13,13 +13,10 @@ type PairingSessionBase interface {
 	session.Delegate
 	SecureSessionType() uint8
 	Peer() lib.ScopedNodeId
-
 	LocalScopedNodeId() lib.ScopedNodeId
 	PeerCATs() lib.CATValues
 	GetNewSessionHandlingPolicy() session.NewSessionHandlingPolicy
-
 	CopySecureSession() *transport.SessionHandle
-
 	IsValidPeerSessionId() bool
 	DeriveSecureSession(ctx session.CryptoContext) error
 	GetRemoteMRPConfig() *session.ReliableMessageProtocolConfig
@@ -40,8 +37,19 @@ type PairingSession struct {
 	mLocalMRPConfig      *session.ReliableMessageProtocolConfig
 }
 
-func (p PairingSession) SecureSessionType() uint8 {
-	return uint8(p.mSecureSessionType)
+func NewPairingSessionImpl() *PairingSession {
+	return &PairingSession{
+		mRole:                0,
+		mSecureSessionType:   session.SecureSessionTypeCASE,
+		SessionManager:       nil,
+		mExchangeCtxt:        messageing.ExchangeContext{},
+		mSecureSessionHolder: nil,
+		mLocalMRPConfig:      nil,
+	}
+}
+
+func (p PairingSession) SecureSessionType() session.SecureSessionType {
+	return p.mSecureSessionType
 }
 
 func (p PairingSession) PeerCATs() lib.CATValues {
@@ -50,10 +58,6 @@ func (p PairingSession) PeerCATs() lib.CATValues {
 }
 
 func (p PairingSession) LocalSessionId() (uint16, error) {
-	//ss := p.mSecureSessionHolder.SessionHandle()
-	//if ss != nil {
-	//	return ss.
-	//}
 	return 0, errors.New("secure session is not available")
 }
 
@@ -67,8 +71,7 @@ func (p PairingSession) CopySecureSession() *transport.SessionHandle {
 }
 
 func (p PairingSession) PeerSessionId() uint16 {
-	//TODO implement me
-	panic("implement me")
+	return p.mPeerSessionId
 }
 
 func (p PairingSession) IsValidPeerSessionId() bool {
@@ -101,15 +104,4 @@ func (p PairingSession) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *tlv2.
 		return nil
 	}
 	return nil
-}
-
-func NewPairingSessionImpl() *PairingSession {
-	return &PairingSession{
-		mRole:                0,
-		mSecureSessionType:   session.SecureSessionTypeCASE,
-		SessionManager:       nil,
-		mExchangeCtxt:        messageing.ExchangeContext{},
-		mSecureSessionHolder: nil,
-		mLocalMRPConfig:      nil,
-	}
 }

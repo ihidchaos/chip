@@ -95,7 +95,7 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 		log.Infof("Discriminator value invalid: %d", discriminator)
 		return lib.InvalidArgument
 	}
-	if spake2pIterationCount < KSpake2pMinPbkdfIterations || spake2pIterationCount > crypto.KSpake2pMaxPbkdfIterations {
+	if spake2pIterationCount < KSpake2pMinPbkdfIterations || spake2pIterationCount > crypto.Spake2pMaxPBKDFIterations {
 		log.Printf("PASE Iteration count invalid: %d", spake2pIterationCount)
 		return lib.InvalidArgument
 	}
@@ -104,7 +104,7 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	havePaseVerifier := serializedSpake2pVerifier != nil && len(serializedSpake2pVerifier) > 0
 	var finalSerializedVerifier []byte
 	if havePaseVerifier {
-		if len(serializedSpake2pVerifier) != crypto.KSpake2pVerifierSerializedLength {
+		if len(serializedSpake2pVerifier) != crypto.Spake2pVerifierSerializedLength {
 			log.Error("PASE verifier size invalid: %d", len(serializedSpake2pVerifier))
 			return lib.InvalidArgument
 		}
@@ -122,7 +122,7 @@ func (c *CommissionableDataImpl) initCommissionableData(serializedSpake2pVerifie
 	}
 
 	spake2pSaltLength := len(spake2pSalt)
-	if havePaseSalt && ((spake2pSaltLength < crypto.KSpake2pMinPbkdfSaltLength) || (spake2pSaltLength > crypto.KSpake2pMaxPbkdfSaltLength)) {
+	if havePaseSalt && ((spake2pSaltLength < crypto.Spake2pMinPBKDFSaltLength) || (spake2pSaltLength > crypto.Spake2pMaxPBKDFSaltLength)) {
 		log.Infof("PASE salt length invalid: %d", spake2pSaltLength)
 		return lib.InvalidArgument
 	}
@@ -213,7 +213,7 @@ func (c *CommissionableDataImpl) GetSpake2pVerifier() ([]byte, error) {
 	if !c.mIsInitialized {
 		return nil, lib.IncorrectState
 	}
-	if len(c.mSerializedPaseVerifier) != crypto.KSpake2pVerifierSerializedLength {
+	if len(c.mSerializedPaseVerifier) != crypto.Spake2pVerifierSerializedLength {
 		return nil, lib.ErrorInternal
 	}
 	return c.mSerializedPaseVerifier, nil

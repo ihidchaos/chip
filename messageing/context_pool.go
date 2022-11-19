@@ -21,7 +21,7 @@ func (c *ExchangeContextPool) add(context *ExchangeContext) {
 	c.container.Store(context.mExchangeId, context)
 }
 
-func (c *ExchangeContextPool) Create(ec *ExchangeManager,
+func (c *ExchangeContextPool) create(ec *ExchangeManager,
 	exchangeId uint16,
 	session *transport.SessionHandle,
 	initiator bool,
@@ -77,7 +77,7 @@ func (c *ExchangeContextPool) CloseContextForDelegate(delegate ExchangeDelegate)
 		if ok {
 			if ec.mDelegate == delegate {
 				ec.SetDelegate(nil)
-				ec.Close()
+				ec.close()
 			}
 		}
 		return false

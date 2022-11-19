@@ -10,6 +10,13 @@ type SessionHolder struct {
 	*lib.ReferenceCounted
 }
 
+func NewSessionHolder(session session.Session) *SessionHolder {
+	session.Retain()
+	return &SessionHolder{
+		Session: session,
+	}
+}
+
 func (s *SessionHolder) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
@@ -34,7 +41,6 @@ func (s *SessionHolder) Get() *SessionHandle {
 func (s *SessionHolder) Release() {
 	if s.Session != nil {
 		s.Session.RemoveHolder(s)
-		s.Session.ClearValue()
 	}
 	s.Session = nil
 }
@@ -50,11 +56,6 @@ func (s *SessionHolder) GrabPairingSession(ss *SessionHandle) bool {
 	}
 	s.GrabUnchecked(ss)
 	return true
-}
-
-func (s *SessionHolder) DispatchSessionEvent(delegate session.Delegate) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (s *SessionHolder) Grad(session *SessionHandle) bool {
@@ -83,6 +84,10 @@ func NewSessionHolderWithDelegateImpl(delegate session.Delegate) *SessionHolderW
 	}
 }
 
+func (s *SessionHolderWithDelegate) DispatchSessionEvent(event session.DelegateEvent) {
+	event()
+}
+
 func (s *SessionHolderWithDelegate) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
@@ -97,12 +102,3 @@ func (s *SessionHolderWithDelegate) Release() {
 	//TODO implement me
 	panic("implement me")
 }
-
-func (s *SessionHolderWithDelegate) DispatchSessionEvent(delegate session.Delegate) {
-	//TODO implement me
-	panic("implement me")
-}
-
-//func (s *SessionHolder) Contains(session SessionHandleBase) bool {
-//	return s.Session != nil && session == s.Session
-//}

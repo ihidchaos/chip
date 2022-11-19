@@ -57,7 +57,7 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 	//Sigma1，Tag=3	destination id 20个字节的认证码
 	err = tlvReader.NextE(tlv2.ContextTag(kDestinationIdTag))
 	sigma1.destinationId, err = tlvReader.GetBytesView()
-	if err != nil && len(sigma1.destinationId) != crypto.KSha256HashLength {
+	if err != nil && len(sigma1.destinationId) != crypto.Sha256HashLength {
 		err = lib.InvalidCaseParameter
 		return
 	}
@@ -65,7 +65,7 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 	//Sigma1，Tag=4	 Initiator PubKey 1个字节的公钥
 	err = tlvReader.NextE(tlv2.ContextTag(kInitiatorPubKeyTag))
 	sigma1.initiatorEphPubKey, err = tlvReader.GetBytesView()
-	if err != nil && len(sigma1.initiatorEphPubKey) != crypto.KP256PublicKeyLength {
+	if err != nil && len(sigma1.initiatorEphPubKey) != crypto.P256PublicKeyLength {
 		err = lib.InvalidCaseParameter
 		return
 	}
