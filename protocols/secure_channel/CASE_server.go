@@ -8,7 +8,6 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
-	"github.com/galenliu/chip/protocols"
 	log "golang.org/x/exp/slog"
 )
 
@@ -93,21 +92,27 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 	s.mPinnedSecureSession = s.Session().CopySecureSession()
 }
 
-func (s *CASEServer) InitCASEHandshake(ec *messageing.ExchangeContext) {
+func (s *CASEServer) InitCASEHandshake(ec *messageing.ExchangeContext) error {
+	if ec == nil {
+		return lib.MATTER_ERROR_INVALID_ARGUMENT
+	}
 	ec.SetDelegate(s.Session())
-}
-
-func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
-	delegate = s
 	return nil
 }
 
-func (s *CASEServer) OnMessageReceived(context *messageing.ExchangeContext, header *raw.PayloadHeader, buf *system.PacketBufferHandle) error {
-	err := s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(protocols.NotSpecifiedProtocolId, uint8(CASE_Sigma1))
+func (s *CASEServer) OnUnsolicitedMessageReceived(header *raw.PayloadHeader) (messageing.ExchangeDelegate, error) {
+	return s, nil
+}
+
+func (s *CASEServer) OnMessageReceived(ec *messageing.ExchangeContext, header *raw.PayloadHeader, buf *system.PacketBufferHandle) error {
+	log.Info("CASE Server received Sigma1 message. Starting handshake.", "EC", ec)
+	err := s.InitCASEHandshake(ec)
+
+	err = s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(ProtocolId, uint8(CASE_Sigma1))
 	if err != nil {
 		return err
 	}
-	return s.Session().OnMessageReceived(context, header, buf)
+	return s.Session().OnMessageReceived(ec, header, buf)
 }
 
 func (s *CASEServer) OnResponseTimeout(ec *messageing.ExchangeContext) {

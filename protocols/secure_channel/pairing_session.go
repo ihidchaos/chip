@@ -32,7 +32,7 @@ type PairingSession struct {
 	mDelegate SessionEstablishmentDelegate
 
 	SessionManager       transport.SessionManagerBase
-	mExchangeCtxt        messageing.ExchangeContext
+	mExchangeCtxt        *messageing.ExchangeContext
 	mSecureSessionHolder *transport.SessionHolderWithDelegate
 	mLocalMRPConfig      *session.ReliableMessageProtocolConfig
 }
@@ -42,7 +42,7 @@ func NewPairingSessionImpl() *PairingSession {
 		mRole:                0,
 		mSecureSessionType:   session.SecureSessionTypeCASE,
 		SessionManager:       nil,
-		mExchangeCtxt:        messageing.ExchangeContext{},
+		mExchangeCtxt:        &messageing.ExchangeContext{},
 		mSecureSessionHolder: nil,
 		mLocalMRPConfig:      nil,
 	}

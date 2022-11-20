@@ -45,7 +45,7 @@ type ExchangeManagerBase interface {
 	SessionManager() *transport.SessionManager
 	RegisterUnsolicitedMessageHandlerForProtocol(protocolId protocols.Id, handler UnsolicitedMessageHandler) error
 	RegisterUnsolicitedMessageHandlerForType(protocolId uint16, msgType uint8, handler UnsolicitedMessageHandler) error
-	UnregisterUnsolicitedMessageHandlerForType(id protocols.Id, messageType uint8) error
+	UnregisterUnsolicitedMessageHandlerForType(id uint16, messageType uint8) error
 	UnregisterUnsolicitedMessageHandlerForProtocol(id protocols.Id) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
@@ -184,12 +184,12 @@ func (e *ExchangeManager) OnMessageReceived(
 		return
 	}
 
+	defer e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
+
 	if matchingUMH != nil {
-		var delegate ExchangeDelegate = nil
-		err := matchingUMH.handler.OnUnsolicitedMessageReceived(payloadHeader, delegate)
+		delegate, err := matchingUMH.handler.OnUnsolicitedMessageReceived(payloadHeader)
 		if err != nil {
 			log.Error("ExchangeManager OnMessageReceived", err)
-			e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
 			return
 		}
 		var ec = e.mContextPool.create(e, payloadHeader.ExchangeId(), ss, false, delegate, false)
@@ -205,7 +205,6 @@ func (e *ExchangeManager) OnMessageReceived(
 		if ec.IsEncryptionRequired() != packetHeader.IsEncrypted() {
 			log.Info("ExchangeManager OnMessageReceived", lib.MATTER_ERROR_INVALID_MESSAGE_TYPE)
 			ec.close()
-			e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
 			return
 		}
 
@@ -215,7 +214,6 @@ func (e *ExchangeManager) OnMessageReceived(
 		}
 		return
 	}
-	e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
 }
 
 func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForProtocol(
@@ -225,13 +223,13 @@ func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForProtocol(
 	return e.registerUMH(protocolId, KAnyMessageType, handler)
 }
 
-func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForType(protocolId uint16, msgType uint8, handler UnsolicitedMessageHandler) error {
-	p := protocols.NewProtocolId(protocolId)
+func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForType(id uint16, msgType uint8, handler UnsolicitedMessageHandler) error {
+	p := protocols.NewProtocolId(id)
 	return e.registerUMH(p, int16(msgType), handler)
 }
 
-func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForType(id protocols.Id, messageType uint8) error {
-	return e.unregisterUMH(id, int16(messageType))
+func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForType(id uint16, messageType uint8) error {
+	return e.unregisterUMH(protocols.NewProtocolId(id), int16(messageType))
 }
 
 func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForProtocol(id protocols.Id) error {

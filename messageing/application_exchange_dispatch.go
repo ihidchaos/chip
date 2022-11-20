@@ -1,9 +1,17 @@
 package messageing
 
+import "sync/atomic"
+
 type ApplicationExchangeDispatch struct {
 	ExchangeMessageDispatchBase
 }
 
-func ApplicationExchangeDispatchInstance() *ApplicationExchangeDispatch {
-	return nil
+var defaultApplicationExchangeDispatch atomic.Value
+
+func init() {
+	defaultEphemeralExchangeDispatch.Store(&ApplicationExchangeDispatch{})
+}
+
+func DefaultApplicationExchangeDispatch() *ApplicationExchangeDispatch {
+	return defaultApplicationExchangeDispatch.Load().(*ApplicationExchangeDispatch)
 }

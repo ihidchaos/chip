@@ -6,7 +6,7 @@ import (
 )
 
 type UnsolicitedMessageHandler interface {
-	OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate ExchangeDelegate) error
+	OnUnsolicitedMessageReceived(header *raw.PayloadHeader) (ExchangeDelegate, error)
 	OnExchangeCreationFailed(delegate ExchangeDelegate)
 }
 

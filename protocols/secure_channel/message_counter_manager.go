@@ -39,7 +39,7 @@ func (m *MessageCounterManager) OnExchangeClosing(ec *messageing.ExchangeContext
 	panic("implement me")
 }
 
-func (m *MessageCounterManager) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+func (m *MessageCounterManager) OnUnsolicitedMessageReceived(header *raw.PayloadHeader) (messageing.ExchangeDelegate, error) {
 	//TODO implement me
 	panic("implement me")
 }

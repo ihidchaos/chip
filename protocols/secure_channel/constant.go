@@ -1,6 +1,9 @@
 package secure_channel
 
-import "github.com/galenliu/chip/crypto"
+import (
+	"github.com/galenliu/chip/crypto"
+	"time"
+)
 
 type state uint8
 
@@ -21,6 +24,8 @@ const (
 	TagTBEDataSenderICAC   = 2
 	TagTBEDataSignature    = 3
 	TagTBEDataResumptionID = 4
+
+	kExpectedHighProcessingTime = time.Duration(30 * time.Second)
 
 	resumptionIdSize        = 16
 	ProtocolName            = "SecureChannel"

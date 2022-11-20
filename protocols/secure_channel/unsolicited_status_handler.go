@@ -41,7 +41,7 @@ func (h UnsolicitedStatusHandlerImpl) OnExchangeClosing(ec *messageing.ExchangeC
 	panic("implement me")
 }
 
-func (h UnsolicitedStatusHandlerImpl) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+func (h UnsolicitedStatusHandlerImpl) OnUnsolicitedMessageReceived(header *raw.PayloadHeader) (messageing.ExchangeDelegate, error) {
 	//TODO implement me
 	panic("implement me")
 }

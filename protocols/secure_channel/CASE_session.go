@@ -14,7 +14,6 @@ import (
 	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/pkg/tlv"
 	"github.com/galenliu/chip/platform/system"
-	"github.com/galenliu/chip/protocols"
 	log "golang.org/x/exp/slog"
 	"math/rand"
 )
@@ -81,14 +80,20 @@ func (s *CASESession) GetMessageDispatch() messageing.ExchangeMessageDispatchBas
 	panic("implement me")
 }
 
-func (s *CASESession) OnMessageReceived(context *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, buf *system.PacketBufferHandle) error {
+func (s *CASESession) OnMessageReceived(ec *messageing.ExchangeContext, payloadHeader *raw.PayloadHeader, msg *system.PacketBufferHandle) error {
+
+	err := s.ValidateReceivedMessage(ec, payloadHeader, msg)
+	if err != nil {
+		return err
+	}
 	msgType := MsgType(payloadHeader.MessageType())
+
 	sha256.New()
 
 	switch s.mState {
 	case initialized:
 		if msgType == CASE_Sigma1 {
-			return s.HandleSigma1AndSendSigma2(buf)
+			return s.HandleSigma1AndSendSigma2(msg)
 		}
 	case sentSigma1:
 	case sentSigma1Resume:
@@ -108,11 +113,11 @@ func (s *CASESession) GetPeer() lib.ScopedNodeId {
 	)
 }
 
-func (s *CASESession) GetLocalScopedNodeId() lib.ScopedNodeId {
+func (s *CASESession) LocalScopedNodeId() lib.ScopedNodeId {
 	return lib.NewScopedNodeId(s.mLocalNodeId, s.FabricIndex())
 }
 
-func (s *CASESession) OnUnsolicitedMessageReceived(header *raw.PayloadHeader, delegate messageing.ExchangeDelegate) error {
+func (s *CASESession) OnUnsolicitedMessageReceived(header *raw.PayloadHeader) (messageing.ExchangeDelegate, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -133,16 +138,6 @@ func (s *CASESession) OnSessionEstablishmentStarted() {
 }
 
 func (s *CASESession) OnSessionEstablished() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForProtocol(protocolId protocols.Id, handler messageing.UnsolicitedMessageHandler) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *CASESession) RegisterUnsolicitedMessageHandlerForType(protocolId protocols.Id, msgType uint8, handler messageing.UnsolicitedMessageHandler) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -453,4 +448,19 @@ func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []b
 	_, err = buf.Write(publicKey)
 	_, err = buf.Write(s.mCommissioningHash.Bytes())
 	return saltSpan, nil
+}
+
+func (s *CASESession) ValidateReceivedMessage(ec *messageing.ExchangeContext, header *raw.PayloadHeader, msg *system.PacketBufferHandle) error {
+	if s.mExchangeCtxt != nil {
+		if s.mExchangeCtxt != ec {
+			return lib.MATTER_ERROR_INVALID_ARGUMENT
+		}
+	} else {
+		s.mExchangeCtxt = ec
+	}
+	s.mExchangeCtxt.UseSuggestedResponseTimeout(kExpectedHighProcessingTime)
+	if msg.IsNull() {
+		return lib.MATTER_ERROR_INVALID_ARGUMENT
+	}
+	return nil
 }

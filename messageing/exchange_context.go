@@ -89,7 +89,7 @@ func (c *ExchangeContext) IsResponseExpected() bool {
 	return c.mFlags.Has(fResponseExpected)
 }
 
-func (c *ExchangeContext) setResponseExpected(inResponseExpected bool) {
+func (c *ExchangeContext) SetResponseExpected(inResponseExpected bool) {
 	c.mFlags.Set(inResponseExpected, fResponseExpected)
 
 }
@@ -102,8 +102,8 @@ func (c *ExchangeContext) IsGroupExchangeContext() bool {
 	return c.mSession.IsGroupSession()
 }
 
-func (c *ExchangeContext) UseSuggestedResponseTimeout(applicationProcessingTimeout time.Time) {
-
+func (c *ExchangeContext) UseSuggestedResponseTimeout(applicationProcessingTimeout time.Duration) {
+	c.SetResponseTimeout(c.mSession.ComputeRoundTripTimeout(applicationProcessingTimeout))
 }
 
 func (c *ExchangeContext) SetResponseTimeout(timeout time.Duration) {
@@ -128,12 +128,9 @@ func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle,
 
 func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *raw.PayloadHeader, f uint32, buf *system.PacketBufferHandle) error {
 
-	c.Retain()
 	msgFlags := bitflags.Some(f)
-
-	isStandaloneAck := payloadHeader.HasMessageType(uint8(secure_channel.StandaloneAck))
 	isDuplicate := msgFlags.Has(fDuplicateMessage)
-
+	isStandaloneAck := payloadHeader.HasMessageType(uint8(secure_channel.StandaloneAck))
 	defer func() {
 		if (isDuplicate || isStandaloneAck) && c.mDelegate != nil {
 			return
@@ -167,8 +164,9 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 		return lib.MATTER_ERROR_INCORRECT_STATE
 	}
 
-	c.cancelResponseTimer()
-	c.setResponseExpected(false)
+	c.CancelResponseTimer()
+
+	c.SetResponseExpected(false)
 	if c.mDelegate != nil && c.mDispatch.MessagePermitted(payloadHeader.ProtocolID(), payloadHeader.MessageType()) {
 		return c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 	}
@@ -183,12 +181,12 @@ func (c *ExchangeContext) SetDelegate(delegate ExchangeDelegate) {
 func (c *ExchangeContext) GetMessageDispatch(isEphemeralExchange bool,
 	delegate ExchangeDelegate) ExchangeMessageDispatchBase {
 	if isEphemeralExchange {
-		return EphemeralExchangeDispatchInstance()
+		return DefaultEphemeraExchangeDispatch()
 	}
-	if c.mDelegate != nil {
-		return c.mDelegate.GetMessageDispatch()
+	if delegate != nil {
+		return delegate.GetMessageDispatch()
 	}
-	return ApplicationExchangeDispatchInstance()
+	return DefaultApplicationExchangeDispatch()
 }
 
 func (c *ExchangeContext) Delegate() ExchangeDelegate {
@@ -215,7 +213,7 @@ func (c *ExchangeContext) DoClose(clearRetransTable bool) {
 	if clearRetransTable {
 		c.mExchangeMgr.ReliableMessageMgr().clearRetransTable(c.ReliableMessageContext)
 	}
-	c.cancelResponseTimer()
+	c.CancelResponseTimer()
 }
 
 func (c *ExchangeContext) close() {
@@ -246,7 +244,7 @@ func (c *ExchangeContext) GetSessionHandle() *transport.SessionHandle {
 	return c.mSession.Get()
 }
 
-func (c *ExchangeContext) cancelResponseTimer() {
+func (c *ExchangeContext) CancelResponseTimer() {
 	systemLayer := c.mExchangeMgr.SessionManager().SystemLayer()
 	if systemLayer == nil {
 		return
