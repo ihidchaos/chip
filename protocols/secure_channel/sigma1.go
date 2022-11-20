@@ -3,7 +3,7 @@ package secure_channel
 import (
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	tlv2 "github.com/galenliu/chip/pkg/tlv"
+	"github.com/galenliu/chip/pkg/tlv"
 )
 
 type Sigma1 struct {
@@ -20,7 +20,7 @@ type Sigma1 struct {
 	sessionResumptionRequested bool
 }
 
-func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
+func ParseSigma1(tlvReader tlv.Reader, sessionResumptionRequested bool) (sigma1 Sigma1, err error) {
 	sigma1 = Sigma1{
 		initiatorResumeMICSize: crypto.AEADMicLengthBytes,
 	}
@@ -34,28 +34,28 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 
 	// Sigma1，这里应该读取到Structure 0x15
 
-	err = tlvReader.NextE(tlv2.AnonymousTag(), tlv2.Type_Structure)
+	err = tlvReader.NextE(tlv.AnonymousTag(), tlv.Type_Structure)
 	containerType, err := tlvReader.EnterContainer()
 	if err != nil {
 		return
 	}
-	// Sigma1，Tag = 1 initiatorRandom  20个字节的随机数
-	err = tlvReader.NextE(tlv2.ContextTag(kInitiatorRandomTag))
+
+	// Sigma1，Tag = 1 initiatorRandom  32个字节的随机数
+	err = tlvReader.NextE(tlv.ContextTag(kInitiatorRandomTag))
 	sigma1.initiatorRandom, err = tlvReader.GetBytesView()
-	if err != nil && len(sigma1.initiatorRandom) != 32 {
-		err = lib.InvalidCaseParameter
-		return
+	if err != nil && len(sigma1.initiatorRandom) != sigmaParamRandomNumberSize {
+		err = lib.MATTER_ERROR_INVALID_CASE_PARAMETER
 	}
 
 	//Sigma1， Tag =2 Session id
-	err = tlvReader.NextE(tlv2.ContextTag(kInitiatorSessionIdTag), tlv2.Type_UnsignedInteger)
+	err = tlvReader.NextE(tlv.ContextTag(kInitiatorSessionIdTag), tlv.Type_UnsignedInteger)
 	sigma1.initiatorSessionId, err = tlvReader.GetUint16()
 	if err != nil {
 		return
 	}
 
-	//Sigma1，Tag=3	destination id 20个字节的认证码
-	err = tlvReader.NextE(tlv2.ContextTag(kDestinationIdTag))
+	//Sigma1，Tag=3
+	err = tlvReader.NextE(tlv.ContextTag(kDestinationIdTag))
 	sigma1.destinationId, err = tlvReader.GetBytesView()
 	if err != nil && len(sigma1.destinationId) != crypto.Sha256HashLength {
 		err = lib.InvalidCaseParameter
@@ -63,7 +63,7 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 	}
 
 	//Sigma1，Tag=4	 Initiator PubKey 1个字节的公钥
-	err = tlvReader.NextE(tlv2.ContextTag(kInitiatorPubKeyTag))
+	err = tlvReader.NextE(tlv.ContextTag(kInitiatorPubKeyTag))
 	sigma1.initiatorEphPubKey, err = tlvReader.GetBytesView()
 	if err != nil && len(sigma1.initiatorEphPubKey) != crypto.P256PublicKeyLength {
 		err = lib.InvalidCaseParameter
@@ -71,7 +71,7 @@ func ParseSigma1(tlvReader tlv2.Reader) (sigma1 Sigma1, err error) {
 	}
 
 	tlvReader.Next()
-	if tlvReader.GetTag() == tlv2.ContextTag(kInitiatorMRPParamsTag) {
+	if tlvReader.GetTag() == tlv.ContextTag(kInitiatorMRPParamsTag) {
 		//s.DecodeMRPParametersIfPresent(tlv.ContextTag(kInitiatorMRPParamsTag), tlvReader)
 	}
 	err = tlvReader.ExitContainer(containerType)
