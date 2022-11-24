@@ -73,7 +73,7 @@ func TestTLV(t *testing.T) {
 	if err != nil {
 		t.Log(err.Error())
 	}
-	sessionId, err = tlvReader.GetUint16()
+	sessionId, err = tlvReader.GetU6()
 
 	//Sigma1，Tag=3	destination id 20个字节的认证码
 	err = tlvReader.NextE(ContextSpecificTag(kDestinationIdTag))

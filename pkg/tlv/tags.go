@@ -39,8 +39,8 @@ const UnknownImplicitTag = fSpecialTagMarker | 0x00000000FFFFFFFE
 type CommonProfiles uint32
 
 const (
-	kProfileNotSpecified CommonProfiles = 0xFFFFFFFF
-	kProfileCommon       CommonProfiles = 0
+	kProfileIdNotSpecified CommonProfiles = 0xFFFFFFFF
+	kProfileCommonId       CommonProfiles = 0
 )
 
 /**
@@ -61,14 +61,14 @@ func CommonTag4Byte(val uint32) Tag {
 }
 
 func CommonTag2Byte(val uint16) Tag {
-	return ProfileTag(0x0, uint32(val))
+	return ProfileTag(0x0, val)
 }
 
-func ProfileTag(profileId, tagNum uint32) Tag {
+func ProfileTag[T uint16 | uint32](profileId uint32, tagNum T) Tag {
 	return Tag((uint64(profileId))<<32 | uint64(tagNum))
 }
 
-func ProfileSpecificTag(vendorId uint16, profileNum uint16, tagNum uint32) Tag {
+func ProfileSpecificTag[T uint16 | uint32](vendorId uint16, profileNum uint16, tagNum T) Tag {
 	tag := uint64(vendorId)<<48 | uint64(profileNum)<<32 | uint64(tagNum)
 	return Tag(tag)
 }

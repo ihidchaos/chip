@@ -44,11 +44,6 @@ func ParseSigma1(tlvReader *tlv.Reader, sessionResumptionRequested bool) (sigma1
 		return sigma1, err
 	}
 
-	containerType, err := tlvReader.EnterContainer()
-	if err != nil {
-		return
-	}
-
 	// Sigma1，Tag = 1 initiatorRandom  32个字节的随机数
 	err = tlvReader.NextT(tlv.ContextSpecificTag(kInitiatorRandomTag))
 	sigma1.initiatorRandom, err = tlvReader.GetBytesView()
@@ -57,14 +52,14 @@ func ParseSigma1(tlvReader *tlv.Reader, sessionResumptionRequested bool) (sigma1
 	}
 
 	//Sigma1， Tag =2 Session id
-	err = tlvReader.NextE(tlv.ContextSpecificTag(kInitiatorSessionIdTag), tlv.TypeUnsignedInteger)
-	sigma1.initiatorSessionId, err = tlvReader.GetUint16()
+	err = tlvReader.NextTT(tlv.ContextSpecificTag(kInitiatorSessionIdTag), tlv.TypeUnsignedInteger)
+	sigma1.initiatorSessionId, err = tlvReader.GetU6()
 	if err != nil {
 		return
 	}
 
 	//Sigma1，Tag=3
-	err = tlvReader.NextE(tlv.ContextSpecificTag(kDestinationIdTag))
+	err = tlvReader.NextTT(tlv.ContextSpecificTag(kDestinationIdTag))
 	sigma1.destinationId, err = tlvReader.GetBytesView()
 	if err != nil && len(sigma1.destinationId) != crypto.Sha256HashLength {
 		err = lib.InvalidCaseParameter
@@ -72,7 +67,7 @@ func ParseSigma1(tlvReader *tlv.Reader, sessionResumptionRequested bool) (sigma1
 	}
 
 	//Sigma1，Tag=4	 Initiator PubKey 1个字节的公钥
-	err = tlvReader.NextE(tlv.ContextSpecificTag(kInitiatorPubKeyTag))
+	err = tlvReader.NextTT(tlv.ContextSpecificTag(kInitiatorPubKeyTag))
 	sigma1.initiatorEphPubKey, err = tlvReader.GetBytesView()
 	if err != nil && len(sigma1.initiatorEphPubKey) != crypto.P256PublicKeyLength {
 		err = lib.InvalidCaseParameter

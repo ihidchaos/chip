@@ -134,7 +134,7 @@ func TestWriterMinMaxInt_Text(t *testing.T) {
 	}
 	tlvReader := NewReader(bytes.NewReader(data))
 
-	getUint8, err := tlvReader.GetUint8()
+	getUint8, err := tlvReader.GetU8()
 	if err != nil {
 		return
 	}

@@ -111,7 +111,7 @@ func (w *Writer) WriteElementHead(elementType ElementType, tag Tag, lenOrVal uin
 			return lib.MATTER_ERROR_INVALID_TLV_TAG
 		}
 		switch tag.ProfileNumber() {
-		case uint32(kProfileCommon):
+		case uint32(kProfileCommonId):
 			if tag.TagNumber() <= math.MaxUint16 {
 				err = buffer.Write8(buf, uint8(CommonProfile2Bytes)|uint8(elementType))
 				if err != nil {
