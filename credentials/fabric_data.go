@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	tagFirstGroup  = tlv.ContextTag(1)
-	tagGroupCount  = tlv.ContextTag(2)
-	tagFirstMap    = tlv.ContextTag(3)
-	tagMapCount    = tlv.ContextTag(4)
-	tagFirstKeyset = tlv.ContextTag(5)
-	tagKeysetCount = tlv.ContextTag(6)
-	tagNext        = tlv.ContextTag(7)
+	tagFirstGroup  = tlv.ContextSpecificTag(1)
+	tagGroupCount  = tlv.ContextSpecificTag(2)
+	tagFirstMap    = tlv.ContextSpecificTag(3)
+	tagMapCount    = tlv.ContextSpecificTag(4)
+	tagFirstKeyset = tlv.ContextSpecificTag(5)
+	tagKeysetCount = tlv.ContextSpecificTag(6)
+	tagNext        = tlv.ContextSpecificTag(7)
 )
 
 type FabricData struct {
@@ -30,13 +30,13 @@ type FabricData struct {
 	key         string
 }
 
-func (f *FabricData) deserialize(tlvReader tlv.Reader) (err error) {
+func (f *FabricData) deserialize(tlvReader tlv.ReaderBase) (err error) {
 
 	err = tlvReader.NextE(tlv.AnonymousTag())
 	if err != nil {
 		return
 	}
-	container := tlv.Type_Structure
+	container := tlv.TypeStructure
 	container, err = tlvReader.EnterContainer()
 	if err != nil {
 		return

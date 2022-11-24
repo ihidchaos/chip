@@ -22,11 +22,6 @@ type MessageType interface {
 	bdx.MsgType | interaction_model.MsgType | secure_channel.MsgType | echo.MsgType
 }
 
-var NotSpecifiedProtocolId = Id{
-	mVendorId:   lib.VidNotSpecified,
-	mProtocolId: 0xFFFF,
-}
-
 func NewProtocolId(protocolId uint16, vid ...lib.VendorId) Id {
 	id := Id{
 		mVendorId:   lib.VidCommon,

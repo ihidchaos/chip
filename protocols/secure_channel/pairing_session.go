@@ -99,8 +99,8 @@ func (p PairingSession) EncodeMRPParameters(tag tlv2.Tag, mrpLocalConfig *sessio
 	panic("implement me")
 }
 
-func (p PairingSession) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *tlv2.ReaderImpl) error {
-	if reader.GetTag() != tag {
+func (p PairingSession) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *tlv2.Reader) error {
+	if reader.Tag() != tag {
 		return nil
 	}
 	return nil

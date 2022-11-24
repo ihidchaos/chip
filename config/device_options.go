@@ -74,7 +74,7 @@ var (
 	DeviceOptionSpake2pIterations = Flag{
 		"spake2p-iterations",
 		0,
-		"Number of PB DF iterations to use. If omitted, will be 1000. If a --spake2p-verifier-base64 is passed, the iteration counts must match that used to generate the verifier otherwise failure will arise.\n",
+		"TagNumber of PB DF iterations to use. If omitted, will be 1000. If a --spake2p-verifier-base64 is passed, the iteration counts must match that used to generate the verifier otherwise failure will arise.\n",
 	}
 
 	DeviceOptionSecuredDevicePort = Flag{

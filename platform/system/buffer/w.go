@@ -6,8 +6,7 @@ import (
 )
 
 func Write8(buf io.Writer, val uint8) error {
-	tSize := 1
-	data := make([]byte, tSize)
+	data := []byte{val}
 	_, err := buf.Write(data)
 	if err != nil {
 		return err

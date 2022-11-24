@@ -2,53 +2,49 @@ package tlv
 
 type TagFields uint16
 type FieldSize int8
-type TagControl uint8
 type TLVType int8
 type ElementType int8
 
 const (
-	TypeNull                 TLVType = 0x14
-	Type_Structure           TLVType = 0x15
-	Type_Array               TLVType = 0x16
-	Type_List                TLVType = 0x17
-	Type_NotSpecified        TLVType = -1
-	TypeUnknownContainer     TLVType = -2
-	TypeSignedInteger        TLVType = 0x00
-	Type_UnsignedInteger     TLVType = 0x04
-	TypeBoolean              TLVType = 0x08
-	Type_FloatingPointNumber TLVType = 0x0A
-	Type_UTF8String          TLVType = 0x0C
-	Type_ByteString          TLVType = 0x10
+	TypeNotSpecified     TLVType = -1
+	TypeUnknownContainer TLVType = -2
+
+	TypeSignedInteger       TLVType = 0x00 //• Signed integers
+	TypeUnsignedInteger     TLVType = 0x04 //• Unsigned integers
+	TypeUTF8String          TLVType = 0x0C //• UTF-8 Strings
+	TypeByteString          TLVType = 0x10 //• Octet Strings
+	TypeFloatingPointNumber TLVType = 0x0A //• Single or double-precision floating point numbers (following IEEE 754-2019) • Booleans
+	TypeBoolean             TLVType = 0x08 //• Booleans
+	TypeNull                TLVType = 0x14 //• Nulls
+
+	TypeStructure TLVType = 0x15
+	TypeArray     TLVType = 0x16
+	TypeList      TLVType = 0x17
 )
 
-// IMPORTANT: All values here must have no bits in common with specified
-// values of TLVElementType.
+func (t TLVType) WithFieldSize(size FieldSize) ElementType {
+	if size == FieldSize0Byte {
+		return ElementType(t)
+	}
+	return ElementType(uint8(t) | uint8(size))
+}
+
 const (
-	Anonymous             TagControl = 0x00
-	ContextSpecific       TagControl = 0x20
-	CommonProfile2Bytes   TagControl = 0x40
-	CommonProfile4Bytes   TagControl = 0x60
-	ImplicitProfile2Bytes TagControl = 0x80
-	ImplicitProfile4Bytes TagControl = 0xA0
-	FullyQualified6Bytes  TagControl = 0xC0
-	FullyQualified8Bytes  TagControl = 0xE0
+	FieldSize0Byte FieldSize = -1
+	FieldSize1Byte FieldSize = 0
+	FieldSize2Byte FieldSize = 1
+	FieldSize4Byte FieldSize = 2
+	FieldSize8Byte FieldSize = 3
+)
+
+const (
+	kTypeMask     uint8 = 0x1F
+	kTypeSizeMask uint8 = 0x03
 )
 
 func controlByte(control TagControl, elementType ElementType) byte {
 	return byte(control) & byte(elementType)
 }
-
-func (t TagControl) Uint8() uint8 {
-	return uint8(t)
-}
-
-const (
-	kTLVFieldSize0Byte FieldSize = -1
-	kTLVFieldSize1Byte FieldSize = 0
-	kTLVFieldSize2Byte FieldSize = 1
-	kTLVFieldSize4Byte FieldSize = 2
-	kTLVFieldSize8Byte FieldSize = 3
-)
 
 const (
 	NotSpecified          ElementType = -1
@@ -80,20 +76,47 @@ const (
 	EndOfContainer ElementType = 0x18
 )
 
-func IsContainerType(elementType ElementType) bool {
-	return elementType <= List && elementType <= Structure
+func (t ElementType) IsContainer() bool {
+	return t <= List && t <= Structure
+}
+
+func (t ElementType) WithTagControl(tag TagControl) uint8 {
+	return uint8(t) | uint8(tag)
+}
+
+func (t ElementType) IsValid() bool {
+	return t <= EndOfContainer
 }
 
 func (t ElementType) HasValue() bool {
 	return t <= UInt64 || (t >= FloatingPointNumber32 && t <= ByteString8ByteLength)
 }
 
-func (t ElementType) Uint8() uint8 {
-	return uint8(t)
+func (t ElementType) HasLength() bool {
+	return t >= UTF8String1ByteLength && t <= ByteString8ByteLength
 }
 
-func WriterControl(buffer Writer, control TagControl, elementType ElementType) error {
-	data := control.Uint8() & elementType.Uint8()
-	err := buffer.WriteByte(data)
-	return err
+func (t ElementType) IsString() bool {
+	return t >= UTF8String1ByteLength && t <= ByteString8ByteLength
 }
+
+func (t ElementType) IsUTF8String() bool {
+	return t >= UTF8String1ByteLength && t <= UTF8String8ByteLength
+}
+
+func (t ElementType) IsByteString() bool {
+	return t >= ByteString1ByteLength && t <= ByteString8ByteLength
+}
+
+func (t ElementType) FieldSize() FieldSize {
+	if t.HasValue() {
+		return FieldSize(uint8(t) & kTypeSizeMask)
+	}
+	return FieldSize0Byte
+}
+
+//func WriterControl(buffer WriterBase, control TagControl, elementType ElementType) error {
+//	data := control.Uint8() & uint8(elementType)
+//	err := buffer.WriteByte(data)
+//	return err
+//}

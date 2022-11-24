@@ -67,7 +67,7 @@ var (
 
 	MATTER_ERROR_INVALID_INTEGRITY_TYPE MatterError = "Invalid integrity type"
 
-	CHIP_END_OF_TLV MatterError = "End of TLV"
+	MATTER_END_OF_TLV MatterError = "End of TLV"
 
 	MATTER_ERROR_TLV_UNDERRUN MatterError = "TLV underrun"
 

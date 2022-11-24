@@ -43,3 +43,15 @@ func (b *Flags[T]) Sets(flags ...T) {
 func (b *Flags[T]) Value() T {
 	return b.mFlags
 }
+
+func U64To32(val uint64) (h, l uint32) {
+	h = uint32((val & 0xFFFF_FFFF_0000_0000) >> 32)
+	l = uint32(val & 0x0000_0000_FFFF_FFFF)
+	return
+}
+
+func U32To16(val uint32) (h, l uint16) {
+	h = uint16((val & 0xFFFF_0000) >> 16)
+	l = uint16(val & 0x0000_FFFF)
+	return
+}
