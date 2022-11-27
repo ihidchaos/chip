@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/platform/path"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -136,7 +135,7 @@ type DeviceOptions struct {
 	TraceStreamToLogEnabled   bool
 	TraceStreamFilename       string
 	TestEventTriggerEnableKey []byte
-	DacProvider               credentials.DeviceAttestationCredentialsProvider
+	DacProvider               any
 }
 
 func NewDeviceOptions() *DeviceOptions {

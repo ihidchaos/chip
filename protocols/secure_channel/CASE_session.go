@@ -200,22 +200,22 @@ func (s *CASESession) SendSigma2() error {
 	tbsData2Signature := s.mFabricsTable.SignWithOpKeypair(s.mFabricIndex).Bytes()
 
 	tlvWriterMsg1 := tlv.NewWriter()
-	err = tlvWriterMsg1.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
+	_, err = tlvWriterMsg1.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
 	if err != nil {
 		return err
 	}
 
-	err = tlvWriterMsg1.PutBytes(tlv.ContextSpecificTag(TagTBEDataSenderNOC), nocCert)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderNOC), nocCert)
 	if err != nil {
 		return err
 	}
 	if len(icaCert) > 0 {
-		err = tlvWriterMsg1.PutBytes(tlv.ContextSpecificTag(TagTBEDataSenderICAC), icaCert)
+		err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderICAC), icaCert)
 		if err != nil {
 			return err
 		}
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextSpecificTag(TagTBEDataSignature), tbsData2Signature)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSignature), tbsData2Signature)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func (s *CASESession) SendSigma2() error {
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextSpecificTag(TagTBEDataResumptionID), s.mNewResumptionId)
+	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataResumptionID), s.mNewResumptionId)
 	if err != nil {
 		return err
 	}
@@ -239,37 +239,37 @@ func (s *CASESession) SendSigma2() error {
 	msgR2Encrypted, err := crypto.AesCcmEncrypt(tlvWriterMsg1.Bytes(), sr2k, kTBEData2Nonce, crypto.AEADMicLengthBytes)
 
 	tlvWriterMsg2 := tlv.NewWriter()
-	err = tlvWriterMsg2.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
+	_, err = tlvWriterMsg2.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextSpecificTag(1), msgRand)
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(1), msgRand)
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutUint(tlv.ContextSpecificTag(2), uint64(sessionId))
+	err = tlvWriterMsg2.PutUint(tlv.ContextTag(2), uint64(sessionId))
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextSpecificTag(3), s.mEphemeralKey.PubBytes())
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.PubBytes())
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutBytes(tlv.ContextSpecificTag(4), msgR2Encrypted)
+	err = tlvWriterMsg2.PutBytes(tlv.ContextTag(4), msgR2Encrypted)
 	if err != nil {
 		return err
 	}
 
 	if s.mLocalMRPConfig != nil {
-		err = tlvWriterMsg2.StartContainer(tlv.ContextSpecificTag(5), tlv.TypeStructure)
+		_, err = tlvWriterMsg2.StartContainer(tlv.ContextTag(5), tlv.TypeStructure)
 		if err != nil {
 			return err
 		}
-		err = tlvWriterMsg2.PutUint(tlv.ContextSpecificTag(1), uint64(s.mLocalMRPConfig.IdleRetransTimeout.Milliseconds()))
+		err = tlvWriterMsg2.PutUint(tlv.ContextTag(1), uint64(s.mLocalMRPConfig.IdleRetransTimeout.Milliseconds()))
 		if err != nil {
 			return err
 		}
-		err = tlvWriterMsg2.PutUint(tlv.ContextSpecificTag(2), uint64(s.mLocalMRPConfig.ActiveRetransTimeout.Milliseconds()))
+		err = tlvWriterMsg2.PutUint(tlv.ContextTag(2), uint64(s.mLocalMRPConfig.ActiveRetransTimeout.Milliseconds()))
 		if err != nil {
 			return err
 		}

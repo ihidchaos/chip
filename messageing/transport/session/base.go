@@ -3,7 +3,6 @@ package session
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"golang.org/x/exp/slices"
 	log "golang.org/x/exp/slog"
 	"sync"
 	"time"
@@ -107,9 +106,10 @@ func (s *BaseImpl) RemoveHolder(holder Holder) {
 	if s.mHolders == nil || len(s.mHolders) == 0 {
 		return
 	}
-	index := slices.Index(s.mHolders, holder)
-	if index >= 0 {
-		s.mHolders = slices.Delete(s.mHolders, index, index+1)
+	for i, h := range s.mHolders {
+		if h == holder {
+			s.mHolders = append(s.mHolders[:i], s.mHolders[i+1:]...)
+		}
 	}
 }
 

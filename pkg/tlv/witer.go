@@ -44,6 +44,7 @@ func (w *Writer) WriteByte(b byte) error {
 
 func (w *Writer) StartContainer(tag Tag, tlvType TLVType) (outerContainerType TLVType, err error) {
 	outerContainerType = w.mContainerType
+
 	if !ElementType(tlvType).IsContainer() {
 		return outerContainerType, lib.MATTER_ERROR_WRONG_TLV_TYPE
 	}
@@ -87,7 +88,7 @@ func (w *Writer) WriteElementHead(elementType ElementType, tag Tag, lenOrVal uin
 	if w.mContainerOpen {
 		return lib.MATTER_ERROR_TLV_CONTAINER_OPEN
 	}
-	if tag.IsContextSpecial() {
+	if tag.IsSpecial() {
 		if tag.TagNumber() <= kContextTagMaxNum {
 			if w.mContainerType != TypeStructure && w.mContainerType != TypeList {
 				return lib.MATTER_ERROR_INVALID_TLV_TAG

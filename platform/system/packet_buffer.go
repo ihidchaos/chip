@@ -21,7 +21,7 @@ func (p *PacketBufferHandle) IsNull() bool {
 	return p.Buffer.Len() == 0
 }
 
-func (p *PacketBufferHandle) DataLength() int {
+func (p *PacketBufferHandle) Length() int {
 	return p.Buffer.Len()
 }
 
@@ -30,7 +30,7 @@ func (p *PacketBufferHandle) TotLength() int {
 }
 
 func (p *PacketBufferHandle) IsValid() error {
-	if p.DataLength() < 36 {
+	if p.Length() < 36 {
 		return errors.New("message length is too short")
 	}
 	return nil

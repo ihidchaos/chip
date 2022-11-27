@@ -48,10 +48,6 @@ func NewPairingSessionImpl() *PairingSession {
 	}
 }
 
-func (p PairingSession) SecureSessionType() session.SecureSessionType {
-	return p.mSecureSessionType
-}
-
 func (p PairingSession) PeerCATs() lib.CATValues {
 	//TODO implement me
 	panic("implement me")
@@ -100,8 +96,5 @@ func (p PairingSession) EncodeMRPParameters(tag tlv2.Tag, mrpLocalConfig *sessio
 }
 
 func (p PairingSession) DecodeMRPParametersIfPresent(tag tlv2.Tag, reader *tlv2.Reader) error {
-	if reader.Tag() != tag {
-		return nil
-	}
 	return nil
 }

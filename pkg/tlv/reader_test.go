@@ -53,13 +53,13 @@ func TestTLV(t *testing.T) {
 	var initiatorRandom, destinationId, initiatorEphPubKey []byte
 
 	tlvReader := NewReader(buf)
-	err = tlvReader.NextE(AnonymousTag(), TypeStructure)
+	err = tlvReader.NextTT(TypeStructure, AnonymousTag())
 	if err != nil {
 		t.Log(err.Error())
 		return
 	}
 	// Sigma1，Tag = 1 initiatorRandom  20个字节的随机数
-	err = tlvReader.NextE(ContextSpecificTag(kInitiatorRandomTag))
+	err = tlvReader.NextT(ContextTag(kInitiatorRandomTag))
 	if err != nil {
 		t.Log(err.Error())
 	}
@@ -69,21 +69,21 @@ func TestTLV(t *testing.T) {
 	}
 
 	//Sigma1， Tag =2 Session id
-	err = tlvReader.NextE(ContextSpecificTag(kInitiatorSessionIdTag), TypeUnsignedInteger)
+	err = tlvReader.NextTT(TypeUnsignedInteger, ContextTag(kInitiatorSessionIdTag))
 	if err != nil {
 		t.Log(err.Error())
 	}
-	sessionId, err = tlvReader.GetU6()
+	sessionId, err = tlvReader.GetU16()
 
 	//Sigma1，Tag=3	destination id 20个字节的认证码
-	err = tlvReader.NextE(ContextSpecificTag(kDestinationIdTag))
+	err = tlvReader.NextT(ContextTag(kDestinationIdTag))
 	destinationId, err = tlvReader.GetBytesView()
 	if err != nil {
 		t.Log(err.Error())
 	}
 
 	//Sigma1，Tag=4	 Initiator PubKey 1个字节的公钥
-	err = tlvReader.NextE(ContextSpecificTag(kInitiatorPubKeyTag))
+	err = tlvReader.NextT(ContextTag(kInitiatorPubKeyTag))
 	initiatorEphPubKey, err = tlvReader.GetBytesView()
 	if err != nil {
 		t.Log(err.Error())

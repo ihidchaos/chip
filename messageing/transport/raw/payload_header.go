@@ -5,7 +5,6 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/platform/system/buffer"
-	"github.com/galenliu/chip/protocols"
 	"github.com/moznion/go-optional"
 	log "golang.org/x/exp/slog"
 	"io"
@@ -53,7 +52,7 @@ type PayloadHeader struct {
 	mExchangeFlags     bitflags.Flags[uint8]
 	mProtocolOpcode    uint8
 	mExchangeId        uint16
-	mProtocolId        protocols.Id
+	mProtocolId        uint16
 	mVendorId          optional.Option[lib.VendorId]
 	mAckMessageCounter optional.Option[uint32]
 }
@@ -65,7 +64,7 @@ func NewPayloadHeader(opts ...payloadHeaderOption) *PayloadHeader {
 		mExchangeFlags:  bitflags.Flags[uint8]{},
 		mProtocolOpcode: 0,
 		mExchangeId:     0,
-		mProtocolId:     protocols.Id{},
+		mProtocolId:     0,
 	}
 	for _, opt := range opts {
 		opt(header)
@@ -104,6 +103,7 @@ func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
 	if err != nil {
 		return err
 	}
+	header.mProtocolId = protocolId
 	var vendorId = lib.VidCommon
 	if header.HaveVendorId() {
 		vid, err := buffer.LittleEndianRead16(buf)
@@ -113,7 +113,7 @@ func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
 		vendorId = lib.VendorId(vid)
 		header.mVendorId = optional.Some(vendorId)
 	}
-	header.mProtocolId = protocols.NewProtocolId(protocolId, vendorId)
+
 	if header.IsAckMsg() {
 		ackCounter, err := buffer.LittleEndianRead32(buf)
 		if err != nil {
@@ -128,8 +128,12 @@ func (header *PayloadHeader) AckMessageCounter() optional.Option[uint32] {
 	return header.mAckMessageCounter
 }
 
-func (header *PayloadHeader) ProtocolID() *protocols.Id {
-	return &header.mProtocolId
+func (header *PayloadHeader) ProtocolID() uint16 {
+	return header.mProtocolId
+}
+
+func (header *PayloadHeader) VendorId() optional.Option[lib.VendorId] {
+	return header.mVendorId
 }
 
 func (header *PayloadHeader) MessageType() uint8 {

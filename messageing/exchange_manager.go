@@ -14,6 +14,9 @@ import (
 	"math/rand"
 )
 
+type Protocol interface {
+}
+
 const (
 	kStateNotInitialized = 0
 	kStateInitialized    = 1
@@ -118,6 +121,7 @@ func (e *ExchangeManager) OnMessageReceived(
 
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 
+	protocolId := protocols.NewId(payloadHeader.ProtocolID(), payloadHeader.VendorId())
 	{
 		//logging
 		var compressedFabricId lib.CompressedFabricId = 0
@@ -141,8 +145,6 @@ func (e *ExchangeManager) OnMessageReceived(
 			"Type", log.GroupValue(
 				log.Any("protocolId", payloadHeader.ProtocolID()),
 				log.Any("opcode", payloadHeader.MessageType()),
-				log.Any("protocolName", payloadHeader.ProtocolID().ProtocolName()),
-				log.Any("message type", payloadHeader.ProtocolID().MessageTypeName(payloadHeader.MessageType())),
 			))
 	}
 
@@ -169,7 +171,8 @@ func (e *ExchangeManager) OnMessageReceived(
 	//如果不是重复的消息，而且如果消息是对方发起
 	if msgFlags.Has(fDuplicateMessage) && payloadHeader.IsInitiator() {
 		for i, umh := range e.mUMHandlerPool {
-			if umh.IsInUse() && payloadHeader.ProtocolID().Equal(umh.protocolId) {
+			id := protocolId
+			if umh.IsInUse() && id.Equal(umh.protocolId) {
 				if umh.messageType == int16(payloadHeader.MessageType()) {
 					matchingUMH = e.mUMHandlerPool[i]
 					break
@@ -224,12 +227,12 @@ func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForProtocol(
 }
 
 func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForType(id uint16, msgType uint8, handler UnsolicitedMessageHandler) error {
-	p := protocols.NewProtocolId(id)
+	p := protocols.NewId(id, nil)
 	return e.registerUMH(p, int16(msgType), handler)
 }
 
 func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForType(id uint16, messageType uint8) error {
-	return e.unregisterUMH(protocols.NewProtocolId(id), int16(messageType))
+	return e.unregisterUMH(protocols.NewId(id, nil), int16(messageType))
 }
 
 func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForProtocol(id protocols.Id) error {

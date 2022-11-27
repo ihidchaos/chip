@@ -14,7 +14,17 @@ const (
 	ImplicitProfile4Bytes TagControl = 0xA0
 	FullyQualified6Bytes  TagControl = 0xC0
 	FullyQualified8Bytes  TagControl = 0xE0
+	fTagControlMask                  = 0xE0
+	fTagControlShift                 = 5
 )
+
+func ParseTagControl[T ~uint8 | ~uint16](val T) TagControl {
+	return TagControl(uint8(val) & fTagControlMask)
+}
+
+func (tc TagControl) TagByteSize() uint8 {
+	return []uint8{0, 1, 2, 4, 2, 4, 6, 8}[uint(tc>>fTagControlShift)]
+}
 
 func (tc TagControl) WithElementType(et ElementType) uint8 {
 	return uint8(tc) | uint8(et)
@@ -32,6 +42,7 @@ const (
 	fTagNumMask       = 0x00000000FFFFFFFF
 	fSpecialTagMarker = 0xFFFFFFFF00000000
 	kContextTagMaxNum = math.MaxUint8
+	kCommonProfileId  = 0
 )
 
 const UnknownImplicitTag = fSpecialTagMarker | 0x00000000FFFFFFFE
@@ -52,25 +63,20 @@ func AnonymousTag() Tag {
 	return Tag(0xFFFFFFFF00000000 | 0x00000000FFFFFFFF)
 }
 
-func ContextSpecificTag(tagNum uint8) Tag {
+func ContextTag(tagNum uint8) Tag {
 	return Tag(0xFFFFFFFF00000000 | uint64(tagNum))
 }
 
-func CommonTag4Byte(val uint32) Tag {
-	return ProfileTag(0x0, val)
+func CommonTag[T ~uint16 | ~uint32](val T) Tag {
+	return ProfileTag(kCommonProfileId, val)
 }
 
-func CommonTag2Byte(val uint16) Tag {
-	return ProfileTag(0x0, val)
-}
-
-func ProfileTag[T uint16 | uint32](profileId uint32, tagNum T) Tag {
+func ProfileTag[T ~uint16 | ~uint32](profileId uint32, tagNum T) Tag {
 	return Tag((uint64(profileId))<<32 | uint64(tagNum))
 }
 
 func ProfileSpecificTag[T uint16 | uint32](vendorId uint16, profileNum uint16, tagNum T) Tag {
-	tag := uint64(vendorId)<<48 | uint64(profileNum)<<32 | uint64(tagNum)
-	return Tag(tag)
+	return ProfileTag(uint32(vendorId)<<16|uint32(profileNum), tagNum)
 }
 
 func (t Tag) Equal(tag Tag) bool {
@@ -90,6 +96,10 @@ func (t Tag) TagNumber() uint32 {
 	return uint32(t & fTagNumMask)
 }
 
-func (t Tag) IsContextSpecial() bool {
+func (t Tag) IsSpecial() bool {
 	return (uint64(t) & fProfileIdMask) == fSpecialTagMarker
+}
+
+func (t Tag) IsContext() bool {
+	return t.IsSpecial() && t.TagNumber() <= kContextTagMaxNum
 }

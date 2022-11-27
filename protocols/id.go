@@ -3,11 +3,7 @@ package protocols
 import (
 	"fmt"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/protocols/bdx"
-	"github.com/galenliu/chip/protocols/echo"
-	"github.com/galenliu/chip/protocols/interaction_model"
-	"github.com/galenliu/chip/protocols/secure_channel"
-	"github.com/galenliu/chip/protocols/user_directed_commissioning"
+	"github.com/moznion/go-optional"
 	log "golang.org/x/exp/slog"
 )
 
@@ -18,17 +14,17 @@ type Id struct {
 	mProtocolId uint16
 }
 
-type MessageType interface {
-	bdx.MsgType | interaction_model.MsgType | secure_channel.MsgType | echo.MsgType
-}
+//type MessageType interface {
+//	bdx.MsgType | interaction_model.MsgType | secure_channel.MsgType | echo.MsgType
+//}
 
-func NewProtocolId(protocolId uint16, vid ...lib.VendorId) Id {
+func NewId(protocolId uint16, option optional.Option[lib.VendorId]) Id {
 	id := Id{
 		mVendorId:   lib.VidCommon,
 		mProtocolId: protocolId,
 	}
-	if len(vid) > 0 {
-		id.mVendorId = vid[0]
+	if option.IsSome() {
+		id.mVendorId = option.Unwrap()
 	}
 	return id
 }
@@ -55,54 +51,53 @@ func (id *Id) Equal(other Id) bool {
 	return id.mVendorId == other.mVendorId && id.mProtocolId == other.mProtocolId
 }
 
-func (id *Id) ProtocolName() string {
-	if id.mVendorId != lib.VidCommon {
-		return sUnknownTypeName
-	}
-	switch id.ProtocolId() {
-	case secure_channel.ProtocolId:
-		return secure_channel.ProtocolName
-	case interaction_model.ProtocolId:
-		return interaction_model.ProtocolName
-	case bdx.ProtocolId:
-		return bdx.ProtocolName
-	case user_directed_commissioning.ProtocolId:
-		return user_directed_commissioning.ProtocolName
-	case echo.ProtocolId:
-		return echo.ProtocolName
-	default:
-		return sUnknownTypeName
-	}
-}
+//func (id *Id) ProtocolName() string {
+//	if id.mVendorId != lib.VidCommon {
+//		return sUnknownTypeName
+//	}
+//	switch id.ProtocolId() {
+//	case secure_channel.ProtocolId:
+//		return secure_channel.ProtocolName
+//	case interaction_model.ProtocolId:
+//		return interaction_model.ProtocolName
+//	case bdx.ProtocolId:
+//		return bdx.ProtocolName
+//	case user_directed_commissioning.ProtocolId:
+//		return user_directed_commissioning.ProtocolName
+//	case echo.ProtocolId:
+//		return echo.ProtocolName
+//	default:
+//		return sUnknownTypeName
+//	}
+//}
 
-func (id *Id) MessageTypeName(messageType uint8) string {
-	if id.mVendorId != lib.VidCommon {
-		return sUnknownTypeName
-	}
-	switch id.ProtocolId() {
-	case secure_channel.ProtocolId:
-		msg := secure_channel.MsgType(messageType)
-		return msg.String()
-	case interaction_model.ProtocolId:
-		msg := interaction_model.MsgType(messageType)
-		return msg.String()
-	case bdx.ProtocolId:
-		msg := bdx.MsgType(messageType)
-		return msg.String()
-	case user_directed_commissioning.ProtocolId:
-		msg := user_directed_commissioning.MsgType(messageType)
-		return msg.String()
-	case echo.ProtocolId:
-		msg := echo.MsgType(messageType)
-		return msg.String()
-	default:
-		return sUnknownTypeName
-	}
-}
+//func (id *Id) MessageTypeName(messageType uint8) string {
+//	if id.mVendorId != lib.VidCommon {
+//		return sUnknownTypeName
+//	}
+//	switch id.ProtocolId() {
+//	case secure_channel.ProtocolId:
+//		msg := secure_channel.MsgType(messageType)
+//		return msg.String()
+//	case interaction_model.ProtocolId:
+//		msg := interaction_model.MsgType(messageType)
+//		return msg.String()
+//	case bdx.ProtocolId:
+//		msg := bdx.MsgType(messageType)
+//		return msg.String()
+//	case user_directed_commissioning.ProtocolId:
+//		msg := user_directed_commissioning.MsgType(messageType)
+//		return msg.String()
+//	case echo.ProtocolId:
+//		msg := echo.MsgType(messageType)
+//		return msg.String()
+//	default:
+//		return sUnknownTypeName
+//	}
+//}
 
 func (id *Id) LogValue() log.Value {
 	return log.GroupValue(
 		log.String("id", fmt.Sprintf("%04X", id.mProtocolId)),
-		log.String("name", id.ProtocolName()),
 	)
 }

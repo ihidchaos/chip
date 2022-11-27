@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	tagFirstGroup  = tlv.ContextSpecificTag(1)
-	tagGroupCount  = tlv.ContextSpecificTag(2)
-	tagFirstMap    = tlv.ContextSpecificTag(3)
-	tagMapCount    = tlv.ContextSpecificTag(4)
-	tagFirstKeyset = tlv.ContextSpecificTag(5)
-	tagKeysetCount = tlv.ContextSpecificTag(6)
-	tagNext        = tlv.ContextSpecificTag(7)
+	tagFirstGroup  = tlv.ContextTag(1)
+	tagGroupCount  = tlv.ContextTag(2)
+	tagFirstMap    = tlv.ContextTag(3)
+	tagMapCount    = tlv.ContextTag(4)
+	tagFirstKeyset = tlv.ContextTag(5)
+	tagKeysetCount = tlv.ContextTag(6)
+	tagNext        = tlv.ContextTag(7)
 )
 
 type FabricData struct {
@@ -30,9 +30,9 @@ type FabricData struct {
 	key         string
 }
 
-func (f *FabricData) deserialize(tlvReader tlv.ReaderBase) (err error) {
+func (f *FabricData) deserialize(tlvReader *tlv.Reader) (err error) {
 
-	err = tlvReader.NextE(tlv.AnonymousTag())
+	err = tlvReader.NextT(tlv.AnonymousTag())
 	if err != nil {
 		return
 	}
@@ -42,50 +42,50 @@ func (f *FabricData) deserialize(tlvReader tlv.ReaderBase) (err error) {
 		return
 	}
 
-	err = tlvReader.NextE(tagFirstGroup)
-	val, err := tlvReader.GetUint16()
+	err = tlvReader.NextT(tagFirstGroup)
+	val, err := tlvReader.GetU16()
 	f.firstGroup = lib.GroupId(val)
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextE(tagGroupCount)
-	val, err = tlvReader.GetUint16()
+	err = tlvReader.NextT(tagGroupCount)
+	val, err = tlvReader.GetU16()
 	f.groupCount = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextE(tagFirstMap)
-	val, err = tlvReader.GetUint16()
+	err = tlvReader.NextT(tagFirstMap)
+	val, err = tlvReader.GetU16()
 	f.firstMap = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextE(tagMapCount)
-	val, err = tlvReader.GetUint16()
+	err = tlvReader.NextT(tagMapCount)
+	val, err = tlvReader.GetU16()
 	f.mapCount = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextE(tagFirstKeyset)
-	val, err = tlvReader.GetUint16()
+	err = tlvReader.NextT(tagFirstKeyset)
+	val, err = tlvReader.GetU16()
 	f.firstKeyset = lib.KeysetId(val)
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextE(tagKeysetCount)
-	val, err = tlvReader.GetUint16()
+	err = tlvReader.NextT(tagKeysetCount)
+	val, err = tlvReader.GetU16()
 	f.keysetCount = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextE(tagNext)
-	val8, err := tlvReader.GetUint8()
+	err = tlvReader.NextT(tagNext)
+	val8, err := tlvReader.GetU8()
 	f.next = lib.FabricIndex(val8)
 	if err != nil {
 		return err

@@ -9,7 +9,6 @@ import (
 	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
-	"github.com/galenliu/chip/protocols/secure_channel"
 	log "golang.org/x/exp/slog"
 	"time"
 )
@@ -130,7 +129,8 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 
 	msgFlags := bitflags.Some(f)
 	isDuplicate := msgFlags.Has(fDuplicateMessage)
-	isStandaloneAck := payloadHeader.HasMessageType(uint8(secure_channel.StandaloneAck))
+	//isStandaloneAck := payloadHeader.HasMessageType(uint8(secure_channel.StandaloneAck))
+	isStandaloneAck := false
 	defer func() {
 		if (isDuplicate || isStandaloneAck) && c.mDelegate != nil {
 			return
@@ -167,10 +167,10 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 	c.CancelResponseTimer()
 
 	c.SetResponseExpected(false)
-	if c.mDelegate != nil && c.mDispatch.MessagePermitted(payloadHeader.ProtocolID(), payloadHeader.MessageType()) {
+	if c.mDelegate != nil && c.mDispatch.MessagePermitted(protocols.NewId(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType()) {
 		return c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 	}
-	DefaultOnMessageReceived(c, payloadHeader.ProtocolID(), payloadHeader.MessageType(), messageCounter, buf)
+	DefaultOnMessageReceived(c, protocols.NewId(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType(), messageCounter, buf)
 	return nil
 }
 
@@ -299,7 +299,7 @@ func (c *ExchangeContext) WillSendMessage() {
 	c.mFlags.Set(true, fWillSendMessage)
 }
 
-func DefaultOnMessageReceived(c *ExchangeContext, id *protocols.Id, messageType uint8, messageCounter uint32, payload *system.PacketBufferHandle) {
+func DefaultOnMessageReceived(c *ExchangeContext, id protocols.Id, messageType uint8, messageCounter uint32, payload *system.PacketBufferHandle) {
 	log.Error("ExchangeManager Dropping unexpected message of type", lib.MATTER_ERROR_INVALID_MESSAGE_TYPE,
 		"MessageType", messageType,
 		"protocolId", id,

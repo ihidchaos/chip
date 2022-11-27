@@ -7,6 +7,11 @@ import (
 	"math"
 )
 
+type TLVReader interface {
+	io.Reader
+	Len() int
+}
+
 const (
 	kControlByteNotSpecified = 0xFFFF
 )
@@ -33,26 +38,26 @@ type ReaderBase interface {
 }
 
 type Reader struct {
-	mBuffer           io.Reader
+	mBuffer           TLVReader
 	mControlTag       TagControl
+	mElemTag          Tag
 	mElementType      ElementType
 	mContainerType    TLVType
-	mElemTag          Tag
 	mElemLenOrVal     uint64
 	mControlByte      uint16
 	mContainerOpen    bool
 	ImplicitProfileId CommonProfiles
 }
 
-func NewReader(reader io.Reader) *Reader {
+func NewReader(buf TLVReader) *Reader {
 	r := &Reader{
-		mBuffer:           reader,
+		mBuffer:           buf,
 		mControlTag:       0,
 		mElementType:      NotSpecified,
+		mElemTag:          AnonymousTag(),
 		mContainerType:    TypeNotSpecified,
 		mContainerOpen:    false,
 		mControlByte:      kControlByteNotSpecified,
-		mElemTag:          0,
 		mElemLenOrVal:     0,
 		ImplicitProfileId: kProfileIdNotSpecified,
 	}
@@ -88,7 +93,7 @@ func (r *Reader) Next() error {
 	if err != nil {
 		return err
 	}
-	err = r.ReadElement()
+	err = r.readElement()
 	if err != nil {
 		return err
 	}
@@ -122,44 +127,36 @@ func (r *Reader) Skip() error {
 	return nil
 }
 
-func (r *Reader) Tag() Tag {
-	return r.mElemTag
-}
+func (r *Reader) readElement() (err error) {
 
-func (r *Reader) ReadElement() (err error) {
-
-	if err = r.EnsureData(); err != nil {
+	if err = r.ensureData(r.mBuffer); err != nil {
 		return
 	}
-
-	if r.mControlByte, err = buffer.Read8(r.mBuffer); err != nil {
-		return
+	if u8, err := buffer.Read8(r.mBuffer); err != nil {
+		return err
+	} else {
+		r.mControlByte = uint16(u8)
 	}
 
-	byt, err := buffer.Read8(r.mBuffer)
-	if err != nil {
+	elemType := r.ElementType()
+	if !elemType.IsValid() {
+		return lib.MATTER_ERROR_INVALID_TLV_ELEMENT
+	}
+
+	tagControl := ParseTagControl(r.mControlByte)
+
+	if r.mElemTag, err = r.readTag(tagControl); err != nil {
 		return err
 	}
-	r.mControlTag = TagControl(byt & 0xE0)
-	r.mElementType = ElementType(byt & 0x1F)
-
-	r.mElemTag = r.readTag(r.mControlTag)
-
-	//tagBytes := sTagSizes[r.mControlTag>>5]
-	lenOrValFieldSize := r.mElementType.FieldSize()
-	//valOrLenBytes := FieldSizeToBytes(lenOrValFieldSize)
-
-	//elemHeadBytes := 1 + tagBytes + valOrLenBytes
-
-	switch lenOrValFieldSize {
+	switch elemType.FieldSize() {
 	case FieldSize0Byte:
 		r.mElemLenOrVal = 0
 	case FieldSize1Byte:
-		val, err := buffer.Read8(r.mBuffer)
-		if err != nil {
+		if val, err := buffer.Read8(r.mBuffer); err != nil {
 			return err
+		} else {
+			r.mElemLenOrVal = uint64(val)
 		}
-		r.mElemLenOrVal = uint64(val)
 	case FieldSize2Byte:
 		val, err := buffer.LittleEndianRead16(r.mBuffer)
 		if err != nil {
@@ -179,7 +176,7 @@ func (r *Reader) ReadElement() (err error) {
 		}
 		r.mElemLenOrVal = val
 	}
-	return nil
+	return r.VerifyElement()
 }
 
 func (r *Reader) ElementType() ElementType {
@@ -193,13 +190,12 @@ func (r *Reader) GetControlTag() TagControl {
 	return r.mControlTag
 }
 
-func (r *Reader) GetBytes(io io.Reader) ([]byte, error) {
+func (r *Reader) GetBytes(buf TLVReader) ([]byte, error) {
 
-	var data = make([]byte, r.mElemLenOrVal)
-	if r.TLVTypeIsContainer() {
-		return nil, lib.WrongTlvType
+	if r.ElementType().IsContainer() {
+		return nil, lib.MATTER_ERROR_WRONG_TLV_TYPE
 	}
-	return data, nil
+	return r.readData(buf, r.mElemLenOrVal)
 }
 
 func (r *Reader) GetBytesView() ([]byte, error) {
@@ -216,22 +212,22 @@ func (r *Reader) readTag(tagControl TagControl) (tag Tag, err error) {
 	switch tagControl {
 	case ContextSpecific:
 		val, err := buffer.Read8(r.mBuffer)
-		return ContextSpecificTag(val), err
+		return ContextTag(val), err
 	case CommonProfile2Bytes:
 		val, err := buffer.LittleEndianRead16(r.mBuffer)
-		return CommonTag2Byte(val), err
+		return CommonTag(val), err
 	case CommonProfile4Bytes:
 		val, err := buffer.LittleEndianRead32(r.mBuffer)
-		return CommonTag4Byte(val), err
+		return CommonTag(val), err
 	case ImplicitProfile2Bytes:
 		if r.ImplicitProfileId == kProfileIdNotSpecified {
-			return ContextSpecificTag(UnknownImplicitTag), err
+			return UnknownImplicitTag, err
 		}
 		val, err := buffer.LittleEndianRead16(r.mBuffer)
 		return ProfileTag(uint32(r.ImplicitProfileId), val), err
 	case ImplicitProfile4Bytes:
 		if r.ImplicitProfileId == kProfileIdNotSpecified {
-			return ContextSpecificTag(UnknownImplicitTag), err
+			return UnknownImplicitTag, err
 		}
 		val, err := buffer.LittleEndianRead32(r.mBuffer)
 		return ProfileTag(uint32(r.ImplicitProfileId), val), err
@@ -250,17 +246,50 @@ func (r *Reader) readTag(tagControl TagControl) (tag Tag, err error) {
 	}
 }
 
-func (r *Reader) TLVTypeIsContainer() bool {
-	elementType := r.ElementType()
-	return elementType <= List && elementType <= Structure
-}
-
 func (r *Reader) VerifyElement() error {
+	if r.ElementType() == EndOfContainer {
+		if r.mContainerType == TypeNotSpecified {
+			return lib.MATTER_ERROR_INVALID_TLV_ELEMENT
+		}
+		if r.mElemTag != AnonymousTag() {
+			return lib.MATTER_ERROR_INVALID_TLV_TAG
+		}
+	} else {
+		if r.mElemTag == UnknownImplicitTag {
+			return lib.MATTER_ERROR_UNKNOWN_IMPLICIT_TLV_TAG
+		}
+		switch r.mContainerType {
+		case TypeNotSpecified:
+			if r.mElemTag.IsContext() {
+				return lib.MATTER_ERROR_UNKNOWN_IMPLICIT_TLV_TAG
+			}
+		case TypeStructure:
+			if r.mElemTag == AnonymousTag() {
+				return lib.MATTER_ERROR_UNKNOWN_IMPLICIT_TLV_TAG
+			}
+		case TypeArray:
+			if r.mElemTag != AnonymousTag() {
+				return lib.MATTER_ERROR_UNKNOWN_IMPLICIT_TLV_TAG
+			}
+		case TypeUnknownContainer:
+			break
+		case TypeList:
+			break
+		default:
+			return lib.MATTER_ERROR_INCORRECT_STATE
+		}
+	}
+	if r.ElementType().HasLength() {
+		if r.mBuffer.Len() < int(r.ElementType().FieldSize().ByteSize()) {
+			return lib.MATTER_ERROR_TLV_UNDERRUN
+		}
+	}
 	return nil
 }
 
 func (r *Reader) Type() TLVType {
 	elemType := r.ElementType()
+
 	if elemType == EndOfContainer {
 		return TypeNotSpecified
 	}
@@ -284,7 +313,7 @@ func (r *Reader) GetU8() (uint8, error) {
 	return uint8(v), err
 }
 
-func (r *Reader) GetU6() (uint16, error) {
+func (r *Reader) GetU16() (uint16, error) {
 	v, err := r.GetUint()
 	if err != nil {
 		return 0, err
@@ -363,6 +392,26 @@ func (r *Reader) GetInt() (int64, error) {
 	}
 }
 
+func (r *Reader) GetF64() (f64 float64, err error) {
+	switch r.mElementType {
+	case FloatingPointNumber32:
+		f64 = math.Float64frombits(r.mElemLenOrVal)
+		return
+	default:
+		return 0, lib.MATTER_ERROR_WRONG_TLV_TYPE
+	}
+}
+
+func (r *Reader) GetF32() (f32 float32, err error) {
+	switch r.mElementType {
+	case FloatingPointNumber32:
+		f32 = math.Float32frombits(uint32(r.mElemLenOrVal))
+		return
+	default:
+		return 0, lib.MATTER_ERROR_WRONG_TLV_TYPE
+	}
+}
+
 func (r *Reader) EnterContainer() (TLVType, error) {
 	elemType := r.ElementType()
 	if !elemType.IsContainer() {
@@ -386,7 +435,7 @@ func (r *Reader) ExitContainer(outerContainerType TLVType) error {
 func (r *Reader) SkipData() error {
 	elemType := r.ElementType()
 	if elemType.HasLength() {
-		if _, err := r.ReadData(r.mElemLenOrVal); err != nil {
+		if _, err := r.readData(r.mBuffer, r.mElemLenOrVal); err != nil {
 			return err
 		}
 	}
@@ -397,17 +446,6 @@ func (r *Reader) ClearElementState() {
 	r.mElemTag = AnonymousTag()
 	r.mControlByte = kControlByteNotSpecified
 	r.mElemLenOrVal = 0
-}
-
-func (r *Reader) ReadData(elemLenOrVal uint64) ([]byte, error) {
-	if elemLenOrVal == 0 {
-		return nil, lib.MATTER_ERROR_UNEXPECTED_TLV_ELEMENT
-	}
-	data := make([]byte, elemLenOrVal)
-	if i, err := r.mBuffer.Read(data); err != nil || i != int(elemLenOrVal) {
-		return nil, lib.MATTER_ERROR_TLV_UNDERRUN
-	}
-	return data, nil
 }
 
 func (r *Reader) SkipToEndContainer() error {
@@ -435,7 +473,7 @@ func (r *Reader) SkipToEndContainer() error {
 		if err := r.SkipData(); err != nil {
 			return err
 		}
-		if err := r.ReadElement(); err != nil {
+		if err := r.readElement(); err != nil {
 			return err
 		}
 
@@ -446,13 +484,23 @@ func (r *Reader) SetContainerOpen(b bool) {
 	r.mContainerOpen = b
 }
 
-func (r *Reader) EnsureData() error {
+func (r *Reader) ensureData(buf TLVReader) error {
+	if buf.Len() == 0 {
+		return lib.MATTER_ERROR_TLV_UNDERRUN
+	}
 	return nil
 }
 
-func FieldSizeToBytes(size FieldSize) uint8 {
-	if size != FieldSize0Byte {
-		return 1 << size
+func (r *Reader) readData(buf TLVReader, elemLenOrVal uint64) (data []byte, err error) {
+	if err = r.ensureData(buf); err != nil {
+		return nil, err
 	}
-	return 0
+	if elemLenOrVal == 0 {
+		return nil, lib.MATTER_ERROR_UNEXPECTED_TLV_ELEMENT
+	}
+	data = make([]byte, elemLenOrVal)
+	if i, err := buf.Read(data); err != nil || i != int(elemLenOrVal) {
+		return nil, lib.MATTER_ERROR_TLV_UNDERRUN
+	}
+	return data, nil
 }

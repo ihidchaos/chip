@@ -37,14 +37,17 @@ const (
 	FieldSize8Byte FieldSize = 3
 )
 
+func (f FieldSize) ByteSize() uint8 {
+	if f == FieldSize0Byte {
+		return 0
+	}
+	return uint8(f) << 1
+}
+
 const (
 	kTypeMask     uint8 = 0x1F
 	kTypeSizeMask uint8 = 0x03
 )
-
-func controlByte(control TagControl, elementType ElementType) byte {
-	return byte(control) & byte(elementType)
-}
 
 const (
 	NotSpecified          ElementType = -1
