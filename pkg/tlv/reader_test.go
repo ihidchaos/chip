@@ -63,7 +63,7 @@ func TestTLV(t *testing.T) {
 	if err != nil {
 		t.Log(err.Error())
 	}
-	initiatorRandom, err = tlvReader.GetBytesView()
+	initiatorRandom, err = tlvReader.GetBytes()
 	if err != nil {
 		t.Log(err.Error())
 	}
@@ -77,14 +77,14 @@ func TestTLV(t *testing.T) {
 
 	//Sigma1，Tag=3	destination id 20个字节的认证码
 	err = tlvReader.NextT(ContextTag(kDestinationIdTag))
-	destinationId, err = tlvReader.GetBytesView()
+	destinationId, err = tlvReader.GetBytes()
 	if err != nil {
 		t.Log(err.Error())
 	}
 
 	//Sigma1，Tag=4	 Initiator PubKey 1个字节的公钥
 	err = tlvReader.NextT(ContextTag(kInitiatorPubKeyTag))
-	initiatorEphPubKey, err = tlvReader.GetBytesView()
+	initiatorEphPubKey, err = tlvReader.GetBytes()
 	if err != nil {
 		t.Log(err.Error())
 	}

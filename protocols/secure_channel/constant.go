@@ -29,36 +29,13 @@ const (
 
 	resumptionIdSize        = 16
 	ProtocolName            = "SecureChannel"
-	ProtocolId       uint16 = 0x0000
+	protocolId       uint16 = 0x0000
 	/* "NCASE_Sigma2N" */
 )
 
 type MsgType uint8
 
-const (
-	// MsgCounterSyncReq Message Counter Synchronization Protocol Message Types
-	MsgCounterSyncReq MsgType = 0x00
-	MsgCounterSyncRsp MsgType = 0x01
-
-	// StandaloneAck Reliable Messaging Protocol Message Types
-	StandaloneAck MsgType = 0x10
-
-	// PBKDFParamRequest Password-based session establishment Message Types
-	PBKDFParamRequest  MsgType = 0x20
-	PBKDFParamResponse MsgType = 0x21
-	PASE_Pake1         MsgType = 0x22
-	PASE_Pake2         MsgType = 0x23
-	PASE_Pake3         MsgType = 0x24
-
-	// Certificate-based session establishment Message Types
-	CASE_Sigma1       MsgType = 0x30
-	CASE_Sigma2       MsgType = 0x31
-	CASE_Sigma3       MsgType = 0x32
-	CASE_Sigma2Resume MsgType = 0x33
-	StatusReport              = 0x40
-)
-
-func (m MsgType) String() string {
+func (m MsgType) Name() string {
 	switch m {
 	case MsgCounterSyncReq:
 		return "MsgCounterSyncReq"
@@ -89,6 +66,41 @@ func (m MsgType) String() string {
 	default:
 		return "----"
 	}
+}
+
+func (m MsgType) MessageType() uint8 {
+	return uint8(m)
+}
+
+func (m MsgType) Matches(msgType uint8) bool {
+	return uint8(m) == msgType
+}
+
+const (
+	// MsgCounterSyncReq Message Counter Synchronization Protocol Message Types
+	MsgCounterSyncReq MsgType = 0x00
+	MsgCounterSyncRsp MsgType = 0x01
+
+	// StandaloneAck Reliable Messaging Protocol Message Types
+	StandaloneAck MsgType = 0x10
+
+	// PBKDFParamRequest Password-based session establishment Message Types
+	PBKDFParamRequest  MsgType = 0x20
+	PBKDFParamResponse MsgType = 0x21
+	PASE_Pake1         MsgType = 0x22
+	PASE_Pake2         MsgType = 0x23
+	PASE_Pake3         MsgType = 0x24
+
+	// Certificate-based session establishment Message Types
+	CASE_Sigma1       MsgType = 0x30
+	CASE_Sigma2       MsgType = 0x31
+	CASE_Sigma3       MsgType = 0x32
+	CASE_Sigma2Resume MsgType = 0x33
+	StatusReport              = 0x40
+)
+
+func (m MsgType) ProtocolId() uint16 {
+	return protocolId
 }
 
 var (

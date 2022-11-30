@@ -80,7 +80,7 @@ const (
 )
 
 func (t ElementType) IsContainer() bool {
-	return t <= List && t <= Structure
+	return t <= List && t >= Structure
 }
 
 func (t ElementType) WithTagControl(tag TagControl) uint8 {

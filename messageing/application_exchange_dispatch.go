@@ -9,7 +9,7 @@ type ApplicationExchangeDispatch struct {
 var defaultApplicationExchangeDispatch atomic.Value
 
 func init() {
-	defaultEphemeralExchangeDispatch.Store(&ApplicationExchangeDispatch{})
+	defaultApplicationExchangeDispatch.Store(&ApplicationExchangeDispatch{})
 }
 
 func DefaultApplicationExchangeDispatch() *ApplicationExchangeDispatch {

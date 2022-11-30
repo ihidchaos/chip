@@ -167,10 +167,10 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 	c.CancelResponseTimer()
 
 	c.SetResponseExpected(false)
-	if c.mDelegate != nil && c.mDispatch.MessagePermitted(protocols.NewId(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType()) {
+	if c.mDelegate != nil && c.mDispatch.MessagePermitted(protocols.New(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType()) {
 		return c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 	}
-	DefaultOnMessageReceived(c, protocols.NewId(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType(), messageCounter, buf)
+	DefaultOnMessageReceived(c, protocols.New(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType(), messageCounter, buf)
 	return nil
 }
 

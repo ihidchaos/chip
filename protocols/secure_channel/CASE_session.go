@@ -286,7 +286,7 @@ func (s *CASESession) SendSigma2() error {
 	//记录下Hash值
 	s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(ProtocolId, uint8(CASE_Sigma2), tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
+	err = s.mExchangeCtxt.SendMessage(protocolId, uint8(CASE_Sigma2), tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,6 @@ func (s *CASESession) Init(
 ) error {
 	s.Clear()
 	s.mCommissioningHash.Begin()
-
 	return nil
 }
 

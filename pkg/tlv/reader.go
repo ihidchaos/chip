@@ -41,7 +41,6 @@ type Reader struct {
 	mBuffer           TLVReader
 	mControlTag       TagControl
 	mElemTag          Tag
-	mElementType      ElementType
 	mContainerType    TLVType
 	mElemLenOrVal     uint64
 	mControlByte      uint16
@@ -53,7 +52,6 @@ func NewReader(buf TLVReader) *Reader {
 	r := &Reader{
 		mBuffer:           buf,
 		mControlTag:       0,
-		mElementType:      NotSpecified,
 		mElemTag:          AnonymousTag(),
 		mContainerType:    TypeNotSpecified,
 		mContainerOpen:    false,
@@ -89,6 +87,7 @@ func (r *Reader) NextT(tag Tag) error {
 }
 
 func (r *Reader) Next() error {
+	elemType := r.ElementType()
 	err := r.Skip()
 	if err != nil {
 		return err
@@ -97,7 +96,6 @@ func (r *Reader) Next() error {
 	if err != nil {
 		return err
 	}
-	elemType := r.ElementType()
 	if elemType == EndOfContainer {
 		return lib.MATTER_END_OF_TLV
 	}
@@ -127,58 +125,6 @@ func (r *Reader) Skip() error {
 	return nil
 }
 
-func (r *Reader) readElement() (err error) {
-
-	if err = r.ensureData(r.mBuffer); err != nil {
-		return
-	}
-	if u8, err := buffer.Read8(r.mBuffer); err != nil {
-		return err
-	} else {
-		r.mControlByte = uint16(u8)
-	}
-
-	elemType := r.ElementType()
-	if !elemType.IsValid() {
-		return lib.MATTER_ERROR_INVALID_TLV_ELEMENT
-	}
-
-	tagControl := ParseTagControl(r.mControlByte)
-
-	if r.mElemTag, err = r.readTag(tagControl); err != nil {
-		return err
-	}
-	switch elemType.FieldSize() {
-	case FieldSize0Byte:
-		r.mElemLenOrVal = 0
-	case FieldSize1Byte:
-		if val, err := buffer.Read8(r.mBuffer); err != nil {
-			return err
-		} else {
-			r.mElemLenOrVal = uint64(val)
-		}
-	case FieldSize2Byte:
-		val, err := buffer.LittleEndianRead16(r.mBuffer)
-		if err != nil {
-			return err
-		}
-		r.mElemLenOrVal = uint64(val)
-	case FieldSize4Byte:
-		val, err := buffer.LittleEndianRead32(r.mBuffer)
-		if err != nil {
-			return err
-		}
-		r.mElemLenOrVal = uint64(val)
-	case FieldSize8Byte:
-		val, err := buffer.LittleEndianRead64(r.mBuffer)
-		if err != nil {
-			return err
-		}
-		r.mElemLenOrVal = val
-	}
-	return r.VerifyElement()
-}
-
 func (r *Reader) ElementType() ElementType {
 	if r.mControlByte == kControlByteNotSpecified {
 		return NotSpecified
@@ -190,60 +136,12 @@ func (r *Reader) GetControlTag() TagControl {
 	return r.mControlTag
 }
 
-func (r *Reader) GetBytes(buf TLVReader) ([]byte, error) {
+func (r *Reader) GetBytes() ([]byte, error) {
 
 	if r.ElementType().IsContainer() {
 		return nil, lib.MATTER_ERROR_WRONG_TLV_TYPE
 	}
-	return r.readData(buf, r.mElemLenOrVal)
-}
-
-func (r *Reader) GetBytesView() ([]byte, error) {
-	if r.mElementType >= 0x0c && r.mElementType <= 0x13 {
-		var data = make([]byte, r.mElemLenOrVal)
-		_, err := r.mBuffer.Read(data)
-		return data, err
-	}
-	return nil, lib.WrongTlvType
-}
-
-func (r *Reader) readTag(tagControl TagControl) (tag Tag, err error) {
-
-	switch tagControl {
-	case ContextSpecific:
-		val, err := buffer.Read8(r.mBuffer)
-		return ContextTag(val), err
-	case CommonProfile2Bytes:
-		val, err := buffer.LittleEndianRead16(r.mBuffer)
-		return CommonTag(val), err
-	case CommonProfile4Bytes:
-		val, err := buffer.LittleEndianRead32(r.mBuffer)
-		return CommonTag(val), err
-	case ImplicitProfile2Bytes:
-		if r.ImplicitProfileId == kProfileIdNotSpecified {
-			return UnknownImplicitTag, err
-		}
-		val, err := buffer.LittleEndianRead16(r.mBuffer)
-		return ProfileTag(uint32(r.ImplicitProfileId), val), err
-	case ImplicitProfile4Bytes:
-		if r.ImplicitProfileId == kProfileIdNotSpecified {
-			return UnknownImplicitTag, err
-		}
-		val, err := buffer.LittleEndianRead32(r.mBuffer)
-		return ProfileTag(uint32(r.ImplicitProfileId), val), err
-	case FullyQualified6Bytes:
-		vendorId, _ := buffer.LittleEndianRead16(r.mBuffer)
-		profileNum, _ := buffer.LittleEndianRead16(r.mBuffer)
-		val, err := buffer.LittleEndianRead16(r.mBuffer)
-		return ProfileSpecificTag(vendorId, profileNum, val), err
-	case FullyQualified8Bytes:
-		vendorId, err := buffer.LittleEndianRead16(r.mBuffer)
-		profileNum, err := buffer.LittleEndianRead16(r.mBuffer)
-		val, err := buffer.LittleEndianRead32(r.mBuffer)
-		return ProfileSpecificTag(vendorId, profileNum, val), err
-	default:
-		return AnonymousTag(), err
-	}
+	return r.readData(r.mBuffer, r.mElemLenOrVal)
 }
 
 func (r *Reader) VerifyElement() error {
@@ -336,7 +234,8 @@ func (r *Reader) GetU32() (uint32, error) {
 }
 
 func (r *Reader) GetUint() (uint64, error) {
-	switch r.mElementType {
+	t := r.ElementType()
+	switch t {
 	case UInt8, UInt16, UInt32, UInt64:
 		return r.mElemLenOrVal, nil
 	default:
@@ -384,7 +283,7 @@ func (r *Reader) GetI32() (i32 int32, err error) {
 }
 
 func (r *Reader) GetInt() (int64, error) {
-	switch r.mElementType {
+	switch r.ElementType() {
 	case Int8, Int16, Int32, Int64:
 		return int64(r.mElemLenOrVal), nil
 	default:
@@ -393,7 +292,7 @@ func (r *Reader) GetInt() (int64, error) {
 }
 
 func (r *Reader) GetF64() (f64 float64, err error) {
-	switch r.mElementType {
+	switch r.ElementType() {
 	case FloatingPointNumber32:
 		f64 = math.Float64frombits(r.mElemLenOrVal)
 		return
@@ -403,7 +302,7 @@ func (r *Reader) GetF64() (f64 float64, err error) {
 }
 
 func (r *Reader) GetF32() (f32 float32, err error) {
-	switch r.mElementType {
+	switch r.ElementType() {
 	case FloatingPointNumber32:
 		f32 = math.Float32frombits(uint32(r.mElemLenOrVal))
 		return
@@ -417,9 +316,10 @@ func (r *Reader) EnterContainer() (TLVType, error) {
 	if !elemType.IsContainer() {
 		return TypeUnknownContainer, lib.MATTER_ERROR_INCORRECT_STATE
 	}
+	outContainerType := r.mContainerType
 	r.mContainerType = TLVType(elemType)
 	r.ClearElementState()
-	return r.mContainerType, lib.WrongTlvType
+	return outContainerType, nil
 }
 
 func (r *Reader) ExitContainer(outerContainerType TLVType) error {
@@ -433,12 +333,12 @@ func (r *Reader) ExitContainer(outerContainerType TLVType) error {
 }
 
 func (r *Reader) SkipData() error {
-	elemType := r.ElementType()
-	if elemType.HasLength() {
-		if _, err := r.readData(r.mBuffer, r.mElemLenOrVal); err != nil {
-			return err
-		}
-	}
+	//elemType := r.ElementType()
+	//if elemType.HasLength() {
+	//	if _, err := r.readData(r.mBuffer, r.mElemLenOrVal); err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
@@ -449,6 +349,7 @@ func (r *Reader) ClearElementState() {
 }
 
 func (r *Reader) SkipToEndContainer() error {
+
 	outContainer := r.mContainerType
 	r.SetContainerOpen(false)
 	nestLevel := 0
@@ -503,4 +404,95 @@ func (r *Reader) readData(buf TLVReader, elemLenOrVal uint64) (data []byte, err 
 		return nil, lib.MATTER_ERROR_TLV_UNDERRUN
 	}
 	return data, nil
+}
+
+func (r *Reader) readElement() (err error) {
+
+	if err = r.ensureData(r.mBuffer); err != nil {
+		return
+	}
+	if u8, err := buffer.Read8(r.mBuffer); err != nil {
+		return err
+	} else {
+		r.mControlByte = uint16(u8)
+	}
+
+	elemType := r.ElementType()
+	if !elemType.IsValid() {
+		return lib.MATTER_ERROR_INVALID_TLV_ELEMENT
+	}
+
+	tagControl := ParseTagControl(r.mControlByte)
+
+	if r.mElemTag, err = r.readTag(tagControl); err != nil {
+		return err
+	}
+	switch elemType.FieldSize() {
+	case FieldSize0Byte:
+		r.mElemLenOrVal = 0
+	case FieldSize1Byte:
+		if val, err := buffer.Read8(r.mBuffer); err != nil {
+			return err
+		} else {
+			r.mElemLenOrVal = uint64(val)
+		}
+	case FieldSize2Byte:
+		val, err := buffer.LittleEndianRead16(r.mBuffer)
+		if err != nil {
+			return err
+		}
+		r.mElemLenOrVal = uint64(val)
+	case FieldSize4Byte:
+		val, err := buffer.LittleEndianRead32(r.mBuffer)
+		if err != nil {
+			return err
+		}
+		r.mElemLenOrVal = uint64(val)
+	case FieldSize8Byte:
+		val, err := buffer.LittleEndianRead64(r.mBuffer)
+		if err != nil {
+			return err
+		}
+		r.mElemLenOrVal = val
+	}
+	return r.VerifyElement()
+}
+
+func (r *Reader) readTag(tagControl TagControl) (tag Tag, err error) {
+
+	switch tagControl {
+	case ContextSpecific:
+		val, err := buffer.Read8(r.mBuffer)
+		return ContextTag(val), err
+	case CommonProfile2Bytes:
+		val, err := buffer.LittleEndianRead16(r.mBuffer)
+		return CommonTag(val), err
+	case CommonProfile4Bytes:
+		val, err := buffer.LittleEndianRead32(r.mBuffer)
+		return CommonTag(val), err
+	case ImplicitProfile2Bytes:
+		if r.ImplicitProfileId == kProfileIdNotSpecified {
+			return UnknownImplicitTag, err
+		}
+		val, err := buffer.LittleEndianRead16(r.mBuffer)
+		return ProfileTag(uint32(r.ImplicitProfileId), val), err
+	case ImplicitProfile4Bytes:
+		if r.ImplicitProfileId == kProfileIdNotSpecified {
+			return UnknownImplicitTag, err
+		}
+		val, err := buffer.LittleEndianRead32(r.mBuffer)
+		return ProfileTag(uint32(r.ImplicitProfileId), val), err
+	case FullyQualified6Bytes:
+		vendorId, _ := buffer.LittleEndianRead16(r.mBuffer)
+		profileNum, _ := buffer.LittleEndianRead16(r.mBuffer)
+		val, err := buffer.LittleEndianRead16(r.mBuffer)
+		return ProfileSpecificTag(vendorId, profileNum, val), err
+	case FullyQualified8Bytes:
+		vendorId, err := buffer.LittleEndianRead16(r.mBuffer)
+		profileNum, err := buffer.LittleEndianRead16(r.mBuffer)
+		val, err := buffer.LittleEndianRead32(r.mBuffer)
+		return ProfileSpecificTag(vendorId, profileNum, val), err
+	default:
+		return AnonymousTag(), err
+	}
 }
