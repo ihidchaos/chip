@@ -2,51 +2,24 @@ package tlv
 
 type TagFields uint16
 type FieldSize int8
-type TLVType int8
+type Type int8
 type ElementType int8
 
 const (
-	TypeNotSpecified     TLVType = -1
-	TypeUnknownContainer TLVType = -2
+	TypeNotSpecified     Type = -1
+	typeUnknownContainer Type = -2
 
-	TypeSignedInteger       TLVType = 0x00 //• Signed integers
-	TypeUnsignedInteger     TLVType = 0x04 //• Unsigned integers
-	TypeUTF8String          TLVType = 0x0C //• UTF-8 Strings
-	TypeByteString          TLVType = 0x10 //• Octet Strings
-	TypeFloatingPointNumber TLVType = 0x0A //• Single or double-precision floating point numbers (following IEEE 754-2019) • Booleans
-	TypeBoolean             TLVType = 0x08 //• Booleans
-	TypeNull                TLVType = 0x14 //• Nulls
+	TypeSignedInteger       Type = 0x00 //• Signed integers
+	TypeUnsignedInteger     Type = 0x04 //• Unsigned integers
+	TypeUTF8String          Type = 0x0C //• UTF-8 Strings
+	TypeByteString          Type = 0x10 //• Octet Strings
+	TypeFloatingPointNumber Type = 0x0A //• Single or double-precision floating point numbers (following IEEE 754-2019) • Booleans
+	TypeBoolean             Type = 0x08 //• Booleans
+	TypeNull                Type = 0x14 //• Nulls
 
-	TypeStructure TLVType = 0x15
-	TypeArray     TLVType = 0x16
-	TypeList      TLVType = 0x17
-)
-
-func (t TLVType) WithFieldSize(size FieldSize) ElementType {
-	if size == FieldSize0Byte {
-		return ElementType(t)
-	}
-	return ElementType(uint8(t) | uint8(size))
-}
-
-const (
-	FieldSize0Byte FieldSize = -1
-	FieldSize1Byte FieldSize = 0
-	FieldSize2Byte FieldSize = 1
-	FieldSize4Byte FieldSize = 2
-	FieldSize8Byte FieldSize = 3
-)
-
-func (f FieldSize) ByteSize() uint8 {
-	if f == FieldSize0Byte {
-		return 0
-	}
-	return uint8(f) << 1
-}
-
-const (
-	fTypeMask     uint8 = 0x1F
-	fTypeSizeMask uint8 = 0x03
+	TypeStructure Type = 0x15
+	TypeArray     Type = 0x16
+	TypeList      Type = 0x17
 )
 
 const (
@@ -77,6 +50,33 @@ const (
 	Array          ElementType = 0x16
 	List           ElementType = 0x17
 	EndOfContainer ElementType = 0x18
+)
+
+func (t Type) WithFieldSize(size FieldSize) ElementType {
+	if size == FieldSize0Byte {
+		return ElementType(t)
+	}
+	return ElementType(uint8(t) | uint8(size))
+}
+
+const (
+	FieldSize0Byte FieldSize = -1
+	FieldSize1Byte FieldSize = 0
+	FieldSize2Byte FieldSize = 1
+	FieldSize4Byte FieldSize = 2
+	FieldSize8Byte FieldSize = 3
+)
+
+func (f FieldSize) ByteSize() uint8 {
+	if f == FieldSize0Byte {
+		return 0
+	}
+	return uint8(f) << 1
+}
+
+const (
+	fTypeMask     uint8 = 0x1F
+	fTypeSizeMask uint8 = 0x03
 )
 
 func NewElementType[T ~uint8 | ~uint16](val T) ElementType {

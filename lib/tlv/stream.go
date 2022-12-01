@@ -20,12 +20,14 @@ type Decoder struct {
 	tokenState int
 	tokenStack []int
 
-	containerType  TLVType
-	containerStack []TLVType
+	containerType  Type
+	containerStack []Type
 
 	controlByte uint8
 	elementType ElementType
 	tagControl  TagControl
+
+	valOrLength []byte
 }
 
 // NewDecoder returns a new decoder that reads from r.
@@ -33,28 +35,65 @@ type Decoder struct {
 // The decoder introduces its own buffering and may
 // read data from r beyond the JSON values requested.
 func NewDecoder(r io.Reader) *Decoder {
-	return &Decoder{r: r}
+	return &Decoder{r: r, containerType: typeUnknownContainer}
 }
 
-func (dec *Decoder) setToken()
-
-func (dec *Decoder) Token() (Token, error) {
+func (dec *Decoder) Token() (t Type, elementType ElementType, err error) {
 
 	for {
 		c, err := dec.peek()
 		if err != nil {
-			return nil, err
+			return -1, -1, err
 		}
 
 		tagControle := NewTagControl(c)
 		elementType := NewElementType(c)
 
 		if !elementType.IsValid() {
-			return nil, dec.elemTypeError(c)
+			return -1, -1, dec.elemTypeError(c)
 		}
 
 		if elementType.IsContainer() {
 			if !dec.tokenValueAllowed() {
+				return -1, -1, dec.tokenError(c)
+			}
+			switch elementType {
+			case Structure:
+				dec.containerStack = append(dec.containerStack, dec.containerType)
+				dec.containerType = TypeStructure
+			case Array:
+				dec.containerStack = append(dec.containerStack, dec.containerType)
+				dec.containerType = TypeArray
+			case List:
+				dec.containerStack = append(dec.containerStack, dec.containerType)
+				dec.containerType = TypeList
+			}
+		}
+
+		if elementType.HasValue() {
+			switch elementType {
+			case Int8:
+
+			case Int16:
+			case Int32:
+
+			case Int64:
+
+			case UInt8:
+
+			case UInt16:
+
+			case UInt32:
+
+			case UInt64:
+
+			case BooleanFalse:
+
+			case BooleanTrue:
+
+			case FloatingPointNumber32:
+
+			case FloatingPointNumber64:
 
 			}
 		}
@@ -62,7 +101,7 @@ func (dec *Decoder) Token() (Token, error) {
 		switch c {
 		case '[':
 			if !dec.tokenValueAllowed() {
-				return dec.tokenError(c)
+				return -1, -1, dec.tokenError(c)
 			}
 			dec.scanp++
 			dec.tokenStack = append(dec.tokenStack, dec.tokenState)
@@ -147,10 +186,6 @@ func (dec *Decoder) Token() (Token, error) {
 	}
 }
 
-func (dec *Decoder) elemTypeError(val uint8) error {
-	return fmt.Errorf("element type err:%d", val)
-}
-
 func (dec *Decoder) peek() (byte, error) {
 	var err error
 	for {
@@ -197,7 +232,7 @@ func (dec *Decoder) refill() error {
 
 func (dec *Decoder) tokenValueAllowed() bool {
 	switch dec.tokenState {
-	case tokenTopValue, tokenArrayStart, tokenArrayValue, tokenObjectValue:
+	case tokenTopValue, tokenArrayStart, tokenArrayValues, tokenObjectValue:
 		return true
 	}
 	return false
@@ -205,17 +240,25 @@ func (dec *Decoder) tokenValueAllowed() bool {
 
 func (dec *Decoder) tokenValueEnd() {
 	switch dec.tokenState {
-	case tokenArrayStart, tokenArrayValue:
+	case tokenArrayStart, tokenArrayValues:
 		dec.tokenState = tokenArrayComma
 	case tokenObjectValue:
 		dec.tokenState = tokenObjectComma
 	}
 }
 
+func (dec *Decoder) tokenError(c uint8) error {
+	return fmt.Errorf("elemType error: %d", c)
+}
+
+func (dec *Decoder) elemTypeError(val uint8) error {
+	return fmt.Errorf("element type err:%d", val)
+}
+
 const (
 	tokenTopValue = iota
 	tokenArrayStart
-	tokenArrayValue
+	tokenArrayValues
 	tokenArrayComma
 	tokenObjectStart
 	tokenObjectKey
