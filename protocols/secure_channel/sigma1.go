@@ -1,9 +1,9 @@
 package secure_channel
 
 import (
-	"encoding/json"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/pkg/tlv"
 )
 
 type Sigma1 struct {
