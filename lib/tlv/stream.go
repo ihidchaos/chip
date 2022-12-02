@@ -38,6 +38,60 @@ func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: r, containerType: typeUnknownContainer}
 }
 
+func (dec *Decoder) Decode(v any) error {
+	if dec.err != nil {
+		return dec.err
+	}
+	if err := dec.tokenPrepareForDecode(); err != nil {
+		return err
+	}
+	if !dec.tokenValueAllowed() {
+		return fmt.Errorf("")
+	}
+
+	n, err := dec.readValue()
+	if err != nil {
+		return err
+	}
+	dec.d.init(dec.buf[dec.scanp : dec.scanp+n])
+	dec.scanp += n
+
+	err = dec.d.unmarshal(v)
+
+	dec.tokenValueEnd()
+
+	return err
+}
+
+func (dec *Decoder) tokenPrepareForDecode() error {
+	// Note: Not calling peek before switch, to avoid
+	// putting peek into the standard Decode path.
+	// peek is only called when using the Token API.
+	switch dec.tokenState {
+	case tokenArrayComma:
+		c, err := dec.peek()
+		if err != nil {
+			return err
+		}
+		if c != ',' {
+			return &SyntaxError{"expected comma after array element", dec.InputOffset()}
+		}
+		dec.scanp++
+		dec.tokenState = tokenArrayValue
+	case tokenObjectColon:
+		c, err := dec.peek()
+		if err != nil {
+			return err
+		}
+		if c != ':' {
+			return &SyntaxError{"expected colon after object key", dec.InputOffset()}
+		}
+		dec.scanp++
+		dec.tokenState = tokenObjectValue
+	}
+	return nil
+}
+
 func (dec *Decoder) Token() (t Type, elementType ElementType, err error) {
 
 	for {
@@ -55,7 +109,7 @@ func (dec *Decoder) Token() (t Type, elementType ElementType, err error) {
 
 		if elementType.IsContainer() {
 			if !dec.tokenValueAllowed() {
-				return -1, -1, dec.tokenError(c)
+				return -1, -1, dec.elemTypeError(c)
 			}
 			switch elementType {
 			case Structure:
@@ -186,6 +240,10 @@ func (dec *Decoder) Token() (t Type, elementType ElementType, err error) {
 	}
 }
 
+func (dec *Decoder) readTag(tagControl TagControl) Tag {
+	return AnonymousTag()
+}
+
 func (dec *Decoder) peek() (byte, error) {
 	var err error
 	for {
@@ -253,6 +311,13 @@ func (dec *Decoder) tokenError(c uint8) error {
 
 func (dec *Decoder) elemTypeError(val uint8) error {
 	return fmt.Errorf("element type err:%d", val)
+}
+
+func (dec *Decoder) readValue() (n int, err error) {
+	dec.scan.reset()
+
+	scanp := dec.scanp
+	return scanp, err
 }
 
 const (

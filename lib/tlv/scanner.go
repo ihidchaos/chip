@@ -21,6 +21,17 @@ type scanner struct {
 	bytes int64
 }
 
+func (s scanner) reset() {
+	s.step = stateBeginValue
+	s.parseState = s.parseState[0:0]
+	s.err = nil
+	s.endTop = false
+}
+
+func stateBeginValue(s *scanner, c byte) int {
+	return 1
+}
+
 func isSpace(c byte) bool {
 	return c <= ' ' && (c == ' ' || c == '\t' || c == '\r' || c == '\n')
 }
