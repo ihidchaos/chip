@@ -2,10 +2,10 @@ package raw
 
 import (
 	"bytes"
+	"encoding/binary"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/bitflags"
-	"github.com/galenliu/chip/platform/system/buffer"
 	"github.com/moznion/go-optional"
 	"io"
 )
@@ -193,148 +193,96 @@ func (header *PacketHeader) SetUnsecured() {
 
 func (header *PacketHeader) Encode() (*bytes.Buffer, error) {
 
-	var msgFlags = header.mMessageFlags
-
 	header.mMessageFlags.Set(header.SourceNodeId.IsSome(), fSourceNodeIdPresent)
 	header.mMessageFlags.Set(header.DestinationNodeId.IsSome(), fDestinationNodeIdPresent)
 	header.mMessageFlags.Set(header.DestinationGroupId.IsSome(), fDestinationGroupIdPresent)
 	header.mMessageFlags.Sets(kMsgHeaderVersion << 4)
 
 	buf := bytes.NewBuffer(nil)
-	err := buffer.Write8(buf, msgFlags.Value())
+	buf.WriteByte(header.mMessageFlags.Value())
 
-	err = buffer.LittleEndianWrite16(buf, header.SessionId)
-	err = buffer.Write8(buf, header.mSecFlags.Value())
-	err = buffer.LittleEndianWrite32(buf, header.MessageCounter)
+	data := make([]byte, 2)
+	binary.LittleEndian.PutUint16(data, header.SessionId)
+	buf.Write(data)
+
+	buf.WriteByte(header.mSecFlags.Value())
+
+	data = make([]byte, 4)
+	binary.LittleEndian.PutUint32(data, header.MessageCounter)
+	buf.Write(data)
+
 	if header.SourceNodeId.IsSome() {
-		err = buffer.LittleEndianWrite64(buf, uint64(header.SourceNodeId.Unwrap()))
+		data = make([]byte, 8)
+		binary.LittleEndian.PutUint64(data, uint64(header.SourceNodeId.Unwrap()))
+		buf.Write(data)
 	}
 	if header.DestinationNodeId.IsSome() {
-		err = buffer.LittleEndianWrite64(buf, uint64(header.DestinationNodeId.Unwrap()))
+		data = make([]byte, 8)
+		binary.LittleEndian.PutUint64(data, uint64(header.DestinationNodeId.Unwrap()))
+		buf.Write(data)
 	} else if header.DestinationGroupId.IsSome() {
-		err = buffer.LittleEndianWrite16(buf, uint16(header.DestinationGroupId.Unwrap()))
-	}
-	if err != nil {
-		return nil, err
+		data = make([]byte, 2)
+		binary.LittleEndian.PutUint16(data, uint16(header.DestinationGroupId.Unwrap()))
+		buf.Write(data)
 	}
 	return buf, nil
 }
 
 func (header *PacketHeader) DecodeAndConsume(buf io.Reader) error {
 
-	f, err := buffer.Read8(buf)
+	data := make([]byte, 1)
+	_, err := buf.Read(data)
 	if err != nil {
 		return err
 	}
-	header.mMessageFlags = bitflags.Some(f)
-	secFlags, err := buffer.Read8(buf)
-	if err != nil {
-		return err
-	}
-	header.setSecurityFlags(secFlags)
+	header.mMessageFlags = bitflags.Some(data[0])
 
-	header.SessionId, err = buffer.LittleEndianRead16(buf)
+	_, err = buf.Read(data)
 	if err != nil {
 		return err
 	}
-	header.MessageCounter, err = buffer.LittleEndianRead32(buf)
+	header.setSecurityFlags(data[0])
+
+	data = make([]byte, 2)
+	_, err = buf.Read(data)
+	header.SessionId = binary.LittleEndian.Uint16(data)
+	if err != nil {
+		return err
+	}
+
+	data = make([]byte, 4)
+	_, err = buf.Read(data)
+	header.MessageCounter = binary.LittleEndian.Uint32(data)
 	if err != nil {
 		return err
 	}
 
 	if header.mMessageFlags.Has(fSourceNodeIdPresent) {
-		v, _ := buffer.LittleEndianRead64(buf)
+		data = make([]byte, 8)
+		_, err = buf.Read(data)
+		if err != nil {
+			return err
+		}
+		v := binary.LittleEndian.Uint64(data)
 		header.SourceNodeId = optional.Some(lib.NodeId(v))
 	}
 	if header.mMessageFlags.Has(fDestinationNodeIdPresent) {
-		v, _ := buffer.LittleEndianRead64(buf)
+		data = make([]byte, 8)
+		_, err = buf.Read(data)
+		if err != nil {
+			return err
+		}
+		v := binary.LittleEndian.Uint64(data)
 		header.DestinationNodeId = optional.Some(lib.NodeId(v))
 	}
 	if header.mMessageFlags.Has(fDestinationGroupIdPresent) {
-		v, _ := buffer.LittleEndianRead16(buf)
+		data = make([]byte, 2)
+		_, err = buf.Read(data)
+		if err != nil {
+			return err
+		}
+		v := binary.LittleEndian.Uint16(data)
 		header.DestinationGroupId = optional.Some(lib.GroupId(v))
-	}
-	return nil
-}
-
-func (header *PacketHeader) Decode(data []byte) error {
-
-	buf := bytes.NewBuffer(data)
-
-	//首先读取 Message Flags
-	msgFlags, err := buffer.Read8(buf)
-	if err != nil {
-		return err
-	}
-	version := (msgFlags & fVersionIdMask) >> 4
-	if version != kMsgHeaderVersion {
-		return lib.MATTER_ERROR_VERSION_MISMATCH
-	}
-	header.setMessageFlags(msgFlags)
-
-	//读取Session ID
-	header.SessionId, err = buffer.LittleEndianRead16(buf)
-	if err != nil {
-		return err
-	}
-
-	//读取 Security Flags
-	secFlags, err := buffer.Read8(buf)
-	if err != nil {
-		return err
-	}
-	header.setSecurityFlags(secFlags)
-
-	//读取Message Counter
-	header.MessageCounter, err = buffer.LittleEndianRead32(buf)
-	if err != nil {
-		return err
-	}
-
-	//读取 Source Node id
-	if header.mMessageFlags.Has(fSourceNodeIdPresent) {
-		v, _ := buffer.LittleEndianRead64(buf)
-		header.SourceNodeId = optional.Some(lib.NodeId(v))
-	} else {
-		header.SourceNodeId = nil
-	}
-	if !header.IsSessionTypeValid() {
-		return lib.MATTER_ERROR_INTERNAL
-	}
-
-	//读取 Destination Node Id
-	if header.mMessageFlags.HasAll(fDestinationNodeIdPresent, fDestinationGroupIdPresent) {
-		return lib.MATTER_ERROR_INTERNAL
-	}
-	if header.mMessageFlags.Has(fDestinationNodeIdPresent) {
-		v, err := buffer.LittleEndianRead64(buf)
-		if err != nil {
-			return err
-		}
-		header.DestinationNodeId = optional.Some(lib.NodeId(v))
-		header.DestinationGroupId = nil
-	}
-
-	//读取 Destination Group ID
-	if header.mMessageFlags.Has(fDestinationGroupIdPresent) {
-		if header.mSessionType != groupSession {
-			return lib.MATTER_ERROR_INTERNAL
-		}
-		v, err := buffer.LittleEndianRead16(buf)
-		if err != nil {
-			return err
-		}
-		header.DestinationGroupId = optional.Some(lib.GroupId(v))
-		header.DestinationNodeId = nil
-	}
-	if header.mSecFlags.Has(fMsgExtension) {
-		maxLength, err := buffer.LittleEndianRead16(buf)
-		if err != nil {
-			return err
-		}
-		if maxLength <= uint16(len(data)) {
-			return lib.MATTER_ERROR_INTERNAL
-		}
 	}
 	return nil
 }

@@ -2,8 +2,8 @@ package lib
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
-	"github.com/galenliu/chip/platform/system/buffer"
 	"io"
 )
 
@@ -51,8 +51,10 @@ func (aNodeId NodeId) IsGroupId() bool {
 }
 
 func ReadNodeId(buf io.Reader) (NodeId, error) {
-	read64, err := buffer.LittleEndianRead64(buf)
-	return NodeId(read64), err
+	data := make([]byte, 8)
+	_, err := buf.Read(data)
+	v := binary.LittleEndian.Uint64(data)
+	return NodeId(v), err
 }
 
 func (aNodeId NodeId) IsCASEAuthTag() bool {

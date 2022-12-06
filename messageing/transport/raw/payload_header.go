@@ -1,10 +1,10 @@
 package raw
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/bitflags"
-	"github.com/galenliu/chip/platform/system/buffer"
 	"github.com/moznion/go-optional"
 	log "golang.org/x/exp/slog"
 	"io"
@@ -94,32 +94,48 @@ func (header *PayloadHeader) HaveVendorId() bool {
 
 func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
 
-	f, err := buffer.Read8(buf)
-	header.mExchangeFlags = bitflags.Some(f)
-
-	header.mProtocolOpcode, err = buffer.Read8(buf)
-	header.mExchangeId, err = buffer.LittleEndianRead16(buf)
-	protocolId, err := buffer.LittleEndianRead16(buf)
+	data := make([]byte, 1)
+	_, err := buf.Read(data)
 	if err != nil {
 		return err
 	}
-	header.mProtocolId = protocolId
-	var vendorId = lib.VidCommon
+	header.mExchangeFlags = bitflags.Some(data[0])
+
+	_, err = buf.Read(data)
+	if err != nil {
+		return err
+	}
+	header.mProtocolOpcode = data[0]
+
+	data = make([]byte, 2)
+	_, err = buf.Read(data)
+	if err != nil {
+		return err
+	}
+	header.mExchangeId = binary.LittleEndian.Uint16(data)
+
+	_, err = buf.Read(data)
+	if err != nil {
+		return err
+	}
+	header.mProtocolId = binary.LittleEndian.Uint16(data)
+
 	if header.HaveVendorId() {
-		vid, err := buffer.LittleEndianRead16(buf)
+		_, err = buf.Read(data)
 		if err != nil {
 			return err
 		}
-		vendorId = lib.VendorId(vid)
+		vendorId := lib.VendorId(binary.LittleEndian.Uint16(data))
 		header.mVendorId = optional.Some(vendorId)
 	}
 
 	if header.IsAckMsg() {
-		ackCounter, err := buffer.LittleEndianRead32(buf)
+		data = make([]byte, 4)
+		_, err = buf.Read(data)
 		if err != nil {
 			return err
 		}
-		header.mAckMessageCounter = optional.Some(ackCounter)
+		header.mAckMessageCounter = optional.Some(binary.LittleEndian.Uint32(data))
 	}
 	return nil
 }

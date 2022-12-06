@@ -7,22 +7,30 @@ import (
 
 type PacketBufferHandle struct {
 	data []byte
-	*bytes.Buffer
+	r    *bytes.Buffer
 }
 
 func NewPacketBufferHandle(data []byte) *PacketBufferHandle {
 	return &PacketBufferHandle{
-		data:   data,
-		Buffer: bytes.NewBuffer(data),
+		data: data,
+		r:    bytes.NewBuffer(data),
 	}
 }
 
+func (p *PacketBufferHandle) Read(data []byte) (int, error) {
+	return p.r.Read(data)
+}
+
+func (p *PacketBufferHandle) Bytes() []byte {
+	return p.r.Bytes()
+}
+
 func (p *PacketBufferHandle) IsNull() bool {
-	return p.Buffer.Len() == 0
+	return p.r.Len() == 0
 }
 
 func (p *PacketBufferHandle) Length() int {
-	return p.Buffer.Len()
+	return p.r.Len()
 }
 
 func (p *PacketBufferHandle) TotLength() int {

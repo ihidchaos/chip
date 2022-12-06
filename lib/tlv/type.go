@@ -152,7 +152,7 @@ func (t Type) String() string {
 func (t elementType) String() string {
 	index := int(t)
 	if index < 0 || index > 0x18 {
-		return "notSpecified"
+		return "not specified"
 	}
 	types := []string{
 		"i8",
