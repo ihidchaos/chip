@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/pkg/store"
-	"github.com/galenliu/chip/pkg/tlv"
 )
 
 var (
@@ -30,67 +30,67 @@ type FabricData struct {
 	key         string
 }
 
-func (f *FabricData) deserialize(tlvReader *tlv.Reader) (err error) {
+func (f *FabricData) deserialize(tlvDecode *tlv.Decoder) (err error) {
 
-	err = tlvReader.NextT(tlv.AnonymousTag())
+	err = tlvDecode.Tag(tlv.AnonymousTag())
 	if err != nil {
 		return
 	}
 	container := tlv.TypeStructure
-	container, err = tlvReader.EnterContainer()
+	container, err = tlvDecode.EnterContainer()
 	if err != nil {
 		return
 	}
 
-	err = tlvReader.NextT(tagFirstGroup)
-	val, err := tlvReader.GetU16()
+	err = tlvDecode.Tag(tagFirstGroup)
+	val, err := tlvDecode.GetU16()
 	f.firstGroup = lib.GroupId(val)
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextT(tagGroupCount)
-	val, err = tlvReader.GetU16()
+	err = tlvDecode.Tag(tagGroupCount)
+	val, err = tlvDecode.GetU16()
 	f.groupCount = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextT(tagFirstMap)
-	val, err = tlvReader.GetU16()
+	err = tlvDecode.Tag(tagFirstMap)
+	val, err = tlvDecode.GetU16()
 	f.firstMap = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextT(tagMapCount)
-	val, err = tlvReader.GetU16()
+	err = tlvDecode.Tag(tagMapCount)
+	val, err = tlvDecode.GetU16()
 	f.mapCount = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextT(tagFirstKeyset)
-	val, err = tlvReader.GetU16()
+	err = tlvDecode.Tag(tagFirstKeyset)
+	val, err = tlvDecode.GetU16()
 	f.firstKeyset = lib.KeysetId(val)
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextT(tagKeysetCount)
-	val, err = tlvReader.GetU16()
+	err = tlvDecode.Tag(tagKeysetCount)
+	val, err = tlvDecode.GetU16()
 	f.keysetCount = val
 	if err != nil {
 		return err
 	}
 
-	err = tlvReader.NextT(tagNext)
-	val8, err := tlvReader.GetU8()
+	err = tlvDecode.Tag(tagNext)
+	val8, err := tlvDecode.GetU8()
 	f.next = lib.FabricIndex(val8)
 	if err != nil {
 		return err
 	}
-	return tlvReader.ExitContainer(container)
+	return tlvDecode.ExitContainer(container)
 }
 
 func (f *FabricData) Load(storage store.KvsPersistentStorageBase) error {
@@ -98,7 +98,7 @@ func (f *FabricData) Load(storage store.KvsPersistentStorageBase) error {
 	if err != nil {
 		return err
 	}
-	tlvReader := tlv.NewReader(bytes.NewBuffer(data))
+	tlvReader := tlv.NewDecoder(bytes.NewBuffer(data))
 	return f.deserialize(tlvReader)
 }
 

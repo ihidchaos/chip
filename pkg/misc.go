@@ -17,7 +17,7 @@ func btoh(i byte) byte {
 // RandHex randomHex returns a random hex string.
 func RandHex() string {
 	var b [16]byte
-	// Read might block
+	// read might block
 	// > crypto/rand: blocked for 60 seconds waiting to read random data from the kernel
 	// > https://github.com/golang/go/commit/1961d8d72a53e780effa18bfa8dbe4e4282df0b2
 	_, err := rand.Read(b[:])

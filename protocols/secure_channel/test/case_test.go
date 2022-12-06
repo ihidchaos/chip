@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/tlv"
+	tlv "github.com/galenliu/chip/lib/tlv"
+
 	"github.com/galenliu/chip/protocols/secure_channel"
 	"testing"
 )
@@ -37,34 +38,42 @@ func EncodeSigma1() []byte {
 	var kDestinationIdTag uint8 = 3
 	var kInitiatorPubKeyTag uint8 = 4
 	//var kInitiatorMRPParamsTag uint8 = 5
-	tlvWriter := tlv.NewWriter()
+	//var kResumptionIDTag uint8 = 6
+	//var kResume1MICTag uint8 = 7
 
-	if _, err := tlvWriter.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
-		fmt.Printf(err.Error())
-	}
-	if err := tlvWriter.PutBytes(tlv.ContextTag(kInitiatorRandomTag), kInitiatorRandomFromSpec); err != nil {
-		fmt.Printf(err.Error())
-	}
-	if err := tlvWriter.PutU16(tlv.ContextTag(kInitiatorSessionIdTag), 0x1111); err != nil {
+	buf := bytes.NewBuffer(make([]byte, 0))
+	tlvEncoder := tlv.NewEncoder(buf)
+
+	if _, err := tlvEncoder.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
 		fmt.Printf(err.Error())
 	}
 
-	if err := tlvWriter.PutBytes(tlv.ContextTag(kDestinationIdTag), kExpectedDestinationIdFromSpec); err != nil {
+	if err := tlvEncoder.PutBytes(tlv.ContextTag(kInitiatorRandomTag), kInitiatorRandomFromSpec); err != nil {
+		fmt.Printf(err.Error())
+	}
+	if err := tlvEncoder.PutU16(tlv.ContextTag(kInitiatorSessionIdTag), 0x1111); err != nil {
 		fmt.Printf(err.Error())
 	}
 
-	if err := tlvWriter.PutBytes(tlv.ContextTag(kInitiatorPubKeyTag), kRootPubKeyFromSpec); err != nil {
+	if err := tlvEncoder.PutBytes(tlv.ContextTag(kDestinationIdTag), kExpectedDestinationIdFromSpec); err != nil {
 		fmt.Printf(err.Error())
 	}
-	return tlvWriter.Bytes()
+
+	if err := tlvEncoder.PutBytes(tlv.ContextTag(kInitiatorPubKeyTag), kRootPubKeyFromSpec); err != nil {
+		fmt.Printf(err.Error())
+	}
+	if err := tlvEncoder.EndContainer(tlv.TypeStructure); err != nil {
+		fmt.Printf(err.Error())
+	}
+	return buf.Bytes()
 }
 
 func TestParseSigma1(t *testing.T) {
-	tlvReader := tlv.NewReader(bytes.NewBuffer(EncodeSigma1()))
-	sigma1, err := secure_channel.ParseSigma1(tlvReader, false)
+	encodeSigma1 := EncodeSigma1()
+	tlvDecoder := tlv.NewDecoder(bytes.NewBuffer(encodeSigma1))
+	sigma1, err := secure_channel.ParseSigma1(tlvDecoder, false)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Logf("ParseSigma1: %v", sigma1)
-
 }

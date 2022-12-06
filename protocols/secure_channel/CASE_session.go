@@ -8,11 +8,11 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/messageing/transport/session"
-	"github.com/galenliu/chip/pkg/tlv"
 	"github.com/galenliu/chip/platform/system"
 	"golang.org/x/exp/rand"
 	log "golang.org/x/exp/slog"
@@ -113,8 +113,8 @@ func (s *CASESession) HandleSigma1(msg *system.PacketBufferHandle) error {
 	s.mCommissioningHash.AddData(msg.Bytes())
 
 	var sessionResumptionRequested = false
-	tlvReader := tlv.NewReader(msg)
-	sigma1, err := ParseSigma1(tlvReader, sessionResumptionRequested)
+	tlvDecode := tlv.NewDecoder(msg)
+	sigma1, err := ParseSigma1(tlvDecode, sessionResumptionRequested)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,8 @@ func (s *CASESession) SendSigma2() error {
 
 	tbsData2Signature := s.mFabricsTable.SignWithOpKeypair(s.mFabricIndex).Bytes()
 
-	tlvWriterMsg1 := tlv.NewWriter()
+	buf := bytes.NewBuffer(make([]byte, 0))
+	tlvWriterMsg1 := tlv.NewEncoder(buf)
 	_, err = tlvWriterMsg1.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
 	if err != nil {
 		return err
@@ -236,9 +237,10 @@ func (s *CASESession) SendSigma2() error {
 	}
 
 	// 使用对称密钥sr2k 对 Sigma2数量进行加密
-	msgR2Encrypted, err := crypto.AesCcmEncrypt(tlvWriterMsg1.Bytes(), sr2k, kTBEData2Nonce, crypto.AEADMicLengthBytes)
+	msgR2Encrypted, err := crypto.AesCcmEncrypt(buf.Bytes(), sr2k, kTBEData2Nonce, crypto.AEADMicLengthBytes)
 
-	tlvWriterMsg2 := tlv.NewWriter()
+	buf = bytes.NewBuffer(make([]byte, 0))
+	tlvWriterMsg2 := tlv.NewEncoder(buf)
 	_, err = tlvWriterMsg2.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
 	if err != nil {
 		return err
@@ -284,9 +286,9 @@ func (s *CASESession) SendSigma2() error {
 	}
 
 	//记录下Hash值
-	s.mCommissioningHash.AddData(tlvWriterMsg2.Bytes())
+	s.mCommissioningHash.AddData(buf.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(protocolId, uint8(CASE_Sigma2), tlvWriterMsg2.Bytes(), messageing.ExpectResponse)
+	err = s.mExchangeCtxt.SendMessage(protocolId, uint8(CASE_Sigma2), buf.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}

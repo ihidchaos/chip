@@ -349,7 +349,7 @@ var (
 
 	MATTER_ERROR_OPEN_FAILED MatterError = "Open file failed"
 
-	MATTER_ERROR_READ_FAILED MatterError = "Read from file failed"
+	MATTER_ERROR_READ_FAILED MatterError = "read from file failed"
 
 	MATTER_ERROR_WRITE_FAILED MatterError = "Write to file failed"
 
@@ -419,7 +419,7 @@ var (
 
 	MATTER_ERROR_IM_MALFORMED_EVENT_FILTER_IB MatterError = "Malformed Interaction Model Event Filter IB"
 
-	MATTER_ERROR_IM_MALFORMED_READ_REQUEST_MESSAGE MatterError = "Malformed Interaction Model Read Request Message"
+	MATTER_ERROR_IM_MALFORMED_READ_REQUEST_MESSAGE MatterError = "Malformed Interaction Model read Request Message"
 
 	MATTER_ERROR_IM_MALFORMED_SUBSCRIBE_REQUEST_MESSAGE MatterError = "Malformed Interaction Model Subscribe Request Message"
 

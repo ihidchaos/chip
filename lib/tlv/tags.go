@@ -2,33 +2,19 @@ package tlv
 
 import "math"
 
-type TagControl uint8
+type tagControl uint8
 type Tag uint64
 
 const (
-	Anonymous             TagControl = 0x00
-	ContextSpecific       TagControl = 0x20
-	CommonProfile2Bytes   TagControl = 0x40
-	CommonProfile4Bytes   TagControl = 0x60
-	ImplicitProfile2Bytes TagControl = 0x80
-	ImplicitProfile4Bytes TagControl = 0xA0
-	FullyQualified6Bytes  TagControl = 0xC0
-	FullyQualified8Bytes  TagControl = 0xE0
-	fTagControlMask                  = 0xE0
-	fTagControlShift                 = 5
+	Anonymous             tagControl = 0x00
+	ContextSpecific       tagControl = 0x20
+	CommonProfile2Bytes   tagControl = 0x40
+	CommonProfile4Bytes   tagControl = 0x60
+	ImplicitProfile2Bytes tagControl = 0x80
+	ImplicitProfile4Bytes tagControl = 0xA0
+	FullyQualified6Bytes  tagControl = 0xC0
+	FullyQualified8Bytes  tagControl = 0xE0
 )
-
-func NewTagControl[T ~uint8 | ~uint16](val T) TagControl {
-	return TagControl(uint8(val) & fTagControlMask)
-}
-
-func (tc TagControl) TagByteSize() uint8 {
-	return []uint8{0, 1, 2, 4, 2, 4, 6, 8}[uint(tc>>fTagControlShift)]
-}
-
-func (tc TagControl) WithElementType(et ElementType) uint8 {
-	return uint8(tc) | uint8(et)
-}
 
 const (
 	fTLVTypeMask      = 0x1F
@@ -45,13 +31,27 @@ const (
 	kCommonProfileId  = 0
 )
 
-const UnknownImplicitTag = fSpecialTagMarker | 0x00000000FFFFFFFE
+func tagCtl[T ~uint8 | ~uint16](val T) tagControl {
+	const fTagControlMask = 0xE0
+	return tagControl(uint8(val) & fTagControlMask)
+}
 
-type CommonProfiles uint32
+func (tc tagControl) bytesSize() uint8 {
+	const fTagControlShift = 5
+	return []uint8{0, 1, 2, 4, 2, 4, 6, 8}[uint(tc>>fTagControlShift)]
+}
+
+func (tc tagControl) withElemType(et elementType) uint8 {
+	return uint8(tc) | uint8(et)
+}
+
+const unknownImplicitTag = fSpecialTagMarker | 0x00000000FFFFFFFE
+
+type commonProfilesU32 uint32
 
 const (
-	kProfileIdNotSpecified CommonProfiles = 0xFFFFFFFF
-	kProfileCommonId       CommonProfiles = 0
+	profileIdNotSpecified commonProfilesU32 = 0xFFFFFFFF
+	profileCommonId       commonProfilesU32 = 0
 )
 
 /**
@@ -67,39 +67,35 @@ func ContextTag(tagNum uint8) Tag {
 	return Tag(0xFFFFFFFF00000000 | uint64(tagNum))
 }
 
-func CommonTag[T ~uint16 | ~uint32](val T) Tag {
-	return ProfileTag(kCommonProfileId, val)
+func commonTag[T ~uint16 | ~uint32](val T) Tag {
+	return profileTag(kCommonProfileId, val)
 }
 
-func ProfileTag[T ~uint16 | ~uint32](profileId uint32, tagNum T) Tag {
+func profileTag[T ~uint16 | ~uint32](profileId uint32, tagNum T) Tag {
 	return Tag((uint64(profileId))<<32 | uint64(tagNum))
 }
 
-func ProfileSpecificTag[T uint16 | uint32](vendorId uint16, profileNum uint16, tagNum T) Tag {
-	return ProfileTag(uint32(vendorId)<<16|uint32(profileNum), tagNum)
+func profileSpecificTag[T uint16 | uint32](vendorId uint16, profileNum uint16, tagNum T) Tag {
+	return profileTag(uint32(vendorId)<<16|uint32(profileNum), tagNum)
 }
 
-func (t Tag) Equal(tag Tag) bool {
-	return t == tag
-}
-
-func (t Tag) VendorId() uint16 {
+func (t Tag) vendorId() uint16 {
 	value := (t & fVendorIdMask) >> fVendorIdShift
 	return uint16(value)
 }
 
-func (t Tag) ProfileNumber() uint32 {
-	return uint32((uint64(t) & fProfileNumMask) >> fProfileIdShift)
+func (t Tag) profileNumber() uint16 {
+	return uint16((uint64(t) & fProfileNumMask) >> fProfileIdShift)
 }
 
-func (t Tag) TagNumber() uint32 {
+func (t Tag) number() uint32 {
 	return uint32(t & fTagNumMask)
 }
 
-func (t Tag) IsSpecial() bool {
+func (t Tag) isSpecial() bool {
 	return (uint64(t) & fProfileIdMask) == fSpecialTagMarker
 }
 
-func (t Tag) IsContext() bool {
-	return t.IsSpecial() && t.TagNumber() <= kContextTagMaxNum
+func (t Tag) isContext() bool {
+	return t.isSpecial() && t.number() <= kContextTagMaxNum
 }
