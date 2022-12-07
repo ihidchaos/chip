@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing"
 	"time"
 )
 
@@ -54,8 +55,8 @@ func (o *OutgoingGroup) GroupId() lib.GroupId {
 	return o.mGroupId
 }
 
-func (o *OutgoingGroup) RemoteMRPConfig() *ReliableMessageProtocolConfig {
-	return DefaultMRPConfig()
+func (o *OutgoingGroup) RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig {
+	return messageing.DefaultMRPConfig()
 }
 
 func (o *OutgoingGroup) AckTimeout() time.Duration {

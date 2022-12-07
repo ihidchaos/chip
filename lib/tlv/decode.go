@@ -2,10 +2,13 @@ package tlv
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math"
 )
+
+var EndOfTLVError error = errors.New("end of tlv")
 
 // A Decoder reads and decodes JSON values from an input stream.
 type Decoder struct {
@@ -34,7 +37,7 @@ type Decoder struct {
 // NewDecoder returns a new decoder that reads from r.
 //
 // The decoder introduces its own buffering and may
-// read data from r beyond the JSON values requested.
+// readData data from r beyond the JSON values requested.
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: r, containerType: TypeUnknownContainer}
 }
@@ -151,7 +154,7 @@ func (dec *Decoder) GetBytes() (data []byte, err error) {
 		return nil, dec.elemTypeError(dec.elementType)
 	}
 	data = make([]byte, dec.elemLenOrVal)
-	_, err = dec.read(data)
+	_, err = dec.readData(data)
 	return data, err
 }
 
@@ -222,7 +225,7 @@ func (dec *Decoder) Tag(tag Tag) error {
 		return err
 	}
 	if dec.elemTag != tag {
-		return dec.tagError(dec.elemTag)
+		return dec.TagError(dec.elemTag)
 	}
 	return nil
 }
@@ -248,6 +251,9 @@ func (dec *Decoder) Next() error {
 	if !elementType.isValid() {
 		return dec.elemTypeError(elementType)
 	}
+	if elementType == endOfContainer {
+		return EndOfTLVError
+	}
 	if tag, err := dec.readTag(tagControl); err != nil {
 		return err
 	} else {
@@ -272,21 +278,21 @@ func (dec *Decoder) readTag(tagControl tagControl) (tag Tag, err error) {
 	switch tagControl {
 	case ContextSpecific:
 		p = make([]byte, 1)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		tag = ContextTag(p[0])
 	case CommonProfile2Bytes:
 		p = make([]byte, 2)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		val := binary.LittleEndian.Uint16(p)
 		tag = commonTag(val)
 	case CommonProfile4Bytes:
 		p = make([]byte, 4)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		val := binary.LittleEndian.Uint32(p)
 		tag = commonTag(val)
 	case ImplicitProfile2Bytes:
 		p = make([]byte, 2)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		val := binary.LittleEndian.Uint16(p)
 		if dec.implicitProfileId == profileIdNotSpecified {
 			tag = unknownImplicitTag
@@ -295,7 +301,7 @@ func (dec *Decoder) readTag(tagControl tagControl) (tag Tag, err error) {
 		}
 	case ImplicitProfile4Bytes:
 		p = make([]byte, 4)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		val := binary.LittleEndian.Uint32(p)
 		if dec.implicitProfileId == profileIdNotSpecified {
 			tag = unknownImplicitTag
@@ -304,21 +310,21 @@ func (dec *Decoder) readTag(tagControl tagControl) (tag Tag, err error) {
 		}
 	case FullyQualified6Bytes:
 		p = make([]byte, 2)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		vendorId := binary.LittleEndian.Uint16(p)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		profileNum := binary.LittleEndian.Uint16(p)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		val := binary.LittleEndian.Uint16(p)
 		tag = profileSpecificTag(vendorId, profileNum, val)
 	case FullyQualified8Bytes:
 		p = make([]byte, 2)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		vendorId := binary.LittleEndian.Uint16(p)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		profileNum := binary.LittleEndian.Uint16(p)
 		p = make([]byte, 4)
-		_, err = dec.read(p)
+		_, err = dec.readData(p)
 		val := binary.LittleEndian.Uint32(p)
 		tag = profileSpecificTag(vendorId, profileNum, val)
 	default:
@@ -327,19 +333,12 @@ func (dec *Decoder) readTag(tagControl tagControl) (tag Tag, err error) {
 	return
 }
 
-func (dec *Decoder) read(p []byte) (int, error) {
+func (dec *Decoder) GetTag() Tag {
+	return dec.elemTag
+}
 
+func (dec *Decoder) readData(p []byte) (int, error) {
 	return dec.r.Read(p)
-
-	//for len(p) > len(dec.buf)-dec.p {
-	//	err := dec.refill()
-	//	if err != nil {
-	//		return 0, err
-	//	}
-	//}
-	//n := copy(p, dec.buf[dec.p:])
-	//dec.p = dec.p + n
-	//return n, nil
 }
 
 func (dec *Decoder) byte() (byte, error) {
@@ -349,7 +348,7 @@ func (dec *Decoder) byte() (byte, error) {
 }
 
 func (dec *Decoder) refill() error {
-	// Make room to read more into the buffer.
+	// Make room to readData more into the buffer.
 	// First slide down data already consumed.
 	if dec.p > 0 {
 		dec.scanned += int64(dec.p)
@@ -366,7 +365,7 @@ func (dec *Decoder) refill() error {
 		dec.buf = newBuf
 	}
 
-	// read. Delay error for next iteration (after scan).
+	// readData. Delay error for next iteration (after scan).
 	n, err := dec.r.Read(dec.buf[len(dec.buf):cap(dec.buf)])
 	dec.buf = dec.buf[0 : len(dec.buf)+n]
 
@@ -375,7 +374,7 @@ func (dec *Decoder) refill() error {
 
 func (dec *Decoder) readElement(elementType elementType) (val uint64, err error) {
 	p := make([]byte, 1<<elementType.fieldSize())
-	_, err = dec.read(p)
+	_, err = dec.readData(p)
 	switch elementType.fieldSize() {
 	case fieldSize0Byte:
 		return 0, nil
@@ -393,7 +392,7 @@ func (dec *Decoder) readElement(elementType elementType) (val uint64, err error)
 
 func (dec *Decoder) skipData() error {
 	if dec.elementType.hasLength() {
-		_, _ = dec.read(make([]byte, dec.elemLenOrVal))
+		_, _ = dec.readData(make([]byte, dec.elemLenOrVal))
 	}
 	return nil
 }
@@ -406,6 +405,16 @@ func (dec *Decoder) valueError(val any) error {
 	return fmt.Errorf("wrong value :%d", val)
 }
 
-func (dec *Decoder) tagError(val any) error {
+func (dec *Decoder) TagError(val any) error {
 	return fmt.Errorf("tag err :%d", val)
+}
+
+func (dec *Decoder) GetBoolean() (bool, error) {
+	if dec.elementType == booleanFalse {
+		return false, nil
+	}
+	if dec.elementType == booleanTrue {
+		return true, nil
+	}
+	return false, dec.elemTypeError(dec.elementType)
 }

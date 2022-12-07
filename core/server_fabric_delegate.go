@@ -1,19 +1,20 @@
 package core
 
 import (
+	"github.com/galenliu/chip/app/server"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
 )
 
 type ServerFabricDelegateImpl struct {
-	mServer *Server
+	mServer *server.Server
 }
 
 func NewServerFabricDelegateImpl() *ServerFabricDelegateImpl {
 	return &ServerFabricDelegateImpl{}
 }
 
-func (s ServerFabricDelegateImpl) Init(server *Server) error {
+func (s ServerFabricDelegateImpl) Init(server *server.Server) error {
 	s.mServer = server
 	return nil
 }

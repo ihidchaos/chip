@@ -3,6 +3,7 @@ package transport
 import (
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport/session"
 	"time"
 )
@@ -17,7 +18,7 @@ func NewUnauthenticatedSessionTable() *UnauthenticatedSessionTable {
 	}
 }
 
-func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeId lib.NodeId, config *session.ReliableMessageProtocolConfig) (*SessionHandle, error) {
+func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeId lib.NodeId, config *messageing.ReliableMessageProtocolConfig) (*SessionHandle, error) {
 	var err error = nil
 	result := t.findEntry(session.Responder, ephemeralInitiatorNodeId)
 	if result != nil {
@@ -53,7 +54,7 @@ func (t *UnauthenticatedSessionTable) findLeastRecentUsedEntry() *session.Unauth
 	return nil
 }
 
-func (t *UnauthenticatedSessionTable) allocEntry(sessionRole session.Role, ephemeralInitiatorNodeID lib.NodeId, config *session.ReliableMessageProtocolConfig) (*session.Unauthenticated, error) {
+func (t *UnauthenticatedSessionTable) allocEntry(sessionRole session.Role, ephemeralInitiatorNodeID lib.NodeId, config *messageing.ReliableMessageProtocolConfig) (*session.Unauthenticated, error) {
 
 	entry := t.createEntry(sessionRole, ephemeralInitiatorNodeID, config)
 	if entry != nil {
@@ -67,7 +68,7 @@ func (t *UnauthenticatedSessionTable) allocEntry(sessionRole session.Role, ephem
 	return entry, nil
 }
 
-func (t *UnauthenticatedSessionTable) createEntry(role session.Role, ephemeralInitiatorNodeID lib.NodeId, config *session.ReliableMessageProtocolConfig) *session.Unauthenticated {
+func (t *UnauthenticatedSessionTable) createEntry(role session.Role, ephemeralInitiatorNodeID lib.NodeId, config *messageing.ReliableMessageProtocolConfig) *session.Unauthenticated {
 	for i, e := range t.mEntries {
 		if e == nil {
 			t.mEntries[i] = session.NewUnauthenticated(role, ephemeralInitiatorNodeID, config)

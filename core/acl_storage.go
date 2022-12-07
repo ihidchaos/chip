@@ -2,7 +2,7 @@ package core
 
 import (
 	"github.com/galenliu/chip/credentials"
-	"github.com/galenliu/chip/pkg/store"
+	"github.com/galenliu/chip/lib/store"
 )
 
 type AclStorage interface {

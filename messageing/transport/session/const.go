@@ -35,7 +35,7 @@ const (
 const (
 	kUndefined Type = iota
 	kUnauthenticated
-	kSecure
+	SecureType
 	kGroupIncoming
 	kGroupOutgoing
 )

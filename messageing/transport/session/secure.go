@@ -2,6 +2,8 @@ package session
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	log "golang.org/x/exp/slog"
 	"net/netip"
@@ -23,7 +25,7 @@ type Secure struct {
 	mPeerSessionId         uint16
 	mLocalNodeId           lib.NodeId
 	mPeerNodeId            lib.NodeId
-	mRemoteMRPConfig       *ReliableMessageProtocolConfig
+	mRemoteMRPConfig       *messageing.ReliableMessageProtocolConfig
 	mCryptoContext         *CryptoContext
 	mPeerCATs              *lib.CATValues
 	mLastPeerActivityTime  time.Time
@@ -45,7 +47,7 @@ func NewSecure(
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 	}
-	session.BaseImpl = NewBaseImpl(0, kSecure, session)
+	session.BaseImpl = NewBaseImpl(0, SecureType, session)
 	for _, option := range options {
 		option(session)
 	}
@@ -139,15 +141,15 @@ func (s *Secure) GetPeer() lib.ScopedNodeId {
 	return lib.NewScopedNodeId(s.mPeerNodeId, s.FabricIndex())
 }
 
-func (s *Secure) RemoteMRPConfig() *ReliableMessageProtocolConfig {
+func (s *Secure) RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig {
 	return s.mRemoteMRPConfig
 }
 
 func (s *Secure) AckTimeout() time.Duration {
 	switch s.BaseImpl.mPeerAddress.TransportType() {
 	case raw.Udp:
-		return GetRetransmissionTimeout(s.mRemoteMRPConfig.ActiveRetransTimeout,
-			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastActivityTime, kMinActiveTime)
+		return messageing.GetRetransmissionTimeout(s.mRemoteMRPConfig.ActiveRetransTimeout,
+			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastActivityTime, transport.kMinActiveTime)
 	case raw.Tcp:
 		return 30 * time.Second
 	case raw.Ble:
@@ -187,7 +189,7 @@ func WithFabricIndex(index lib.FabricIndex) OptionalFunc {
 	}
 }
 
-func WithMRPC(config *ReliableMessageProtocolConfig) OptionalFunc {
+func WithMRPC(config *messageing.ReliableMessageProtocolConfig) OptionalFunc {
 	return func(session *Secure) {
 		session.mRemoteMRPConfig = config
 	}

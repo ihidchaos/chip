@@ -2,6 +2,7 @@ package secure_channel
 
 import (
 	"github.com/galenliu/chip/crypto"
+	"github.com/galenliu/chip/protocols"
 	"time"
 )
 
@@ -35,7 +36,7 @@ const (
 
 type MsgType uint8
 
-func (m MsgType) Name() string {
+func (m MsgType) String() string {
 	switch m {
 	case MsgCounterSyncReq:
 		return "MsgCounterSyncReq"
@@ -72,10 +73,6 @@ func (m MsgType) MessageType() uint8 {
 	return uint8(m)
 }
 
-func (m MsgType) Matches(msgType uint8) bool {
-	return uint8(m) == msgType
-}
-
 const (
 	// MsgCounterSyncReq Message Counter Synchronization Protocol Message Types
 	MsgCounterSyncReq MsgType = 0x00
@@ -99,12 +96,21 @@ const (
 	StatusReport              = 0x40
 )
 
-func (m MsgType) ProtocolId() uint16 {
-	return protocolId
+func (m MsgType) ProtocolId() protocols.Id {
+	return protocols.New(protocolId, nil)
 }
 
 var (
 	KDFSR2Info     = []byte{0x53, 0x69, 0x67, 0x6d, 0x61, 0x32}
 	KDFSR3Info     = []byte{0x53, 0x69, 0x67, 0x6d, 0x61, 0x33}
 	kTBEData2Nonce = []byte{0x4e, 0x43, 0x41, 0x53, 0x45, 0x5f, 0x53, 0x69, 0x67, 0x6d, 0x61, 0x32, 0x4e}
+)
+
+const (
+	kProtocolCodeSuccess         uint16 = 0x0000
+	kProtocolCodeNoSharedRoot    uint16 = 0x0001
+	kProtocolCodeInvalidParam    uint16 = 0x0002
+	kProtocolCodeCloseSession    uint16 = 0x0003
+	kProtocolCodeBusy            uint16 = 0x0004
+	kProtocolCodeSessionNotFound uint16 = 0x0005
 )

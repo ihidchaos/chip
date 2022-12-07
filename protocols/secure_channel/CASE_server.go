@@ -6,7 +6,6 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/galenliu/chip/protocols"
 	log "golang.org/x/exp/slog"
@@ -85,7 +84,7 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 		s.mCertificateValidityPolicy,
 		s,
 		previouslyEstablishedPeer,
-		session.GetLocalMRPConfig(),
+		messageing.GetLocalMRPConfig(),
 	)
 	if err != nil {
 		log.Info(err.Error())

@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"github.com/galenliu/chip/pkg/store"
+	"github.com/galenliu/chip/lib/store"
 )
 
 type SessionResumptionStorage interface {

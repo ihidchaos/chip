@@ -3,7 +3,7 @@ package credentials
 import (
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/store"
+	"github.com/galenliu/chip/lib/store"
 )
 
 type FabricInfoProvider interface {

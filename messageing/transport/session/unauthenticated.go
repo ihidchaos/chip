@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"net/netip"
 	"time"
@@ -15,11 +16,11 @@ type Unauthenticated struct {
 	mLastActivityTime         time.Time
 	mLastPeerActivityTime     time.Time
 
-	mRemoteMRPConfig    *ReliableMessageProtocolConfig
+	mRemoteMRPConfig    *messageing.ReliableMessageProtocolConfig
 	mPeerMessageCounter *PeerMessageCounter
 }
 
-func NewUnauthenticated(roleResponder Role, ephemeralInitiatorNodeID lib.NodeId, config *ReliableMessageProtocolConfig) *Unauthenticated {
+func NewUnauthenticated(roleResponder Role, ephemeralInitiatorNodeID lib.NodeId, config *messageing.ReliableMessageProtocolConfig) *Unauthenticated {
 	session := &Unauthenticated{
 		mSessionRole:              roleResponder,
 		mEphemeralInitiatorNodeId: ephemeralInitiatorNodeID,
@@ -70,8 +71,8 @@ func (s *Unauthenticated) PeerNodeId() lib.NodeId {
 func (s *Unauthenticated) AckTimeout() time.Duration {
 	switch s.BaseImpl.mPeerAddress.TransportType() {
 	case raw.Udp:
-		return GetRetransmissionTimeout(s.mRemoteMRPConfig.ActiveRetransTimeout,
-			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastPeerActivityTime, kMinActiveTime)
+		return messageing.GetRetransmissionTimeout(s.mRemoteMRPConfig.ActiveRetransTimeout,
+			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastPeerActivityTime, 1)
 	case raw.Tcp:
 		return 30 * time.Second
 	default:
@@ -130,6 +131,10 @@ func (s *Unauthenticated) Released() {
 	panic("implement me")
 }
 
-func (s *Unauthenticated) RemoteMRPConfig() *ReliableMessageProtocolConfig {
+func (s *Unauthenticated) RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig {
 	return s.mRemoteMRPConfig
+}
+
+func (s *Unauthenticated) SetRemoteMRPConfig(config *messageing.ReliableMessageProtocolConfig) {
+	s.mRemoteMRPConfig = config
 }

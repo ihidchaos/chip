@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/galenliu/chip/lib"
-	"github.com/galenliu/chip/pkg/store"
+	"github.com/galenliu/chip/lib/store"
 	log "golang.org/x/exp/slog"
 	"sync/atomic"
 )

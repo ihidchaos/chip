@@ -14,8 +14,10 @@ import (
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
+	"github.com/moznion/go-optional"
 	"golang.org/x/exp/rand"
 	log "golang.org/x/exp/slog"
+	"hash"
 )
 
 // SessionEstablishmentDelegate : CASEServer implementation
@@ -25,24 +27,14 @@ type SessionEstablishmentDelegate interface {
 	OnSessionEstablished()
 }
 
-type CASESessionBase interface {
-	messageing.UnsolicitedMessageHandler
-	messageing.ExchangeDelegate
-	credentials.FabricTableDelegate
-	PairingSessionBase
-	GetPeerSessionId() uint16
-	GetPeer() lib.ScopedNodeId
-	GetLocalScopedNodeId() lib.ScopedNodeId
-}
-
 // CASESession
 // UnsolicitedMessageHandler,
 // ExchangeDelegate,
 // FabricTable::Delegate,
 // PairingSessionBase
 type CASESession struct {
-	*PairingSession
-	mCommissioningHash *crypto.HashSha256Stream
+	PairingSession
+	mCommissioningHash hash.Hash
 
 	mRemotePubKey      *crypto.P256PublicKey
 	mEphemeralKey      *crypto.P256Keypair
@@ -110,17 +102,16 @@ func (s *CASESession) HandleSigma1(msg *system.PacketBufferHandle) error {
 
 	log.Debug("CASESession HandleSigma1")
 
-	s.mCommissioningHash.AddData(msg.Bytes())
+	s.mCommissioningHash.Write(msg.Bytes())
 
-	var sessionResumptionRequested = false
 	tlvDecode := tlv.NewDecoder(msg)
-	sigma1, err := ParseSigma1(tlvDecode, sessionResumptionRequested)
+	sigma1, err := ParseSigma1(tlvDecode, false)
 	if err != nil {
 		return err
 	}
 
 	log.Info("Peer assigned session key ID %d", sigma1.initiatorSessionId)
-	s.mPeerSessionId = sigma1.initiatorSessionId
+	s.peerSessionId = optional.Option[uint16]{sigma1.initiatorSessionId}
 
 	if s.mFabricsTable == nil {
 		return lib.IncorrectState
@@ -148,14 +139,14 @@ func (s *CASESession) HandleSigma1(msg *system.PacketBufferHandle) error {
 		s.mState = initialized
 		return err
 	}
-	s.mDelegate.OnSessionEstablishmentStarted()
+	s.delegate.OnSessionEstablishmentStarted()
 	return nil
 }
 
 func (s *CASESession) SendSigma2() error {
-	sessionId, err := s.LocalSessionId()
-	if err != nil {
-		return err
+	sessionId := s.LocalSessionId()
+	if sessionId == nil {
+		return fmt.Errorf("")
 	}
 	//获取ICA证书
 	icaCert, err := s.mFabricsTable.FetchICACert(s.mFabricIndex)
@@ -222,7 +213,7 @@ func (s *CASESession) SendSigma2() error {
 	}
 
 	s.mNewResumptionId = make([]byte, resumptionIdSize)
-	err = crypto.DRBGBytes(s.mNewResumptionId)
+	_, err = rand.Read(s.mNewResumptionId)
 	if err != nil {
 		return err
 	}
@@ -249,7 +240,7 @@ func (s *CASESession) SendSigma2() error {
 	if err != nil {
 		return err
 	}
-	err = tlvWriterMsg2.PutUint(tlv.ContextTag(2), uint64(sessionId))
+	err = tlvWriterMsg2.PutUint(tlv.ContextTag(2), uint64(*sessionId))
 	if err != nil {
 		return err
 	}
@@ -262,16 +253,16 @@ func (s *CASESession) SendSigma2() error {
 		return err
 	}
 
-	if s.mLocalMRPConfig != nil {
+	if s.localMRPConfig != nil {
 		_, err = tlvWriterMsg2.StartContainer(tlv.ContextTag(5), tlv.TypeStructure)
 		if err != nil {
 			return err
 		}
-		err = tlvWriterMsg2.PutUint(tlv.ContextTag(1), uint64(s.mLocalMRPConfig.IdleRetransTimeout.Milliseconds()))
+		err = tlvWriterMsg2.PutUint(tlv.ContextTag(1), uint64(s.localMRPConfig.IdleRetransTimeout.Milliseconds()))
 		if err != nil {
 			return err
 		}
-		err = tlvWriterMsg2.PutUint(tlv.ContextTag(2), uint64(s.mLocalMRPConfig.ActiveRetransTimeout.Milliseconds()))
+		err = tlvWriterMsg2.PutUint(tlv.ContextTag(2), uint64(s.localMRPConfig.ActiveRetransTimeout.Milliseconds()))
 		if err != nil {
 			return err
 		}
@@ -286,9 +277,9 @@ func (s *CASESession) SendSigma2() error {
 	}
 
 	//记录下Hash值
-	s.mCommissioningHash.AddData(buf.Bytes())
+	s.mCommissioningHash.Write(buf.Bytes())
 
-	err = s.mExchangeCtxt.SendMessage(protocolId, uint8(CASE_Sigma2), buf.Bytes(), messageing.ExpectResponse)
+	err = s.exchangeContext.SendMessage(CASE_Sigma2, buf.Bytes(), messageing.ExpectResponse)
 	if err != nil {
 		return err
 	}
@@ -343,7 +334,7 @@ func (s *CASESession) Init(
 	previouslyEstablishedPeer *lib.ScopedNodeId,
 ) error {
 	s.Clear()
-	s.mCommissioningHash.Begin()
+	s.mCommissioningHash = sha256.New()
 	return nil
 }
 
@@ -396,16 +387,16 @@ func (s *CASESession) PrepareForSessionEstablishment(
 	policy credentials.CertificateValidityPolicy,
 	delegate *CASEServer,
 	previouslyEstablishedPeer *lib.ScopedNodeId,
-	config *session.ReliableMessageProtocolConfig,
+	config *messageing.ReliableMessageProtocolConfig,
 ) error {
 	err := s.Init(sessionManger, policy, delegate, previouslyEstablishedPeer)
 	if err != nil {
 		return err
 	}
 	s.mFabricsTable = fabrics
-	s.mRole = session.KSessionRoleResponder
+	s.role = session.KSessionRoleResponder
 	s.mSessionResumptionStorage = storage
-	s.mLocalMRPConfig = config
+	s.localMRPConfig = config
 
 	log.Info("Allocated SecureSession-waiting for Sigma1 msg")
 
@@ -453,19 +444,19 @@ func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []b
 	_, err = buf.Write(ipk)
 	_, err = buf.Write(rand)
 	_, err = buf.Write(publicKey)
-	_, err = buf.Write(s.mCommissioningHash.Bytes())
+	_, err = buf.Write(s.mCommissioningHash.Sum(nil))
 	return saltSpan, nil
 }
 
 func (s *CASESession) ValidateReceivedMessage(ec *messageing.ExchangeContext, header *raw.PayloadHeader, msg *system.PacketBufferHandle) error {
-	if s.mExchangeCtxt != nil {
-		if s.mExchangeCtxt != ec {
+	if s.exchangeContext != nil {
+		if s.exchangeContext != ec {
 			return lib.MATTER_ERROR_INVALID_ARGUMENT
 		}
 	} else {
-		s.mExchangeCtxt = ec
+		s.exchangeContext = ec
 	}
-	s.mExchangeCtxt.UseSuggestedResponseTimeout(kExpectedHighProcessingTime)
+	s.exchangeContext.UseSuggestedResponseTimeout(kExpectedHighProcessingTime)
 	if msg.IsNull() {
 		return lib.MATTER_ERROR_INVALID_ARGUMENT
 	}

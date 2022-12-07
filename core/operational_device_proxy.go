@@ -4,7 +4,6 @@ import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/messageing"
 	transport2 "github.com/galenliu/chip/messageing/transport"
-	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/protocols/secure_channel"
 )
 
@@ -17,5 +16,5 @@ type DeviceProxyInitParams struct {
 	ClientPool                CASEClientPoolDelegate
 	GroupDataProvider         *credentials.GroupDataProvider
 
-	MrpLocalConfig *session.ReliableMessageProtocolConfig
+	MrpLocalConfig *messageing.ReliableMessageProtocolConfig
 }

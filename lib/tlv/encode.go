@@ -65,7 +65,7 @@ func (enc *Encoder) WriteElementWithData(tlvType Type, tag Tag, data []byte) err
 	if err != nil {
 		return err
 	}
-	return enc.write(data)
+	return enc.writeData(data)
 }
 
 func (enc *Encoder) writeElementHead(elemType elementType, tag Tag, lenOrVal uint64) (err error) {
@@ -80,7 +80,7 @@ func (enc *Encoder) writeElementHead(elemType elementType, tag Tag, lenOrVal uin
 				return enc.tagError(tag)
 			}
 			buf.WriteByte(ContextSpecific.withElemType(elemType))
-			buf.WriteByte(uint8(tag.number()))
+			buf.WriteByte(uint8(tag.Number()))
 		} else {
 			if elemType != endOfContainer &&
 				enc.containerType != TypeNotSpecified &&
@@ -96,40 +96,40 @@ func (enc *Encoder) writeElementHead(elemType elementType, tag Tag, lenOrVal uin
 			enc.containerType != TypeList {
 			return enc.tagError(tag)
 		}
-		switch tag.number() {
+		switch tag.Number() {
 		case uint32(profileCommonId):
-			if tag.number() <= math.MaxUint16 {
+			if tag.Number() <= math.MaxUint16 {
 				buf.WriteByte(CommonProfile2Bytes.withElemType(elemType))
 				var data = make([]byte, 2)
-				binary.LittleEndian.PutUint16(data, uint16(tag.number()))
+				binary.LittleEndian.PutUint16(data, uint16(tag.Number()))
 				buf.Write(data)
 			} else {
 				buf.WriteByte(CommonProfile4Bytes.withElemType(elemType))
 				var data = make([]byte, 4)
-				binary.LittleEndian.PutUint32(data, tag.number())
+				binary.LittleEndian.PutUint32(data, tag.Number())
 				buf.Write(data)
 			}
 		case uint32(enc.implicitProfileId):
-			if tag.number() <= math.MaxUint16 {
+			if tag.Number() <= math.MaxUint16 {
 				buf.WriteByte(ImplicitProfile2Bytes.withElemType(elemType))
 				data := make([]byte, 2)
-				binary.LittleEndian.PutUint16(data, uint16(tag.number()))
+				binary.LittleEndian.PutUint16(data, uint16(tag.Number()))
 				buf.Write(data)
 			} else {
 				buf.WriteByte(ImplicitProfile4Bytes.withElemType(elemType))
 				data := make([]byte, 4)
-				binary.LittleEndian.PutUint32(data, tag.number())
+				binary.LittleEndian.PutUint32(data, tag.Number())
 				buf.Write(data)
 			}
 		default:
-			if tag.number() <= math.MaxUint16 {
+			if tag.Number() <= math.MaxUint16 {
 				buf.WriteByte(FullyQualified6Bytes.withElemType(elemType))
 				v := make([]byte, 2)
 				binary.LittleEndian.PutUint16(v, tag.vendorId())
 				p := make([]byte, 2)
 				binary.LittleEndian.PutUint16(p, tag.profileNumber())
 				n := make([]byte, 2)
-				binary.LittleEndian.PutUint16(p, uint16(tag.number()))
+				binary.LittleEndian.PutUint16(p, uint16(tag.Number()))
 				buf.Write(v)
 				buf.Write(p)
 				buf.Write(n)
@@ -140,7 +140,7 @@ func (enc *Encoder) writeElementHead(elemType elementType, tag Tag, lenOrVal uin
 				p := make([]byte, 2)
 				binary.LittleEndian.PutUint16(p, tag.profileNumber())
 				n := make([]byte, 4)
-				binary.LittleEndian.PutUint32(p, tag.number())
+				binary.LittleEndian.PutUint32(p, tag.Number())
 				buf.Write(v)
 				buf.Write(p)
 				buf.Write(n)
@@ -165,13 +165,13 @@ func (enc *Encoder) writeElementHead(elemType elementType, tag Tag, lenOrVal uin
 		binary.LittleEndian.PutUint64(data, lenOrVal)
 		buf.Write(data)
 	}
-	return enc.write(buf.Bytes())
+	return enc.writeData(buf.Bytes())
 }
 
-func (enc *Encoder) write(data []byte) error {
+func (enc *Encoder) writeData(data []byte) error {
 	n, err := enc.w.Write(data)
 	if n != len(data) {
-		err = fmt.Errorf("write err:%w", err)
+		err = fmt.Errorf("writeData err:%w", err)
 	}
 	return err
 }
@@ -246,6 +246,13 @@ func (enc *Encoder) PutF32(tag Tag, f32 float32) error {
 
 func (enc *Encoder) PutF64(tag Tag, f64 float64) error {
 	return enc.writeElementHead(floatingPointNumber64, tag, uint64(f64))
+}
+
+func (enc *Encoder) PutBoolean(tag Tag, b bool) error {
+	if b {
+		return enc.writeElementHead(booleanTrue, tag, 0)
+	}
+	return enc.writeElementHead(booleanFalse, tag, 0)
 }
 
 func (enc *Encoder) incorrectStateError(str string) error {

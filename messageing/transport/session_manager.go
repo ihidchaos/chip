@@ -3,9 +3,10 @@ package transport
 import (
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/store"
+	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	"github.com/galenliu/chip/messageing/transport/session"
-	"github.com/galenliu/chip/pkg/store"
 	"github.com/galenliu/chip/platform/system"
 	log "golang.org/x/exp/slog"
 	"net/netip"
@@ -21,8 +22,8 @@ var mGroupPeerMsgCounter = NewGroupPeerTable(ConfigMaxFabrice)
 const (
 	PayloadIsEncrypted uint8 = iota
 	PayloadIsUnencrypted
-	kNotReady
-	kInitialized
+	notReady
+	initialized
 )
 
 type EncryptedPacketBufferHandle struct {
@@ -60,7 +61,7 @@ type SessionManagerBase interface {
 
 	FabricTable() *credentials.FabricTable
 
-	CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *session.ReliableMessageProtocolConfig) *SessionHandle
+	CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *messageing.ReliableMessageProtocolConfig) *SessionHandle
 	FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType session.SecureSessionType) *SessionHandle
 
 	SetMessageDelegate(cb SessionMessageDelegate)
@@ -99,7 +100,7 @@ func (s *SessionManager) SetMessageDelegate(delegate SessionMessageDelegate) {
 
 func (s *SessionManager) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManagerBase, storage store.KvsPersistentStorageBase, table *credentials.FabricTable) error {
 
-	s.mState = kInitialized
+	s.mState = initialized
 	s.mSystemLayer = systemLay
 
 	err := s.mFabricTable.AddFabricDelegate(s)
@@ -124,7 +125,7 @@ func (s *SessionManager) OnMessageReceived(srcAddr netip.AddrPort, msg *system.P
 	packetHeader := raw.NewPacketHeader()
 	err := packetHeader.DecodeAndConsume(msg)
 	if err != nil {
-		log.Error("packet header failed", err, "Tag", "SessionManager")
+		log.Error("packet header failed", err, "Tag", "sessionManager")
 		return
 	}
 	if packetHeader.IsEncrypted() {
@@ -144,7 +145,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 	sourceNodeId := packetHeader.SourceNodeId
 	destinationNodeId := packetHeader.DestinationNodeId
 	if (sourceNodeId.IsSome() && destinationNodeId.IsSome()) || (sourceNodeId.IsNone() && destinationNodeId.IsNone()) {
-		log.Info("received malformed unsecure packet", "SourceNodeId", sourceNodeId, "DestinationNodeId", destinationNodeId, "Tag", "SessionManager")
+		log.Info("received malformed unsecure packet", "SourceNodeId", sourceNodeId, "DestinationNodeId", destinationNodeId, "Tag", "sessionManager")
 		return
 		//ephemeral node id is only assigned to the initiator, there should be one and only one node id exists.
 	}
@@ -153,7 +154,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 	if sourceNodeId.IsSome() {
 		// Assume peer is the initiator, we are the responder.
 		// 对方是发起人，我们是响应者
-		optionalSession, err = s.mUnauthenticatedSessions.FindOrAllocateResponder(sourceNodeId.Unwrap(), session.GetLocalMRPConfig())
+		optionalSession, err = s.mUnauthenticatedSessions.FindOrAllocateResponder(sourceNodeId.Unwrap(), messageing.GetLocalMRPConfig())
 		if err != nil {
 			log.Error("Unauthenticated exhausted", err)
 			return
@@ -163,7 +164,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 		// 对方为响应，我们是发起人
 		optionalSession = s.mUnauthenticatedSessions.FindInitiator(destinationNodeId.Unwrap())
 		if optionalSession == nil {
-			log.Info("Received unknown unsecure packet for initiator", "DestinationNodeId", destinationNodeId, "Tag", "SessionManager")
+			log.Info("Received unknown unsecure packet for initiator", "DestinationNodeId", destinationNodeId, "Tag", "sessionManager")
 			return
 		}
 	}
@@ -177,7 +178,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 	payloadHeader := raw.NewPayloadHeader()
 	err = payloadHeader.DecodeAndConsume(msg)
 	if err != nil {
-		log.Error("Received invalid packet", err, "Tag", "SessionManager")
+		log.Error("Received invalid packet", err, "Tag", "sessionManager")
 		return
 	}
 
@@ -352,7 +353,7 @@ func (s *SessionManager) Shutdown() {
 		s.mFabricTable.RemoveFabricDelegate(s)
 		s.mFabricTable = nil
 	}
-	s.mState = kNotReady
+	s.mState = notReady
 	//s.mSecureSessions
 	s.mMessageCounterManager = nil
 	s.mSystemLayer = nil
@@ -363,7 +364,7 @@ func (s *SessionManager) Shutdown() {
 func (s *SessionManager) FabricRemoved(fabricId lib.FabricIndex) {
 	err := mGroupPeerMsgCounter.FabricRemoved(fabricId)
 	if err != nil {
-		log.Error("SessionManager.FabricRemoved", err)
+		log.Error("sessionManager.FabricRemoved", err)
 	}
 }
 
@@ -390,7 +391,7 @@ func (s *SessionManager) ExpireAllSessionsOnLogicalFabric(node *lib.ScopedNodeId
 
 }
 
-func (s *SessionManager) CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *session.ReliableMessageProtocolConfig) *SessionHandle {
+func (s *SessionManager) CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *messageing.ReliableMessageProtocolConfig) *SessionHandle {
 	return nil
 }
 

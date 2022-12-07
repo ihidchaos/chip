@@ -2,18 +2,11 @@ package session
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	log "golang.org/x/exp/slog"
 	"sync"
 	"time"
-)
-
-type NewSessionHandlingPolicy uint8
-
-const (
-	KShiftToNewSession NewSessionHandlingPolicy = 0
-	KStayAtOldSession  NewSessionHandlingPolicy = 1
-	kMinActiveTime     time.Duration            = time.Duration(4 * time.Second)
 )
 
 type DelegateEvent func()
@@ -47,7 +40,7 @@ type Session interface {
 	AckTimeout() time.Duration
 	GetPeer() lib.ScopedNodeId
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
-	RemoteMRPConfig() *ReliableMessageProtocolConfig
+	RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig
 	Released()
 	ClearValue()
 }
@@ -114,7 +107,7 @@ func (s *BaseImpl) RemoveHolder(holder Holder) {
 }
 
 func (s *BaseImpl) IsSecureSession() bool {
-	return s.SessionType() == kSecure
+	return s.SessionType() == SecureType
 }
 
 func (s *BaseImpl) IsGroupSession() bool {

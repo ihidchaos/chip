@@ -109,10 +109,12 @@ func (c *ExchangeContext) SetResponseTimeout(timeout time.Duration) {
 	c.mResponseTimeout = timeout
 }
 
-func (c *ExchangeContext) SendMessage(protocolId uint16, msgType uint8, r2 []byte, response uint16) error {
+func (c *ExchangeContext) SendMessage(msgType MessageType, msgPayload []byte, sendFlags uint16) error {
 
 	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
-
+	if err := c.send(msgType.ProtocolId(), msgType.MessageType(), msgPayload, sendFlags); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -230,7 +232,7 @@ func (c *ExchangeContext) OnSessionReleased() {
 	panic("implement me")
 }
 
-func (c *ExchangeContext) sendMessage(id protocols.Id) error {
+func (c *ExchangeContext) send(id protocols.Id, msgType uint8, msgBuf []byte, sendFlags uint16) error {
 
 	//c.mDispatch.SendMessage(c.ExchangeMgr().SessionManagerBase(),c.mSession.)
 	return nil

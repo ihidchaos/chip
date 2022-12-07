@@ -1,6 +1,8 @@
 package credentials
 
-import "github.com/galenliu/chip/pkg/store"
+import (
+	"github.com/galenliu/chip/lib/store"
+)
 
 const (
 	CertChainElement_Rcac uint8 = 0

@@ -31,9 +31,9 @@ func (a AnyMessage) Matches(m uint8) bool {
 }
 
 type MessageType interface {
-	Name() string
+	String() string
 	MessageType() uint8
-	Matches(m uint8) bool
+	ProtocolId() protocols.Id
 }
 
 const (
@@ -57,13 +57,13 @@ type ExchangeManagerBase interface {
 }
 
 type UnsolicitedMessageHandlerSlot struct {
-	messageType MessageType
+	messageType uint8
 	handler     UnsolicitedMessageHandler
 	protocolId  protocols.Id
 }
 
-func (slot *UnsolicitedMessageHandlerSlot) Matches(aProtocolId protocols.Id, aMessageType MessageType) bool {
-	return aProtocolId == slot.protocolId && aMessageType.Matches(slot.messageType.MessageType())
+func (slot *UnsolicitedMessageHandlerSlot) Matches(aProtocolId protocols.Id, aMessageType uint8) bool {
+	return aProtocolId == slot.protocolId && aMessageType == slot.messageType
 }
 
 func (slot *UnsolicitedMessageHandlerSlot) Reset() {
@@ -190,11 +190,11 @@ func (e *ExchangeManager) OnMessageReceived(
 		for i, umh := range e.mUMHandlerPool {
 			id := protocolId
 			if umh.IsInUse() && id.Equal(umh.protocolId) {
-				if umh.messageType.Matches(payloadHeader.MessageType()) {
+				if umh.messageType == payloadHeader.MessageType() {
 					matchingUMH = e.mUMHandlerPool[i]
 					break
 				}
-				if umh.messageType == KAnyMessageType {
+				if umh.messageType == uint8(KAnyMessageType) {
 					matchingUMH = umh
 				}
 			}
@@ -240,22 +240,22 @@ func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForProtocol(
 	protocolId protocols.Id,
 	handler UnsolicitedMessageHandler,
 ) error {
-	return e.registerUMH(protocolId, KAnyMessageType, handler)
+	return e.registerUMH(protocolId, KAnyMessageType.MessageType(), handler)
 }
 
 func (e *ExchangeManager) RegisterUnsolicitedMessageHandlerForType(id protocols.Id, msgType MessageType, handler UnsolicitedMessageHandler) error {
-	return e.registerUMH(id, msgType, handler)
+	return e.registerUMH(id, msgType.MessageType(), handler)
 }
 
 func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForType(id protocols.Id, messageType MessageType) error {
-	return e.unregisterUMH(id, messageType)
+	return e.unregisterUMH(id, messageType.MessageType())
 }
 
 func (e *ExchangeManager) UnregisterUnsolicitedMessageHandlerForProtocol(id protocols.Id) error {
-	return e.unregisterUMH(id, KAnyMessageType)
+	return e.unregisterUMH(id, KAnyMessageType.MessageType())
 }
 
-func (e *ExchangeManager) registerUMH(protocolId protocols.Id, msgType MessageType, handle UnsolicitedMessageHandler) error {
+func (e *ExchangeManager) registerUMH(protocolId protocols.Id, msgType uint8, handle UnsolicitedMessageHandler) error {
 
 	var selected *UnsolicitedMessageHandlerSlot
 	for _, umh := range e.mUMHandlerPool {
@@ -278,7 +278,7 @@ func (e *ExchangeManager) registerUMH(protocolId protocols.Id, msgType MessageTy
 	return nil
 }
 
-func (e *ExchangeManager) unregisterUMH(id protocols.Id, msgType MessageType) error {
+func (e *ExchangeManager) unregisterUMH(id protocols.Id, msgType uint8) error {
 	for _, umh := range e.mUMHandlerPool {
 		if umh.IsInUse() && umh.Matches(id, msgType) {
 			umh.Reset()

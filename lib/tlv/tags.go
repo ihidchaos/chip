@@ -88,7 +88,7 @@ func (t Tag) profileNumber() uint16 {
 	return uint16((uint64(t) & fProfileNumMask) >> fProfileIdShift)
 }
 
-func (t Tag) number() uint32 {
+func (t Tag) Number() uint32 {
 	return uint32(t & fTagNumMask)
 }
 
@@ -97,5 +97,5 @@ func (t Tag) isSpecial() bool {
 }
 
 func (t Tag) isContext() bool {
-	return t.isSpecial() && t.number() <= kContextTagMaxNum
+	return t.isSpecial() && t.Number() <= kContextTagMaxNum
 }

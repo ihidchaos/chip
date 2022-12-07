@@ -3,7 +3,6 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
 	"fmt"
 	"github.com/CrimsonAIO/aesccm"
 )
@@ -35,14 +34,6 @@ func SignP256ECDSASignature(plainTex, privateKeyFile []byte) (P256ECDSASignature
 }
 
 type P256ECDHDerivedSecret struct {
-}
-
-func DRBGBytes(data []byte) error {
-	_, err := rand.Read(data)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // AesCcmEncrypt

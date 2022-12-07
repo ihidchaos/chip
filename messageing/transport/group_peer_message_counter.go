@@ -2,8 +2,8 @@ package transport
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/store"
 	"github.com/galenliu/chip/messageing/transport/session"
-	"github.com/galenliu/chip/pkg/store"
 )
 
 type GroupSender struct {

@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/messageing"
 	"time"
 )
 
@@ -47,8 +48,9 @@ func (i *IncomingGroupSession) ComputeRoundTripTimeout(upperlayerProcessingTimeo
 	return i.AckTimeout() + upperlayerProcessingTimeout
 }
 
-func (i *IncomingGroupSession) RemoteMRPConfig() *ReliableMessageProtocolConfig {
-	return DefaultMRPConfig()
+func (i *IncomingGroupSession) RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig {
+	config := messageing.DefaultMRPConfig()
+	return &config
 }
 
 func (i *IncomingGroupSession) Released() {
