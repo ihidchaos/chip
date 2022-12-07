@@ -3,7 +3,6 @@ package session
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
-	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	log "golang.org/x/exp/slog"
 	"net/netip"
@@ -149,7 +148,7 @@ func (s *Secure) AckTimeout() time.Duration {
 	switch s.BaseImpl.mPeerAddress.TransportType() {
 	case raw.Udp:
 		return messageing.GetRetransmissionTimeout(s.mRemoteMRPConfig.ActiveRetransTimeout,
-			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastActivityTime, transport.kMinActiveTime)
+			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastActivityTime, 0)
 	case raw.Tcp:
 		return 30 * time.Second
 	case raw.Ble:

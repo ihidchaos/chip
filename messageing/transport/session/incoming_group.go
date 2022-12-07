@@ -50,7 +50,7 @@ func (i *IncomingGroupSession) ComputeRoundTripTimeout(upperlayerProcessingTimeo
 
 func (i *IncomingGroupSession) RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig {
 	config := messageing.DefaultMRPConfig()
-	return &config
+	return config
 }
 
 func (i *IncomingGroupSession) Released() {
