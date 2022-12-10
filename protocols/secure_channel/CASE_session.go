@@ -318,16 +318,6 @@ func (s *CASESession) OnExchangeCreationFailed(delegate messageing.ExchangeDeleg
 	panic("implement me")
 }
 
-func (s *CASESession) OnSessionEstablishmentError(err error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *CASESession) OnSessionEstablishmentStarted() {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *CASESession) OnSessionEstablished() {
 	//TODO implement me
 	panic("implement me")

@@ -1,15 +1,14 @@
 module github.com/galenliu/chip
 
-go 1.19
+go 1.20
 
 require (
 	github.com/CrimsonAIO/aesccm v1.0.1
 	github.com/aead/ecdh v0.2.0
 	github.com/bits-and-blooms/bitset v1.3.0
-	github.com/cloudflare/circl v1.3.0
-	github.com/jtejido/spake2plus v0.0.0-20201002175625-bf1e635cd021
 	github.com/miekg/dns v1.1.50
 	github.com/moznion/go-optional v0.10.0
+	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
