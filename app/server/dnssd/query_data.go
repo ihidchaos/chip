@@ -66,7 +66,7 @@ func (d QueryData) SendUnicast() bool {
 //	}
 //}
 
-//func (q *QueryData) Parse(validData *core.BytesRange, start, end uint8) bool {
+//func (q *QueryData) Decode(validData *core.BytesRange, start, end uint8) bool {
 //	// Structure is:
 //	//    QNAME
 //	//    TYPE

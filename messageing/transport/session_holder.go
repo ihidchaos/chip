@@ -31,7 +31,7 @@ func (s *SessionHolder) Contains(session *SessionHandle) bool {
 	return s.Session != nil && s.Session == session.Session
 }
 
-func (s *SessionHolder) Get() *SessionHandle {
+func (s *SessionHolder) SessionHandler() *SessionHandle {
 	if s.Session != nil {
 		return NewSessionHandle(s.Session)
 	}
@@ -47,7 +47,7 @@ func (s *SessionHolder) Release() {
 
 func (s *SessionHolder) GrabPairingSession(ss *SessionHandle) bool {
 	s.Release()
-	if !ss.IsSecureSession() {
+	if !ss.IsSecure() {
 		return false
 	}
 	secureSession, ok := ss.Session.(*session.Secure)
@@ -60,7 +60,7 @@ func (s *SessionHolder) GrabPairingSession(ss *SessionHandle) bool {
 
 func (s *SessionHolder) Grad(session *SessionHandle) bool {
 	s.Release()
-	if !session.IsActiveSession() {
+	if !session.IsActive() {
 		return false
 	}
 	s.GrabUnchecked(session)

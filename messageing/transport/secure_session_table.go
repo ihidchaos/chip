@@ -40,7 +40,7 @@ func (t *SecureSessionTable) FindSecureSessionByLocalKey(id uint16) *SessionHand
 	return nil
 }
 
-func (t *SecureSessionTable) CreateSecureSession(sessionType session.SecureSessionType, sessionId uint16) *session.Secure {
+func (t *SecureSessionTable) CreateSecureSession(sessionType session.SecureType, sessionId uint16) *session.Secure {
 	for i, s := range t.mEntries {
 		if s == nil {
 			t.mEntries[i] = session.NewSecure(t, sessionType, sessionId)

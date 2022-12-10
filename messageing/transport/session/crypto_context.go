@@ -14,8 +14,6 @@ const (
 	kAESCCMNonceLen uint8 = 13
 )
 
-type NonceStorage [kAESCCMNonceLen]byte
-
 type CryptoContext struct {
 }
 
@@ -30,12 +28,12 @@ func (c *CryptoContext) Decrypt(msg *system.PacketBufferHandle, nonce []byte, he
 }
 
 // BuildNonce 使用SecFlags,messageCounter,nodeId三个字段生成Nonce(用于AES加解密的初始化向量)，Len == 13
-func BuildNonce(secFlags uint8, messageCounter uint32, nodeId lib.NodeId) NonceStorage {
-	data := NonceStorage{}
-	data[0] = secFlags
-	binary.LittleEndian.PutUint32(data[1:5], messageCounter)
-	binary.LittleEndian.PutUint64(data[5:12], uint64(nodeId))
-	return data
+func BuildNonce(secFlags uint8, messageCounter uint32, nodeId lib.NodeId) []byte {
+	nonceStorage := make([]byte, kAESCCMNonceLen)
+	nonceStorage[0] = secFlags
+	binary.LittleEndian.PutUint32(nonceStorage[1:5], messageCounter)
+	binary.LittleEndian.PutUint64(nonceStorage[5:12], uint64(nodeId))
+	return nonceStorage
 }
 
 func GetAdditionalAuthData(header *raw.PacketHeader) {

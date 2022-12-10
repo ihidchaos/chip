@@ -142,7 +142,7 @@ func (e *ExchangeManager) OnMessageReceived(
 	{
 		//logging
 		var compressedFabricId lib.CompressedFabricId = 0
-		if ss.IsSecureSession() && e.mSessionManager.FabricTable() != nil {
+		if ss.IsSecure() && e.mSessionManager.FabricTable() != nil {
 			secureSession := ss.Session.(*session.Secure)
 			fabricInfo := e.mSessionManager.FabricTable().FindFabricWithIndex(secureSession.FabricIndex())
 			if fabricInfo != nil {
@@ -153,7 +153,7 @@ func (e *ExchangeManager) OnMessageReceived(
 			"E", fmt.Sprintf("%04X", payloadHeader.ExchangeId()),
 			"M", fmt.Sprintf("%08X", packetHeader.MessageCounter),
 			"Ack", fmt.Sprintf("%04X", payloadHeader.AckMessageCounter()),
-			"S", ss.SessionType(),
+			"S", ss.Type(),
 			"From", log.GroupValue(
 				log.Any("FabricIndex", ss.FabricIndex()),
 				log.Any("NodeId", ss.GetPeer().NodeId()),
@@ -180,7 +180,7 @@ func (e *ExchangeManager) OnMessageReceived(
 		log.Info("Received Group Cast Message", "GroupId", packetHeader.DestinationGroupId)
 	}
 
-	if !ss.IsActiveSession() {
+	if !ss.IsActive() {
 		log.Info("Dropping message on inactive session that does not match an existing exchange")
 		return
 	}

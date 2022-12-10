@@ -19,23 +19,10 @@ type Holder interface {
 	DispatchSessionEvent(DelegateEvent)
 }
 
-type Base interface {
-	AddHolder(handle Holder)
-	RemoveHolder(holder Holder)
-	SetFabricIndex(index lib.FabricIndex)
-	FabricIndex() lib.FabricIndex
-	NotifySessionReleased()
-	DispatchSessionEvent(delegate DelegateEvent)
-	IsSecureSession() bool
-	IsGroupSession() bool
-	SessionType() Type
-}
-
 type Session interface {
-	Base
 	Retain()
 	Release()
-	IsActiveSession() bool
+	IsActive() bool
 	IsEstablishing() bool
 	AckTimeout() time.Duration
 	GetPeer() lib.ScopedNodeId
@@ -43,6 +30,14 @@ type Session interface {
 	RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig
 	Released()
 	ClearValue()
+	AddHolder(handle Holder)
+	RemoveHolder(holder Holder)
+	FabricIndex() lib.FabricIndex
+	NotifySessionReleased()
+	DispatchSessionEvent(delegate DelegateEvent)
+	IsSecure() bool
+	IsGroup() bool
+	Type() Type
 }
 
 type BaseImpl struct {
@@ -51,18 +46,8 @@ type BaseImpl struct {
 	mHolders     []Holder
 	mSessionType Type
 	mPeerAddress raw.PeerAddress
-	mDelegate    Session
+	base         Session
 	*lib.ReferenceCounted
-}
-
-func NewBaseImpl(initCounter int, sessionType Type, delegate Session) *BaseImpl {
-	return &BaseImpl{
-		mFabricIndex:     lib.UndefinedFabricIndex(),
-		locker:           sync.Mutex{},
-		mSessionType:     sessionType,
-		mDelegate:        delegate,
-		ReferenceCounted: lib.NewReferenceCounted(initCounter, delegate),
-	}
 }
 
 func (s *BaseImpl) FabricIndex() lib.FabricIndex {
@@ -72,10 +57,6 @@ func (s *BaseImpl) FabricIndex() lib.FabricIndex {
 func (s *BaseImpl) NotifySessionReleased() {
 	//TODO implement me
 	panic("implement me")
-}
-
-func (s *BaseImpl) SetFabricIndex(index lib.FabricIndex) {
-	s.mFabricIndex = index
 }
 
 func (s *BaseImpl) DispatchSessionEvent(event DelegateEvent) {
@@ -106,15 +87,15 @@ func (s *BaseImpl) RemoveHolder(holder Holder) {
 	}
 }
 
-func (s *BaseImpl) IsSecureSession() bool {
-	return s.SessionType() == SecureType
+func (s *BaseImpl) IsSecure() bool {
+	return s.Type() == kSecure
 }
 
-func (s *BaseImpl) IsGroupSession() bool {
-	return s.SessionType() == kGroupIncoming || s.SessionType() == kGroupOutgoing
+func (s *BaseImpl) IsGroup() bool {
+	return s.Type() == kGroupIncoming || s.Type() == kGroupOutgoing
 }
 
-func (s *BaseImpl) SessionType() Type {
+func (s *BaseImpl) Type() Type {
 	return s.mSessionType
 }
 

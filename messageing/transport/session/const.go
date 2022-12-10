@@ -1,14 +1,14 @@
 package session
 
-type SecureSessionType uint8
-type SecureState uint8
+type SecureType uint8
+type State uint8
 type Type uint8
 
 type Role uint8
 
 const (
-	Initiator Role = iota
-	Responder
+	RoleInitiator Role = iota
+	RoleResponder
 )
 
 func (t Role) Uint8() uint8 {
@@ -17,17 +17,17 @@ func (t Role) Uint8() uint8 {
 
 func (t Role) String() string {
 	switch t {
-	case Responder:
-		return "Responder"
-	case Initiator:
-		return "Initiator"
+	case RoleResponder:
+		return "RoleResponder"
+	case RoleInitiator:
+		return "RoleInitiator"
 	default:
 		return "Unknown"
 	}
 }
 
 const (
-	kEstablishing SecureState = iota
+	kEstablishing State = iota
 	kActive
 	kDefunct
 	kPendingEviction
@@ -35,23 +35,23 @@ const (
 const (
 	kUndefined Type = iota
 	kUnauthenticated
-	SecureType
+	kSecure
 	kGroupIncoming
 	kGroupOutgoing
 )
 
 const (
-	SecureSessionTypePASE SecureSessionType = iota
+	SecureSessionTypePASE SecureType = iota
 	SecureSessionTypeCASE
 )
 
-func (t SecureState) String() string {
+func (t State) String() string {
 	return [...]string{
 		"Establishing", "Active", "Defunct", "PendingEviction",
 	}[t]
 }
 
-func (t SecureSessionType) String() string {
+func (t SecureType) String() string {
 	return [...]string{"Pase", "Case"}[t]
 }
 
@@ -59,4 +59,12 @@ func (t Type) String() string {
 	return [...]string{
 		"Undefined", "Unauthenticated", "Secure", "GroupIncoming", "GroupOutgoing",
 	}[t]
+}
+
+type ErrorType string
+
+var ErrorMessageCounterExhausted ErrorType = "MessageCounterExhausted"
+
+func (e ErrorType) Error() string {
+	return string(e)
 }

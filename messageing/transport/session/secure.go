@@ -5,7 +5,7 @@ import (
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	log "golang.org/x/exp/slog"
-	"net/netip"
+	"sync"
 	"time"
 )
 
@@ -17,9 +17,9 @@ type SecureDelegate interface {
 
 type Secure struct {
 	*BaseImpl
-	mState                 SecureState
-	mDelegate              SecureDelegate //
-	mSecureSessionType     SecureSessionType
+	mState                 State
+	mDelegate              SecureDelegate
+	mSecureSessionType     SecureType
 	mLocalSessionId        uint16
 	mPeerSessionId         uint16
 	mLocalNodeId           lib.NodeId
@@ -29,14 +29,13 @@ type Secure struct {
 	mPeerCATs              *lib.CATValues
 	mLastPeerActivityTime  time.Time
 	mLastActivityTime      time.Time
-	mSessionMessageCounter *MessageCounter //
-	mPeerAddress           netip.AddrPort
-	PPeerAddress           raw.PeerAddress
+	mSessionMessageCounter MessageCounter //
+	mPeerAddress           raw.PeerAddress
 }
 
 func NewSecure(
 	table SecureDelegate,
-	secureSessionType SecureSessionType,
+	secureSessionType SecureType,
 	localSessionId uint16,
 	options ...OptionalFunc,
 ) *Secure {
@@ -46,7 +45,15 @@ func NewSecure(
 		mSecureSessionType: secureSessionType,
 		mLocalSessionId:    localSessionId,
 	}
-	session.BaseImpl = NewBaseImpl(0, SecureType, session)
+	session.BaseImpl = &BaseImpl{
+		locker:           sync.Mutex{},
+		mFabricIndex:     lib.UndefinedFabricIndex(),
+		mHolders:         nil,
+		mSessionType:     kSecure,
+		mPeerAddress:     raw.PeerAddress{},
+		base:             session,
+		ReferenceCounted: lib.NewReferenceCounted(0, session),
+	}
 	for _, option := range options {
 		option(session)
 	}
@@ -54,7 +61,7 @@ func NewSecure(
 	return session
 }
 
-func (s *Secure) IsActiveSession() bool {
+func (s *Secure) IsActive() bool {
 	return s.mState == kActive
 }
 
@@ -63,7 +70,7 @@ func (s *Secure) IsEstablishing() bool {
 }
 
 func (s *Secure) ComputeRoundTripTimeout(upperlayerProcessingTimeout time.Duration) time.Duration {
-	if s.IsGroupSession() {
+	if s.IsGroup() {
 		return time.Duration(0)
 	}
 	return s.AckTimeout() + upperlayerProcessingTimeout
@@ -73,7 +80,7 @@ func (s *Secure) Released() {
 	s.mDelegate.ReleaseSession(s)
 }
 
-func (s *Secure) MoveToState(targetState SecureState) {
+func (s *Secure) MoveToState(targetState State) {
 	if s.mState != targetState {
 		log.Info("Moving state", "from", s.mState, "to", targetState, "Tag", s)
 		s.mState = targetState
@@ -96,11 +103,11 @@ func (s *Secure) IsPendingEviction() bool {
 	return s.mState == kPendingEviction
 }
 
-func (s *Secure) State() SecureState {
+func (s *Secure) State() State {
 	return s.mState
 }
 
-func (s *Secure) SecureSessionType() SecureSessionType {
+func (s *Secure) SecureType() SecureType {
 	return s.mSecureSessionType
 }
 
@@ -112,7 +119,7 @@ func (s *Secure) PeerNodeId() lib.NodeId {
 	return s.mPeerNodeId
 }
 
-func (s *Secure) SessionMessageCounter() *MessageCounter {
+func (s *Secure) SessionMessageCounter() MessageCounter {
 	return s.mSessionMessageCounter
 }
 
@@ -128,11 +135,11 @@ func (s *Secure) MarkActive() {
 	s.mLastActivityTime = time.Now()
 }
 
-func (s *Secure) PeerAddress() netip.AddrPort {
+func (s *Secure) PeerAddress() raw.PeerAddress {
 	return s.mPeerAddress
 }
 
-func (s *Secure) SetPeerAddress(address netip.AddrPort) {
+func (s *Secure) SetPeerAddress(address raw.PeerAddress) {
 	s.mPeerAddress = address
 }
 
@@ -145,7 +152,7 @@ func (s *Secure) RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig {
 }
 
 func (s *Secure) AckTimeout() time.Duration {
-	switch s.BaseImpl.mPeerAddress.TransportType() {
+	switch s.BaseImpl.mPeerAddress.TransportType {
 	case raw.Udp:
 		return messageing.GetRetransmissionTimeout(s.mRemoteMRPConfig.ActiveRetransTimeout,
 			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastActivityTime, 0)
@@ -156,6 +163,10 @@ func (s *Secure) AckTimeout() time.Duration {
 	default:
 		return time.Duration(0)
 	}
+}
+
+func (s *Secure) Activate(local, peer lib.ScopedNodeId, ts lib.CATValues, peerSessionId uint16, config *messageing.ReliableMessageProtocolConfig) {
+
 }
 
 func WithLocalNodeId(localNodeId lib.NodeId) OptionalFunc {

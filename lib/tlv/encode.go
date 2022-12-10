@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"golang.org/x/exp/constraints"
 	"io"
 	"math"
 )
@@ -184,7 +185,7 @@ func (enc *Encoder) PutUTFString(tag Tag, data []byte) error {
 	return enc.WriteElementWithData(TypeUTF8String, tag, data)
 }
 
-func (enc *Encoder) PutUint(tag Tag, val uint64) error {
+func (enc *Encoder) putUint(tag Tag, val uint64) error {
 	if val <= math.MaxUint8 {
 		return enc.PutU8(tag, uint8(val))
 	} else if val <= math.MaxUint16 {
@@ -196,7 +197,7 @@ func (enc *Encoder) PutUint(tag Tag, val uint64) error {
 	}
 }
 
-func (enc *Encoder) PutInt(tag Tag, val int64) error {
+func (enc *Encoder) putInt(tag Tag, val int64) error {
 	if math.MinInt8 <= val && val <= math.MaxInt8 {
 		return enc.PutI8(tag, int8(val))
 	} else if math.MinInt16 <= val && val <= math.MaxInt16 {
@@ -255,6 +256,10 @@ func (enc *Encoder) PutBoolean(tag Tag, b bool) error {
 	return enc.writeElementHead(booleanFalse, tag, 0)
 }
 
+func (enc *Encoder) Status() error {
+	return enc.err
+}
+
 func (enc *Encoder) incorrectStateError(str string) error {
 	return fmt.Errorf("incorrect state err:%s", str)
 }
@@ -265,6 +270,14 @@ func (enc *Encoder) elementTypeError(val any) error {
 
 func (enc *Encoder) tagError(val any) error {
 	return fmt.Errorf("tag err:%s", val)
+}
+
+func PutUint[T constraints.Unsigned](enc *Encoder, tag Tag, val T) error {
+	return enc.putUint(tag, uint64(val))
+}
+
+func PutInt[T constraints.Signed](enc *Encoder, tag Tag, val T) error {
+	return enc.putInt(tag, int64(val))
 }
 
 func EstimateStructOverhead(firstFieldSize int, args ...int) int {

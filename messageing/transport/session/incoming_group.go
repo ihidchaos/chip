@@ -3,6 +3,8 @@ package session
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/messageing/transport/raw"
+	"sync"
 	"time"
 )
 
@@ -17,17 +19,19 @@ func NewIncomingGroupSession(groupId lib.GroupId, index lib.FabricIndex, nodeId 
 		mGroupId:    groupId,
 		mPeerNodeId: nodeId,
 	}
-	session.SetFabricIndex(index)
-	session.BaseImpl = NewBaseImpl(1, kGroupIncoming, session)
+	session.BaseImpl = &BaseImpl{
+		locker:           sync.Mutex{},
+		mFabricIndex:     index,
+		mHolders:         nil,
+		mSessionType:     kGroupIncoming,
+		mPeerAddress:     raw.PeerAddress{},
+		base:             session,
+		ReferenceCounted: lib.NewReferenceCounted(1, session),
+	}
 	return session
 }
 
-func (i *IncomingGroupSession) IsActiveSession() bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (i *IncomingGroupSession) IsGroupSession() bool {
+func (i *IncomingGroupSession) IsActive() bool {
 	//TODO implement me
 	panic("implement me")
 }
@@ -42,7 +46,7 @@ func (i *IncomingGroupSession) GetPeer() lib.ScopedNodeId {
 }
 
 func (i *IncomingGroupSession) ComputeRoundTripTimeout(upperlayerProcessingTimeout time.Duration) time.Duration {
-	if i.IsGroupSession() {
+	if i.IsGroup() {
 		return time.Duration(0)
 	}
 	return i.AckTimeout() + upperlayerProcessingTimeout

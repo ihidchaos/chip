@@ -13,7 +13,7 @@ func Decrypt(context *session.CryptoContext, nonce session.NonceStorage, packetH
 		return nil, lib.InvalidArgument
 	}
 	footerLen := packetHeader.MICTagLength()
-	if int(footerLen) >= msg.Length() {
+	if int(footerLen) >= msg.Len() {
 		return nil, lib.InvalidArgument
 	}
 	mac := raw.NewMessageAuthenticationCode()

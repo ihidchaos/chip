@@ -20,11 +20,11 @@ func NewUnauthenticatedSessionTable() *UnauthenticatedSessionTable {
 
 func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiatorNodeId lib.NodeId, config *messageing.ReliableMessageProtocolConfig) (*SessionHandle, error) {
 	var err error = nil
-	result := t.findEntry(session.Responder, ephemeralInitiatorNodeId)
+	result := t.findEntry(session.RoleResponder, ephemeralInitiatorNodeId)
 	if result != nil {
 		return NewSessionHandle(result), nil
 	}
-	result, err = t.allocEntry(session.Responder, ephemeralInitiatorNodeId, config)
+	result, err = t.allocEntry(session.RoleResponder, ephemeralInitiatorNodeId, config)
 	if err != nil {
 		return nil, err
 	}

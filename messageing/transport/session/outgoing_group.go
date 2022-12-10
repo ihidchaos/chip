@@ -3,6 +3,8 @@ package session
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/messageing/transport/raw"
+	"sync"
 	"time"
 )
 
@@ -15,12 +17,19 @@ func NewOutgoingGroupSession(groupId lib.GroupId, index lib.FabricIndex) *Outgoi
 	session := &OutgoingGroup{
 		mGroupId: groupId,
 	}
-	session.SetFabricIndex(index)
-	session.BaseImpl = NewBaseImpl(1, kGroupOutgoing, session)
+	session.BaseImpl = &BaseImpl{
+		locker:           sync.Mutex{},
+		mFabricIndex:     index,
+		mHolders:         nil,
+		mSessionType:     kGroupOutgoing,
+		mPeerAddress:     raw.PeerAddress{},
+		base:             session,
+		ReferenceCounted: lib.NewReferenceCounted(1, session),
+	}
 	return session
 }
 
-func (o *OutgoingGroup) IsActiveSession() bool {
+func (o *OutgoingGroup) IsActive() bool {
 	//TODO implement me
 	panic("implement me")
 }
@@ -31,7 +40,7 @@ func (o *OutgoingGroup) IsEstablishing() bool {
 }
 
 func (o *OutgoingGroup) ComputeRoundTripTimeout(upperlayerProcessingTimeout time.Duration) time.Duration {
-	if o.IsGroupSession() {
+	if o.IsGroup() {
 		return time.Duration(0)
 	}
 	return o.AckTimeout() + upperlayerProcessingTimeout

@@ -8,6 +8,35 @@ import (
 
 type state uint8
 
+// Message Counter Synchronization Protocol Message Types
+const (
+	MsgCounterSyncReq MsgType = 0x00
+	MsgCounterSyncRsp MsgType = 0x01
+)
+
+// StandaloneAck Reliable Messaging Protocol Message Types
+const (
+	StandaloneAck MsgType = 0x10
+)
+
+// Password-based session establishment Message Types
+const (
+	PBKDFParamRequest  MsgType = 0x20
+	PBKDFParamResponse MsgType = 0x21
+	PASEPake1          MsgType = 0x22
+	PASEPake2          MsgType = 0x23
+	PASEPake3          MsgType = 0x24
+)
+
+// Certificate-based session establishment Message Types
+const (
+	CASESigma1       MsgType = 0x30
+	CASESigma2       MsgType = 0x31
+	CASESigma3       MsgType = 0x32
+	CASESigma2Resume MsgType = 0x33
+	CASEStatusReport MsgType = 0x40
+)
+
 const (
 	initialized       state = 0
 	sentSigma1        state = 1
@@ -48,22 +77,22 @@ func (m MsgType) String() string {
 		return "PBKDFParamRequest"
 	case PBKDFParamResponse:
 		return "PBKDFParamResponse"
-	case PASE_Pake1:
-		return "PASE_Pake1"
-	case PASE_Pake2:
-		return "PASE_Pake2"
-	case PASE_Pake3:
-		return "PASE_Pake3"
-	case CASE_Sigma1:
-		return "CASE_Sigma1"
-	case CASE_Sigma2:
-		return "CASE_Sigma2"
-	case CASE_Sigma3:
-		return "CASE_Sigma3"
-	case CASE_Sigma2Resume:
-		return "CASE_Sigma2Resume"
-	case StatusReport:
-		return "StatusReport"
+	case PASEPake1:
+		return "PASEPake1"
+	case PASEPake2:
+		return "PASEPake2"
+	case PASEPake3:
+		return "PASEPake3"
+	case CASESigma1:
+		return "CASESigma1"
+	case CASESigma2:
+		return "CASESigma2"
+	case CASESigma3:
+		return "CASESigma3"
+	case CASESigma2Resume:
+		return "CASESigma2Resume"
+	case CASEStatusReport:
+		return "CASEStatusReport"
 	default:
 		return "----"
 	}
@@ -72,29 +101,6 @@ func (m MsgType) String() string {
 func (m MsgType) MessageType() uint8 {
 	return uint8(m)
 }
-
-const (
-	// MsgCounterSyncReq Message Counter Synchronization Protocol Message Types
-	MsgCounterSyncReq MsgType = 0x00
-	MsgCounterSyncRsp MsgType = 0x01
-
-	// StandaloneAck Reliable Messaging Protocol Message Types
-	StandaloneAck MsgType = 0x10
-
-	// PBKDFParamRequest Password-based session establishment Message Types
-	PBKDFParamRequest  MsgType = 0x20
-	PBKDFParamResponse MsgType = 0x21
-	PASE_Pake1         MsgType = 0x22
-	PASE_Pake2         MsgType = 0x23
-	PASE_Pake3         MsgType = 0x24
-
-	// Certificate-based session establishment Message Types
-	CASE_Sigma1       MsgType = 0x30
-	CASE_Sigma2       MsgType = 0x31
-	CASE_Sigma3       MsgType = 0x32
-	CASE_Sigma2Resume MsgType = 0x33
-	StatusReport              = 0x40
-)
 
 func (m MsgType) ProtocolId() protocols.Id {
 	return protocols.New(protocolId, nil)
@@ -107,10 +113,41 @@ var (
 )
 
 const (
-	kProtocolCodeSuccess         uint16 = 0x0000
-	kProtocolCodeNoSharedRoot    uint16 = 0x0001
-	kProtocolCodeInvalidParam    uint16 = 0x0002
-	kProtocolCodeCloseSession    uint16 = 0x0003
-	kProtocolCodeBusy            uint16 = 0x0004
-	kProtocolCodeSessionNotFound uint16 = 0x0005
+	protocolCodeSuccess         uint16 = 0x0000
+	protocolCodeNoSharedRoot    uint16 = 0x0001
+	protocolCodeInvalidParam    uint16 = 0x0002
+	protocolCodeCloseSession    uint16 = 0x0003
+	protocolCodeBusy            uint16 = 0x0004
+	protocolCodeSessionNotFound uint16 = 0x0005
 )
+
+type generalStatusCode uint16
+
+const (
+	kSuccess           generalStatusCode = 0 /**< Operation completed successfully. */
+	kFailure           generalStatusCode = 1 /**< Generic failure, additional details may be included in the protocol specific status. */
+	kBadPrecondition   generalStatusCode = 2 /**< Operation was rejected by the system because the system is in an invalid state. */
+	kOutOfRange        generalStatusCode = 3 /**< A value was out of a required range. */
+	kBadRequest        generalStatusCode = 4 /**< A request was unrecognized or malformed. */
+	kUnsupported       generalStatusCode = 5 /**< An unrecognized or unsupported request was received. */
+	kUnexpected        generalStatusCode = 6 /**< A request was not expected at this time. */
+	kResourceExhausted generalStatusCode = 7 /**< Insufficient resources to process the given request. */
+	kBusy              generalStatusCode = 8 /**< Device is busy and cannot handle this request at this time. */
+	kTimeout           generalStatusCode = 9 /**< A timeout occurred. */
+	kContinue          generalStatusCode = 1 /**< Context-specific signal to proceed. */
+	kAborted           generalStatusCode = 1 /**< Failure, often due to a concurrency error. */
+	kInvalidArgument   generalStatusCode = 1 /**< An invalid/unsupported argument was provided. */
+	kNotFound          generalStatusCode = 1 /**< Some requested entity was not found. */
+	kAlreadyExists     generalStatusCode = 1 /**< The caller attempted to create something that already exists. */
+	kPermissionDenied  generalStatusCode = 1 /**< Caller does not have sufficient permissions to execute the requested operations. */
+	kDataLoss          generalStatusCode = 1 /**< Unrecoverable data loss or corruption has occurred. */
+)
+
+type ErrorType string
+
+var ErrorTimeOut ErrorType = "Time Out"
+var ErrorNoMemory ErrorType = "ErrorNoMemory"
+
+func (e ErrorType) Error() string {
+	return string(e)
+}

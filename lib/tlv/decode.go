@@ -9,6 +9,7 @@ import (
 )
 
 var EndOfTLVError error = errors.New("end of tlv")
+var ByteLenError error = errors.New("tlv data length err")
 
 // A Decoder reads and decodes JSON values from an input stream.
 type Decoder struct {
@@ -230,12 +231,12 @@ func (dec *Decoder) Tag(tag Tag) error {
 	return nil
 }
 
-func (dec *Decoder) Type(t Type, tag Tag) error {
-	err := dec.Tag(tag)
+func (dec *Decoder) Type(expectedType Type, expectedTag Tag) error {
+	err := dec.Tag(expectedTag)
 	if err != nil {
 		return err
 	}
-	if dec.elementType != elementType(t) {
+	if dec.elementType != elementType(expectedType) {
 		return dec.elemTypeError(dec.elementType)
 	}
 	return nil
@@ -417,4 +418,16 @@ func (dec *Decoder) GetBoolean() (bool, error) {
 		return true, nil
 	}
 	return false, dec.elemTypeError(dec.elementType)
+}
+
+func (dec *Decoder) GetData(data []byte) error {
+	buf, err := dec.GetBytes()
+	if err != nil {
+		return err
+	}
+	if len(buf) != len(data) {
+		return ByteLenError
+	}
+	copy(data, buf)
+	return err
 }

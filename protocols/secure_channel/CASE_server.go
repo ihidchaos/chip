@@ -69,7 +69,7 @@ func (s *CASEServer) ListenForSessionEstablishment(
 func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *lib.ScopedNodeId) {
 
 	log.Info("CASE Server enabling CASE session setups")
-	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(protocols.New(protocolId, nil), CASE_Sigma1, s)
+	err := s.mExchangeManager.RegisterUnsolicitedMessageHandlerForType(protocols.New(protocolId, nil), CASESigma1, s)
 	if err != nil {
 		log.Info(err.Error())
 	}
@@ -108,7 +108,7 @@ func (s *CASEServer) OnMessageReceived(ec *messageing.ExchangeContext, header *r
 	log.Info("CASE Server received Sigma1 message. Starting handshake.", "EC", ec)
 	err := s.InitCASEHandshake(ec)
 
-	err = s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(protocols.New(protocolId, nil), CASE_Sigma1)
+	err = s.mExchangeManager.UnregisterUnsolicitedMessageHandlerForType(protocols.New(protocolId, nil), CASESigma1)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (s *CASEServer) Session() *CASESession {
 	return s.mPairingSession
 }
 
-func (s *CASEServer) OnSessionEstablishmentError() {
+func (s *CASEServer) OnSessionEstablishmentError(err error) {
 	//TODO implement me
 	panic("implement me")
 }

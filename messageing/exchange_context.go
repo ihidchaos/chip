@@ -75,7 +75,7 @@ func NewExchangeContext(
 		ec.WillSendMessage()
 	}
 	ec.SetAckPending(false)
-	ec.SetAutoRequestAck(!session.IsGroupSession())
+	ec.SetAutoRequestAck(!session.IsGroup())
 	return ec
 }
 
@@ -98,7 +98,7 @@ func (c *ExchangeContext) IsEncryptionRequired() bool {
 }
 
 func (c *ExchangeContext) IsGroupExchangeContext() bool {
-	return c.mSession.IsGroupSession()
+	return c.mSession.IsGroup()
 }
 
 func (c *ExchangeContext) UseSuggestedResponseTimeout(applicationProcessingTimeout time.Duration) {
@@ -180,6 +180,10 @@ func (c *ExchangeContext) SetDelegate(delegate ExchangeDelegate) {
 	c.mDelegate = delegate
 }
 
+func (c *ExchangeContext) ExchangeId() uint16 {
+	return c.mExchangeId
+}
+
 func (c *ExchangeContext) GetMessageDispatch(isEphemeralExchange bool,
 	delegate ExchangeDelegate) ExchangeMessageDispatchBase {
 	if isEphemeralExchange {
@@ -242,8 +246,8 @@ func (c *ExchangeContext) HasSessionHandle() bool {
 	return c.mSession != nil
 }
 
-func (c *ExchangeContext) GetSessionHandle() *transport.SessionHandle {
-	return c.mSession.Get()
+func (c *ExchangeContext) SessionHandle() *transport.SessionHandle {
+	return c.mSession.SessionHandler()
 }
 
 func (c *ExchangeContext) CancelResponseTimer() {
@@ -305,6 +309,6 @@ func DefaultOnMessageReceived(c *ExchangeContext, id protocols.Id, messageType u
 	log.Error("ExchangeManager Dropping unexpected message of type", lib.MATTER_ERROR_INVALID_MESSAGE_TYPE,
 		"MessageType", messageType,
 		"protocolId", id,
-		"MessageCounter", messageCounter,
+		"MessageCounterBase", messageCounter,
 		"exchange", c)
 }

@@ -14,15 +14,13 @@ const (
 	MessageCounterTypeSession
 )
 
-type MessageCounter struct {
+type MessageCounter interface {
 }
 
 type GlobalUnencryptedMessageCounter struct {
-	*MessageCounter
 }
 
 type LocalSessionMessageCounter struct {
-	*MessageCounter
 }
 
 func NewGlobalUnencryptedMessageCounterImpl() *GlobalUnencryptedMessageCounter {

@@ -53,7 +53,7 @@ type SessionManagerBase interface {
 
 	PrepareMessage(session *SessionHandle, payloadHeader *raw.PayloadHeader, msgBuf *system.PacketBufferHandle, encryptedMessage *EncryptedPacketBufferHandle) error
 	SendPreparedMessage(session *SessionHandle, preparedMessage *EncryptedPacketBufferHandle) error
-	AllocateSession(sessionType session.SecureSessionType, sessionEvictionHint *lib.ScopedNodeId) *SessionHandle
+	AllocateSession(sessionType session.SecureType, sessionEvictionHint lib.ScopedNodeId) *SessionHandle
 
 	ExpireAllSessions(node *lib.ScopedNodeId)
 	ExpireAllSessionsForFabric(fabricIndex lib.FabricIndex)
@@ -62,7 +62,7 @@ type SessionManagerBase interface {
 	FabricTable() *credentials.FabricTable
 
 	CreateUnauthenticatedSession(peerAddress netip.AddrPort, config *messageing.ReliableMessageProtocolConfig) *SessionHandle
-	FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType session.SecureSessionType) *SessionHandle
+	FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType session.SecureType) *SessionHandle
 
 	SetMessageDelegate(cb SessionMessageDelegate)
 	SystemLayer() system.Layer
@@ -213,13 +213,13 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 
 	secureSession := sessionHandle.Session.(*session.Secure)
 
-	if secureSession.IsDefunct() && !secureSession.IsActiveSession() && !secureSession.IsPendingEviction() {
+	if secureSession.IsDefunct() && !secureSession.IsActive() && !secureSession.IsPendingEviction() {
 		log.Info("kSecure transport received message on a session in an invalid state", "stata", secureSession.State())
 		return
 	}
 
 	nonce := session.BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, func() lib.NodeId {
-		if secureSession.SecureSessionType() == session.SecureSessionTypeCASE {
+		if secureSession.SecureType() == session.SecureSessionTypeCASE {
 			return secureSession.PeerNodeId()
 		}
 		return lib.UndefinedNodeId()
@@ -230,9 +230,9 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 		log.Error("Secure transport received message, but failed to decode/authenticate it", err)
 	}
 
-	err = secureSession.SessionMessageCounter().VerifyEncryptedUnicast(packetHeader.MessageCounter)
+	err = secureSession.SessionMessageCounter().PeerMessageCounter.VerifyEncryptedUnicast(packetHeader.MessageCounter)
 	if err == lib.DuplicateMessageReceived {
-		log.Info("Received a duplicate message on exchange", "MessageCounter", packetHeader.MessageCounter, "PayloadHeader", payloadHeader)
+		log.Info("Received a duplicate message on exchange", "MessageCounterBase", packetHeader.MessageCounter, "PayloadHeader", payloadHeader)
 		isDuplicate = true
 		err = nil
 	}
@@ -247,11 +247,11 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 	}
 
 	if !isDuplicate {
-		secureSession.SessionMessageCounter().PeerMessageCounter().CommitUnencryptedUnicast(packetHeader.MessageCounter)
+		secureSession.SessionMessageCounter().PeerMessageCounter.CommitUnencryptedUnicast(packetHeader.MessageCounter)
 	}
 
-	if secureSession.PeerAddress() != peerAddress {
-		secureSession.SetPeerAddress(peerAddress)
+	if secureSession.PeerAddress().AddrPort != peerAddress {
+		secureSession.SetPeerAddress(secureSession.PeerAddress())
 	}
 
 	if s.mCB != nil {
@@ -282,7 +282,7 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 	// Trial decryption with GroupDataProvider
 	var err error
 	var payloadHeader *raw.PayloadHeader
-	var nonce session.NonceStorage
+	var nonce []byte
 	var groupContext *credentials.GroupSession
 	for _, groupContext = range groups.GroupSessions(packetHeader.SessionId) {
 		if packetHeader.DestinationGroupId.Unwrap() != groupContext.GroupId {
@@ -376,7 +376,7 @@ func (s *SessionManager) SendPreparedMessage(session *SessionHandle, preparedMes
 	return nil
 }
 
-func (s *SessionManager) AllocateSession(sessionType session.SecureSessionType, sessionEvictionHint *lib.ScopedNodeId) *SessionHandle {
+func (s *SessionManager) AllocateSession(sessionType session.SecureType, sessionEvictionHint lib.ScopedNodeId) *SessionHandle {
 	return nil
 }
 
@@ -395,7 +395,7 @@ func (s *SessionManager) CreateUnauthenticatedSession(peerAddress netip.AddrPort
 	return nil
 }
 
-func (s *SessionManager) FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType session.SecureSessionType) *SessionHandle {
+func (s *SessionManager) FindSecureSessionForNode(nodeId *lib.ScopedNodeId, sessionType session.SecureType) *SessionHandle {
 	return nil
 }
 

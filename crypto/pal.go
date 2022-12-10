@@ -8,6 +8,8 @@ import (
 )
 
 type Spake2pVerifier struct {
+	W0 []byte
+	ML []byte
 }
 
 func (v Spake2pVerifier) Deserialize(verifier []byte) error {

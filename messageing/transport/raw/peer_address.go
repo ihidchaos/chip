@@ -1,6 +1,9 @@
 package raw
 
-import "net"
+import (
+	"net"
+	"net/netip"
+)
 
 type Type uint8
 
@@ -12,11 +15,7 @@ const (
 )
 
 type PeerAddress struct {
-	mTransportType Type
-	mInterface     net.Interface
-	mPort          uint16
-}
-
-func (a PeerAddress) TransportType() Type {
-	return a.mTransportType
+	TransportType Type
+	Interface     net.Interface
+	AddrPort      netip.AddrPort
 }

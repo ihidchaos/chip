@@ -1,5 +1,7 @@
 package lib
 
+import log "golang.org/x/exp/slog"
+
 type ScopedNodeId struct {
 	mNodeId      NodeId
 	mFabricIndex FabricIndex
@@ -29,4 +31,11 @@ func (s ScopedNodeId) FabricIndex() FabricIndex {
 
 func (s ScopedNodeId) IsOperational() bool {
 	return s.mFabricIndex != UndefinedFabricIndex() && s.mNodeId.IsOperationalNodeId()
+}
+
+func (s ScopedNodeId) LogValue() log.Value {
+	return log.GroupValue(
+		log.String("NodeId", s.mNodeId.String()),
+		log.Uint64("FabricIndex", uint64(s.mFabricIndex)),
+	)
 }

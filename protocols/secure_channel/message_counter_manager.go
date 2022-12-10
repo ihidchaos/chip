@@ -30,7 +30,7 @@ func (m *MessageCounterManager) OnMessageReceived(context *messageing.ExchangeCo
 
 func (m *MessageCounterManager) OnResponseTimeout(ec *messageing.ExchangeContext) {
 	if ec.HasSessionHandle() {
-		ec.GetSessionHandle()
+		ec.SessionHandle()
 	}
 }
 

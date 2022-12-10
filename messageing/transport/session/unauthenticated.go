@@ -4,7 +4,9 @@ import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport/raw"
+	"net"
 	"net/netip"
+	"sync"
 	"time"
 )
 
@@ -30,7 +32,15 @@ func NewUnauthenticated(roleResponder Role, ephemeralInitiatorNodeID lib.NodeId,
 		mLastActivityTime:         time.Now(),
 		mLastPeerActivityTime:     time.Time{},
 	}
-	session.BaseImpl = NewBaseImpl(1, kUnauthenticated, session)
+	session.BaseImpl = &BaseImpl{
+		locker:           sync.Mutex{},
+		mFabricIndex:     lib.UndefinedFabricIndex(),
+		mHolders:         nil,
+		mSessionType:     kUnauthenticated,
+		mPeerAddress:     raw.PeerAddress{},
+		base:             session,
+		ReferenceCounted: lib.NewReferenceCounted(1, session),
+	}
 	return session
 }
 
@@ -38,7 +48,7 @@ func (s *Unauthenticated) GetPeer() lib.ScopedNodeId {
 	return lib.NewScopedNodeId(lib.UndefinedNodeId(), s.mFabricIndex)
 }
 
-func (s *Unauthenticated) IsActiveSession() bool {
+func (s *Unauthenticated) IsActive() bool {
 	//TODO implement me
 	panic("implement me")
 }
@@ -57,19 +67,23 @@ func (s *Unauthenticated) SetPeerAddress(addr netip.AddrPort) {
 	s.mPeerAddress = addr
 }
 
-func (s *Unauthenticated) PeerAddress() netip.AddrPort {
-	return s.mPeerAddress
+func (s *Unauthenticated) PeerAddress() raw.PeerAddress {
+	return raw.PeerAddress{
+		TransportType: 0,
+		Interface:     net.Interface{},
+		AddrPort:      s.mPeerAddress,
+	}
 }
 
 func (s *Unauthenticated) PeerNodeId() lib.NodeId {
-	if s.mSessionRole == Initiator {
+	if s.mSessionRole == RoleInitiator {
 		return lib.UndefinedNodeId()
 	}
 	return s.mEphemeralInitiatorNodeId
 }
 
 func (s *Unauthenticated) AckTimeout() time.Duration {
-	switch s.BaseImpl.mPeerAddress.TransportType() {
+	switch s.BaseImpl.mPeerAddress.TransportType {
 	case raw.Udp:
 		return messageing.GetRetransmissionTimeout(s.mRemoteMRPConfig.ActiveRetransTimeout,
 			s.mRemoteMRPConfig.IdleRetransTimeout, s.mLastPeerActivityTime, 1)
@@ -81,7 +95,7 @@ func (s *Unauthenticated) AckTimeout() time.Duration {
 }
 
 func (s *Unauthenticated) ComputeRoundTripTimeout(upperlayerProcessingTimeout time.Duration) time.Duration {
-	if s.IsGroupSession() {
+	if s.IsGroup() {
 		return time.Duration(0)
 	}
 	return s.AckTimeout() + upperlayerProcessingTimeout

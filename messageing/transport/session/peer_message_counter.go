@@ -6,6 +6,8 @@ import (
 	"github.com/galenliu/chip/lib"
 )
 
+const InitialSyncValue uint32 = 0
+
 type Synced struct {
 	mMaxCounter uint32
 	mWindow     *bitset.BitSet
@@ -150,4 +152,8 @@ func (c *PeerMessageCounter) VerifyPositionEncrypted(pos position, counter uint3
 
 func (c *PeerMessageCounter) CommitGroup(counter uint32) {
 	c.commitWithRollover(counter)
+}
+
+func (c *PeerMessageCounter) VerifyEncryptedUnicast(counter uint32) error {
+	return nil
 }

@@ -2,7 +2,7 @@ package dnssd
 
 import (
 	"github.com/miekg/dns"
-	log "github.com/sirupsen/logrus"
+	log "golang.org/x/exp/slog"
 	"net"
 	"time"
 )
@@ -63,7 +63,7 @@ func (rs *ResponseSender) Respond(query *QueryData, interfaceId net.Interface) e
 func (rs *ResponseSender) OnQuery(query *QueryData) (*dns.Msg, error) {
 	msg := new(dns.Msg)
 	msg.SetReply(query.Msg)
-	log.Infof("query responder:\n mssage ->%s \n srcAddr-> %s \n destAddr-> %s", query.Msg.String(), query.mSrcAddr.String(), query.mDestAddr.String())
+	log.Info("query responder:\n mssage ->%s \n srcAddr-> %s \n destAddr-> %s", query.Msg.String(), query.mSrcAddr.String(), query.mDestAddr.String())
 	{
 		queryReplyFilter := NewQueryReplyFilter(query)
 		responseFilter := NewQueryResponderRecordFilter().
