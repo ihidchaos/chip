@@ -32,7 +32,7 @@ func (t *UnauthenticatedSessionTable) FindOrAllocateResponder(ephemeralInitiator
 }
 
 func (t *UnauthenticatedSessionTable) FindInitiator(ephemeralInitiatorNodeID lib.NodeId) *SessionHandle {
-	result := t.findEntry(session.Initiator, ephemeralInitiatorNodeID)
+	result := t.findEntry(session.RoleInitiator, ephemeralInitiatorNodeID)
 	if result != nil {
 		return NewSessionHandle(result)
 	}

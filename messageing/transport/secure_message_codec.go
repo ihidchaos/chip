@@ -7,7 +7,7 @@ import (
 	"github.com/galenliu/chip/platform/system"
 )
 
-func Decrypt(context *session.CryptoContext, nonce session.NonceStorage, packetHeader *raw.PacketHeader, msg *system.PacketBufferHandle) (*raw.PayloadHeader, error) {
+func Decrypt(context *session.CryptoContext, nonce []byte, packetHeader *raw.PacketHeader, msg *system.PacketBufferHandle) (*raw.PayloadHeader, error) {
 
 	if msg.IsNull() {
 		return nil, lib.InvalidArgument

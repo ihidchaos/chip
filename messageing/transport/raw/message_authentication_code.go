@@ -28,7 +28,7 @@ func (c *MessageAuthenticationCode) Decode(header *PacketHeader, msg *system.Pac
 	if size < tagLen {
 		return lib.InvalidArgument
 	}
-	c.mTag = msg.Bytes()[msg.TotLength()-int(tagLen) : msg.Len()]
+	c.mTag = msg.Bytes()[msg.Len()-int(tagLen) : msg.Len()]
 	return nil
 }
 
