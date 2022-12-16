@@ -4,6 +4,7 @@ import (
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/store"
+	"sync/atomic"
 	"time"
 )
 
@@ -40,7 +41,7 @@ type GroupSession struct {
 	GroupId        lib.GroupId
 	FabricIndex    lib.FabricIndex
 	SecurityPolicy SecurityPolicy
-	Key            *crypto.SymmetricKeyContext
+	Key            crypto.SymmetricKeyContextBase
 }
 
 type GroupKey struct {
@@ -66,15 +67,29 @@ func NewEpochKey() *EpochKey {
 }
 
 type GroupDataProviderBase interface {
-	SetStorageDelegate(delegate store.KvsPersistentStorageBase)
+	SetStorageDelegate(delegate store.PersistentStorageDelegate)
 	Init() error
 	SetListener(listener GroupListener)
 	GetIpkKeySet(index lib.FabricIndex) (*KeySet, error)
 	GroupSessions(sessionId uint16) []*GroupSession
 }
 
+var gGroupDataProvider atomic.Value
+
+func init() {
+	gGroupDataProvider.Store(&GroupDataProvider{})
+}
+
+func GetGroupDataProvider() *GroupDataProvider {
+	return gGroupDataProvider.Load().(*GroupDataProvider)
+}
+
+func SetGroupDataProvider(g *GroupDataProvider) {
+	gGroupDataProvider.Store(g)
+}
+
 type GroupDataProvider struct {
-	mStorage       store.KvsPersistentStorageBase
+	mStorage       store.PersistentStorageDelegate
 	mGroupListener GroupListener
 }
 
@@ -84,10 +99,14 @@ func NewGroupDataProvider() *GroupDataProvider {
 
 func (g *GroupDataProvider) GetIpkKeySet(index lib.FabricIndex) (outKeyset *KeySet, err error) {
 	outKeyset = &KeySet{}
-	fabric := NewFabricData(index)
-	err = fabric.Load(g.mStorage)
+	fabric := &FabricData{
+		FabricIndex: index,
+	}
+	if err = fabric.Load(g.mStorage); err != nil {
+		return nil, err
+	}
 
-	//mapping := NewKeyMapData(fabric.fabricIndex, fabric.firstMap)
+	//mapping := NewKeyMapData(fabric.FabricIndex, fabric.FirstMap)
 
 	keyset := KeySetData{}
 	keyset.Find(g.mStorage, fabric, lib.KeysetId(0))
@@ -103,9 +122,6 @@ func (g *GroupDataProvider) GetIpkKeySet(index lib.FabricIndex) (outKeyset *KeyS
 		}
 	}
 
-	if err != nil {
-		return
-	}
 	return
 }
 
@@ -113,7 +129,7 @@ func (g *GroupDataProvider) SetListener(listener GroupListener) {
 	g.mGroupListener = listener
 }
 
-func (g *GroupDataProvider) SetStorageDelegate(delegate store.KvsPersistentStorageBase) {
+func (g *GroupDataProvider) SetStorageDelegate(delegate store.PersistentStorageDelegate) {
 	g.mStorage = delegate
 }
 
@@ -125,14 +141,33 @@ func (g *GroupDataProvider) Init() error {
 	return nil
 }
 
-var gGroupDataProvider GroupDataProviderBase
+func (g *GroupDataProvider) KeyContext(fabricIndex lib.FabricIndex, groupId lib.GroupId) crypto.SymmetricKeyContextBase {
+	fabric := &FabricData{
+		FabricIndex: fabricIndex,
+	}
+	if err := fabric.Load(g.mStorage); err != nil {
+		return nil
+	}
+	mapping := KeyMapData{
+		fabricIndex: 0,
+		groupId:     0,
+		keysetId:    0,
+		LinkedData: LinkedData{
+			id: fabric.FirstMap,
+		},
+	}
+	var i uint16 = 0
+	for ; i < fabric.MapCount; i++ {
+		mapping.id = mapping.next
+		if err := mapping.Load(g.mStorage); err != nil {
+			return nil
+		}
+		if mapping.keysetId > 0 && mapping.groupId == groupId {
 
-func GetGroupDataProvider() GroupDataProviderBase {
-	return gGroupDataProvider
-}
+		}
+	}
 
-func SetGroupDataProvider(g GroupDataProviderBase) {
-	gGroupDataProvider = g
+	return nil
 }
 
 type PersistentData struct {

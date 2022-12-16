@@ -33,7 +33,7 @@ func ParseSigma1(tlvDecoder *tlv.Decoder, sessionResumptionRequested bool) (sigm
 	// Sigma1，这里应该读取到Structure 0x15
 
 	containerType := tlv.TypeStructure
-	err = tlvDecoder.Type(containerType, tlv.AnonymousTag())
+	err = tlvDecoder.NextType(containerType, tlv.AnonymousTag())
 	if err != nil {
 		return sigma1, err
 	}
@@ -42,41 +42,41 @@ func ParseSigma1(tlvDecoder *tlv.Decoder, sessionResumptionRequested bool) (sigm
 		return sigma1, err
 	}
 
-	// Sigma1，Tag = 1 initiatorRandom  32个字节的随机数
-	err = tlvDecoder.Tag(tlv.ContextTag(kInitiatorRandomTag))
+	// Sigma1，NextTag = 1 initiatorRandom  32个字节的随机数
+	err = tlvDecoder.NextTag(tlv.ContextTag(kInitiatorRandomTag))
 	sigma1.initiatorRandom, err = tlvDecoder.GetBytes()
 	if err != nil {
 		return sigma1, err
 	}
 
-	//Sigma1， Tag =2 Session id
-	err = tlvDecoder.Type(tlv.TypeUnsignedInteger, tlv.ContextTag(kInitiatorSessionIdTag))
+	//Sigma1， NextTag =2 Session id
+	err = tlvDecoder.NextType(tlv.TypeUnsignedInteger, tlv.ContextTag(kInitiatorSessionIdTag))
 	sigma1.initiatorSessionId, err = tlvDecoder.GetU16()
 	if err != nil {
 		return sigma1, err
 	}
 
-	//Sigma1，Tag=3
-	err = tlvDecoder.Tag(tlv.ContextTag(kDestinationIdTag))
+	//Sigma1，NextTag=3
+	err = tlvDecoder.NextTag(tlv.ContextTag(kDestinationIdTag))
 	sigma1.destinationId, err = tlvDecoder.GetBytes()
 	if err != nil {
 		return sigma1, err
 	}
 
-	//Sigma1，Tag=4	 Initiator PubKey 65个字节的公钥
-	err = tlvDecoder.Tag(tlv.ContextTag(kInitiatorPubKeyTag))
+	//Sigma1，NextTag=4	 Initiator PubKey 65个字节的公钥
+	err = tlvDecoder.NextTag(tlv.ContextTag(kInitiatorPubKeyTag))
 	sigma1.initiatorEphPubKey, err = tlvDecoder.GetBytes()
 	if err != nil {
 		return sigma1, err
 	}
 
-	err = tlvDecoder.Tag(tlv.ContextTag(kResumptionIDTag))
+	err = tlvDecoder.NextTag(tlv.ContextTag(kResumptionIDTag))
 	sigma1.initiatorEphPubKey, err = tlvDecoder.GetBytes()
 	if err != nil {
 		return sigma1, err
 	}
 
-	//err = tlvDecoder.Tag(tlv.ContextTag(kResumptionIDTag))
+	//err = tlvDecoder.NextTag(tlv.ContextTag(kResumptionIDTag))
 	//tlvDecoder.GetF32()
 
 	return sigma1, tlvDecoder.ExitContainer(containerType)

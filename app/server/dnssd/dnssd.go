@@ -2,10 +2,10 @@ package dnssd
 
 import (
 	"fmt"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/credentials"
 	DeviceLayer "github.com/galenliu/chip/device"
-	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
@@ -89,7 +89,7 @@ func (d *Dnssd) StartServer() {
 
 func (d *Dnssd) AdvertiseOperational() error {
 	if d.mFabricTable == nil {
-		return lib.IncorrectState
+		return chip.ErrorIncorrectState
 	}
 	for _, info := range d.mFabricTable.Fabrics() {
 		mac, err := config.DefaultManager().GetPrimaryMACAddress()

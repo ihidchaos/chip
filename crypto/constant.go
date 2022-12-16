@@ -47,7 +47,7 @@ const (
 	MaxP256keypairContextSize = 512
 
 	EmitDerIntegerWithoutTagOverhead = 1 // 1 sign stuffer
-	EmitDerIntegerOverhead           = 3 // Tag + Length byte + 1 sign stuffer
+	EmitDerIntegerOverhead           = 3 // NextTag + Length byte + 1 sign stuffer
 
 	MaxHashSha256ContextSize = config.Sha256ContextSize
 

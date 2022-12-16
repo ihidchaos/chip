@@ -6,7 +6,7 @@ import (
 )
 
 type AclStorage interface {
-	Init(storage store.KvsPersistentStorageBase, fabrics *credentials.FabricTable) error
+	Init(storage store.PersistentStorageDelegate, fabrics *credentials.FabricTable) error
 }
 
 type AclStorageImpl struct {
@@ -16,6 +16,6 @@ func NewAclStorageImpl() *AclStorageImpl {
 	return &AclStorageImpl{}
 }
 
-func (d AclStorageImpl) Init(storage store.KvsPersistentStorageBase, fabrics *credentials.FabricTable) error {
+func (d AclStorageImpl) Init(storage store.PersistentStorageDelegate, fabrics *credentials.FabricTable) error {
 	return nil
 }

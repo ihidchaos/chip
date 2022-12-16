@@ -9,10 +9,10 @@ type InfoProvider interface {
 }
 
 type InfoProviderImpl struct {
-	storage store.KvsPersistentStorageBase
+	storage store.PersistentStorageDelegate
 }
 
-func (i *InfoProviderImpl) SetStorageDelegate(storage store.KvsPersistentStorageBase) {
+func (i *InfoProviderImpl) SetStorageDelegate(storage store.PersistentStorageDelegate) {
 	i.storage = storage
 }
 

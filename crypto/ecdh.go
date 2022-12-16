@@ -1,13 +1,14 @@
 package crypto
 
 import (
+	"crypto"
+	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/aead/ecdh"
 	"math/big"
 	"os"
 )
@@ -65,51 +66,14 @@ func GenerateEccKey(privateKeyFile, publicKeyFile string) error {
 }
 
 // EccSign 对数据进行Ecc签名, sha256
-func EccSign(plainText []byte, privateKeyFile string) (rText, sText []byte, err error) {
-
-	//打开私钥文件，将[]byte内容读出来
-	file, err := os.Open(privateKeyFile)
-	defer file.Close()
-	if err != nil {
-		return
-	}
-	info, err := file.Stat()
-	if err != nil {
-		return
-	}
-	buf := make([]byte, info.Size())
-	_, err = file.Read(buf)
-	if err != nil {
-		return
-	}
-	if err != nil {
-		return
-	}
-	// 用pem将读出来的[]byte进行解码得到Block结构体
-	block, _ := pem.Decode(buf)
+func EccSign(plainText []byte, priKey []byte) (sign []byte, err error) {
 
 	//使用x509对Block还原成私钥
-	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
-
-	//计算出plainTest的散列值
-	hash := sha256.Sum256(plainText)
+	privateKey, err := x509.ParseECPrivateKey(priKey)
 
 	//使用privateKey对Hash值进行签名
-	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hash[:])
-	if err != nil {
-		return
-	}
+	return privateKey.Sign(rand.Reader, sha256.New().Sum(plainText), crypto.SHA256)
 
-	//对 r,s的数据进行格式化
-	rText, err = r.MarshalText()
-	if err != nil {
-		return
-	}
-	sText, err = s.MarshalText()
-	if err != nil {
-		return
-	}
-	return
 }
 
 // EccVerify Ecc签名认证, sha256
@@ -151,45 +115,53 @@ func EccVerify(plainText, rText, sTest []byte, publicKeyFile string) (b bool, er
 	return
 }
 
-type P256PublicKey ecdsa.PublicKey
-
-type P256Keypair ecdsa.PrivateKey
+type P256PublicKey ecdh.PublicKey
+type P256Keypair ecdh.PrivateKey
 
 func (k *P256Keypair) PubBytes() []byte {
-	p256publicKey := P256PublicKey(k.PublicKey)
-	return p256publicKey.Marshal()
+	//p256publicKey := P256PublicKey(k.PublicKey)
+	return (*ecdh.PrivateKey)(k).PublicKey().Bytes()
+	//return p256publicKey.Marshal()
 }
 
-func (p *P256PublicKey) Marshal() []byte {
-	return elliptic.Marshal(elliptic.P256(), p.X, p.Y)
+func (k *P256Keypair) PrivateKey() *ecdh.PrivateKey {
+	return (*ecdh.PrivateKey)(k)
 }
 
-func (k *P256Keypair) ECDHDeriveSecret(key P256PublicKey) []byte {
-	p256 := ecdh.Generic(elliptic.P256())
-	return p256.ComputeSecret(k, key)
+func (k *P256PublicKey) PublicKey() *ecdh.PublicKey {
+	return (*ecdh.PublicKey)(k)
+}
+
+func (k *P256Keypair) ECDHDeriveSecret(key *P256PublicKey) ([]byte, error) {
+	bytes, err := (*ecdh.PrivateKey)(k).ECDH((*ecdh.PublicKey)(key))
+
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}
+
+func (k *P256Keypair) ECDSASignMsg(msg []byte) ([]byte, error) {
+	sign, err := EccSign(msg, k.PrivateKey().Bytes())
+	if err != nil {
+		return nil, err
+	}
+	return sign, nil
 }
 
 func GenericP256Keypair() *P256Keypair {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privateKey, err := ecdh.P256().GenerateKey(rand.Reader)
 	if err != nil {
 		panic(err)
 	}
 	return (*P256Keypair)(privateKey)
 }
 
-// UnmarshalP256PublicKey  接收到的字节序列化成公钥
-func UnmarshalP256PublicKey(data []byte) (P256PublicKey, error) {
-	x, y := elliptic.Unmarshal(elliptic.P256(), data)
-	pubKey := ecdsa.PublicKey{
-		Curve: elliptic.P256(),
-		X:     x,
-		Y:     y,
+// UnmarshalPublicKey  接收到的字节序列化成公钥
+func UnmarshalPublicKey(data []byte) (*P256PublicKey, error) {
+	pubKey, err := ecdh.X25519().NewPublicKey(data)
+	if err != nil {
+		return nil, err
 	}
-	return P256PublicKey(pubKey), nil
-}
-
-func MarshalP256PublicKey(pubKey P256PublicKey) ([]byte, error) {
-	key := ecdsa.PublicKey(pubKey)
-	data := elliptic.Marshal(elliptic.P256(), key.X, key.Y)
-	return data, nil
+	return (*P256PublicKey)(pubKey), nil
 }

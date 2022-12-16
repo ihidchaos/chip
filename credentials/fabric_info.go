@@ -1,6 +1,7 @@
 package credentials
 
 import (
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/store"
@@ -34,6 +35,7 @@ type FabricInfo struct {
 	mFabricIndex         lib.FabricIndex
 	mCompressedFabriceId lib.CompressedFabricId
 	mVendorId            lib.VendorId
+	mOperationalKey      *crypto.P256Keypair
 }
 
 func (info *FabricInfo) GetFabricLabel() string {
@@ -56,7 +58,7 @@ func (info *FabricInfo) GetScopedNodeIdForNode(node lib.NodeId) lib.ScopedNodeId
 	panic("implement me")
 }
 
-func (info *FabricInfo) CommitToStorage(storage store.KvsPersistentStorageBase) {
+func (info *FabricInfo) CommitToStorage(storage store.PersistentStorageDelegate) {
 
 }
 
@@ -82,8 +84,7 @@ func (info *FabricInfo) IsInitialized() bool {
 }
 
 func (info *FabricInfo) HasOperationalKey() bool {
-	//TODO implement me
-	panic("implement me")
+	return info.mOperationalKey != nil
 }
 
 func (info *FabricInfo) GetNodeId() lib.NodeId {
@@ -96,9 +97,16 @@ func (info *FabricInfo) Reset() {
 
 func (info *FabricInfo) FetchRootPubkey() (*crypto.P256PublicKey, error) {
 	if !info.IsInitialized() {
-		return nil, lib.KeyNotFound
+		return nil, chip.ErrorKeyNotFound
 	}
 	return info.mRootPublicKey, nil
+}
+
+func (info *FabricInfo) SignWithOpKeypair(msg []byte) ([]byte, error) {
+	if info.mOperationalKey != nil {
+		return info.mOperationalKey.ECDSASignMsg(msg)
+	}
+	return nil, chip.New(chip.MATTER_ERROR_KEY_NOT_FOUND, "FabricInfo")
 }
 
 type FabricInfoInitParams struct {

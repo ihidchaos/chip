@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/bitflags"
+	"github.com/galenliu/chip/protocols"
 	"github.com/moznion/go-optional"
 	log "golang.org/x/exp/slog"
 	"io"
@@ -29,7 +30,7 @@ const (
  *
  * -------- Unencrypted header -----------------------------------------------------
  *  8 bit:  | Message Flags: VERSION: 4 bit | S: 1 bit | RESERVED: 1 bit | DSIZ: 2 bit |
- *  8 bit:  | Security Flags: P: 1 bit | C: 1 bit | MX: 1 bit | RESERVED: 3 bit | Session Type: 2 bit |
+ *  8 bit:  | Security Flags: P: 1 bit | C: 1 bit | MX: 1 bit | RESERVED: 3 bit | Session TransportType: 2 bit |
  *  16 bit: | Session ID                                                           |
  *  32 bit: | Message Counter                                                      |
  *  64 bit: | SOURCE_NODE_ID (iff source node flag is set)                         |
@@ -44,27 +45,26 @@ const (
  * -------- Encrypted Application Data Start ---------------------------------------
  *  <var>:  | Encrypted Data                                                       |
  * -------- Encrypted Application Data End -----------------------------------------
- *  <var>:  | (Unencrypted) Message Authentication Tag                             |
+ *  <var>:  | (Unencrypted) Message Authentication NextTag                             |
  *
  **********************************************/
 
 type PayloadHeader struct {
-	mExchangeFlags     bitflags.Flags[uint8]
-	mProtocolOpcode    uint8
-	mExchangeId        uint16
-	mProtocolId        uint16
-	mVendorId          optional.Option[lib.VendorId]
-	mAckMessageCounter optional.Option[uint32]
+	mExchangeFlags    bitflags.Flags[uint8]
+	MessageType       uint8
+	ExchangeId        uint16
+	ProtocolId        protocols.Id
+	AckMessageCounter optional.Option[uint32]
 }
 
 type payloadHeaderOption func(header *PayloadHeader)
 
 func NewPayloadHeader(opts ...payloadHeaderOption) *PayloadHeader {
 	header := &PayloadHeader{
-		mExchangeFlags:  bitflags.Flags[uint8]{},
-		mProtocolOpcode: 0,
-		mExchangeId:     0,
-		mProtocolId:     0,
+		mExchangeFlags: bitflags.Flags[uint8]{},
+		MessageType:    0,
+		ExchangeId:     0,
+		ProtocolId:     protocols.NotSpecifiedId(),
 	}
 	for _, opt := range opts {
 		opt(header)
@@ -77,7 +77,7 @@ func (header *PayloadHeader) IsInitiator() bool {
 }
 
 func (header *PayloadHeader) HasMessageType(t uint8) bool {
-	return header.mProtocolOpcode == t
+	return header.MessageType == t
 }
 
 func (header *PayloadHeader) IsAckMsg() bool {
@@ -92,77 +92,129 @@ func (header *PayloadHeader) HaveVendorId() bool {
 	return header.mExchangeFlags.Has(fVendorIdPresent)
 }
 
-func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) error {
+func (header *PayloadHeader) DecodeAndConsume(buf io.Reader) (err error) {
 
 	data := make([]byte, 1)
-	_, err := buf.Read(data)
-	if err != nil {
+	if _, err = buf.Read(data); err != nil {
 		return err
 	}
 	header.mExchangeFlags = bitflags.Some(data[0])
 
-	_, err = buf.Read(data)
-	if err != nil {
+	if _, err = buf.Read(data); err != nil {
 		return err
 	}
-	header.mProtocolOpcode = data[0]
+	header.MessageType = data[0]
 
 	data = make([]byte, 2)
-	_, err = buf.Read(data)
-	if err != nil {
+	if _, err = buf.Read(data); err != nil {
 		return err
 	}
-	header.mExchangeId = binary.LittleEndian.Uint16(data)
+	header.ExchangeId = binary.LittleEndian.Uint16(data)
 
-	_, err = buf.Read(data)
-	if err != nil {
+	if _, err = buf.Read(data); err != nil {
 		return err
 	}
-	header.mProtocolId = binary.LittleEndian.Uint16(data)
+	protocolId := binary.LittleEndian.Uint16(data)
 
+	vendorId := lib.VidCommon
 	if header.HaveVendorId() {
-		_, err = buf.Read(data)
-		if err != nil {
+		if _, err = buf.Read(data); err != nil {
 			return err
 		}
-		vendorId := lib.VendorId(binary.LittleEndian.Uint16(data))
-		header.mVendorId = optional.Some(vendorId)
+		vendorId = lib.VendorId(binary.LittleEndian.Uint16(data))
 	}
+	header.ProtocolId = protocols.New(protocolId, optional.Some(vendorId))
 
 	if header.IsAckMsg() {
 		data = make([]byte, 4)
-		_, err = buf.Read(data)
-		if err != nil {
+		if _, err = buf.Read(data); err != nil {
 			return err
 		}
-		header.mAckMessageCounter = optional.Some(binary.LittleEndian.Uint32(data))
+		header.AckMessageCounter = optional.Some(binary.LittleEndian.Uint32(data))
 	}
 	return nil
 }
 
-func (header *PayloadHeader) AckMessageCounter() optional.Option[uint32] {
-	return header.mAckMessageCounter
-}
-
-func (header *PayloadHeader) ProtocolID() uint16 {
-	return header.mProtocolId
-}
-
-func (header *PayloadHeader) VendorId() optional.Option[lib.VendorId] {
-	return header.mVendorId
-}
-
-func (header *PayloadHeader) MessageType() uint8 {
-	return header.mProtocolOpcode
-}
-
-func (header *PayloadHeader) ExchangeId() uint16 {
-	return header.mExchangeId
-}
-
 func (header *PayloadHeader) LogValue() log.Value {
 	return log.GroupValue(
-		log.String("exchangeId", fmt.Sprintf("%04X", header.mExchangeId)),
-		log.Bool("IsInitiator", header.IsInitiator()),
+		log.String("ExchangeId", fmt.Sprintf("%04X", header.ExchangeId)),
+		log.Uint64("MessageType", uint64(header.MessageType)),
+		log.Bool("isInitiator", header.IsInitiator()),
+		log.Any("ProtocolId", header.ProtocolId),
+		log.Uint64("AckMessageCounter", uint64(header.AckMessageCounter.Unwrap())),
 	)
+}
+
+func (header *PayloadHeader) SetInitiator(initiator bool) *PayloadHeader {
+	header.mExchangeFlags.Set(initiator, fInitiator)
+	return header
+}
+
+func (header *PayloadHeader) SetAckMessageCounter(counter uint32) *PayloadHeader {
+	header.AckMessageCounter = optional.Some(counter)
+	header.mExchangeFlags.Sets(fAckMsg)
+	return header
+}
+
+func (header *PayloadHeader) SetNeedsAck(inNeedsAck bool) *PayloadHeader {
+	header.mExchangeFlags.Set(inNeedsAck, fNeedsAck)
+	return header
+}
+
+func (header *PayloadHeader) SetProtocol(id protocols.Id) *PayloadHeader {
+	header.mExchangeFlags.Set(id.VendorId != lib.VidCommon, fVendorIdPresent)
+	header.ProtocolId = id
+	return header
+}
+
+func (header *PayloadHeader) SetMessageType(id protocols.Id, typ uint8) *PayloadHeader {
+	header.MessageType = typ
+	header.SetProtocol(id)
+	return header
+}
+
+func (header *PayloadHeader) Encode(buf io.Writer) (err error) {
+	if _, err = buf.Write([]byte{header.mExchangeFlags.Raw()}); err != nil {
+		return err
+	}
+	if _, err = buf.Write([]byte{header.MessageType}); err != nil {
+		return err
+	}
+	var data = make([]byte, 2)
+	binary.LittleEndian.PutUint16(data, header.ExchangeId)
+	if _, err = buf.Write(data); err != nil {
+		return err
+	}
+
+	if header.HaveVendorId() {
+		binary.LittleEndian.PutUint16(data, uint16(header.ProtocolId.VendorId))
+		if _, err = buf.Write(data); err != nil {
+			return err
+		}
+	}
+
+	binary.LittleEndian.PutUint16(data, header.ProtocolId.ProtocolId)
+	if _, err = buf.Write(data); err != nil {
+		return err
+	}
+
+	if header.AckMessageCounter.IsSome() {
+		data = make([]byte, 4)
+		binary.LittleEndian.PutUint32(data, header.AckMessageCounter.Unwrap())
+		if _, err = buf.Write(data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (header *PayloadHeader) EncodeSizeBytes() uint16 {
+	var size = kEncryptedHeaderSizeBytes
+	if header.HaveVendorId() {
+		size += kVendorIdSizeBytes
+	}
+	if header.AckMessageCounter.IsSome() {
+		size += kAckMessageCounterSizeBytes
+	}
+	return uint16(size)
 }

@@ -2,6 +2,7 @@ package credentials
 
 import (
 	"bytes"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/store"
@@ -19,105 +20,104 @@ var (
 )
 
 type FabricData struct {
-	fabricIndex lib.FabricIndex
-	firstGroup  lib.GroupId
-	groupCount  uint16
-	firstMap    uint16
-	mapCount    uint16
-	keysetCount uint16
-	firstKeyset lib.KeysetId
-	next        lib.FabricIndex
+	FabricIndex lib.FabricIndex
+	FirstGroup  lib.GroupId
+	GroupCount  uint16
+	FirstMap    uint16
+	MapCount    uint16
+	KeysetCount uint16
+	FirstKeyset lib.KeysetId
+	Next        lib.FabricIndex
 	key         string
 }
 
-func (f *FabricData) deserialize(tlvDecode *tlv.Decoder) (err error) {
+func (f *FabricData) UpdateKey() (lib.StorageKeyName, error) {
+	if f.FabricIndex == lib.UndefinedFabricIndex() {
+		return "", chip.ErrorInvalidFabricIndex
+	}
+	key := lib.FabricGroups(f.FabricIndex)
+	return key, nil
+}
 
-	err = tlvDecode.Tag(tlv.AnonymousTag())
-	if err != nil {
+func (f *FabricData) Serialize(e *tlv.Encoder) (err error) {
+	var container = tlv.TypeUnknownContainer
+	if container, err = e.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
+		return err
+	}
+	if err = e.Put(tagNext, f.FirstGroup); err != nil {
+		return err
+	}
+	if err = e.Put(tagGroupCount, f.GroupCount); err != nil {
+		return err
+	}
+	if err = e.Put(tagGroupCount, f.GroupCount); err != nil {
+		return err
+	}
+	if err = e.Put(tagFirstMap, f.FirstMap); err != nil {
+		return err
+	}
+	if err = e.Put(tagMapCount, f.MapCount); err != nil {
+		return err
+	}
+	if err = e.Put(tagFirstKeyset, f.FirstKeyset); err != nil {
+		return err
+	}
+	if err = e.Put(tagKeysetCount, f.KeysetCount); err != nil {
+		return err
+	}
+	if err = e.Put(tagNext, f.Next); err != nil {
+		return err
+	}
+	return e.EndContainer(container)
+}
+
+func (f *FabricData) Deserialize(d *tlv.Decoder) (err error) {
+
+	if err = d.NextType(tlv.TypeStructure, tlv.AnonymousTag()); err != nil {
 		return
 	}
-	container := tlv.TypeStructure
-	container, err = tlvDecode.EnterContainer()
-	if err != nil {
+	container := tlv.TypeNotSpecified
+	if container, err = d.EnterContainer(); err != nil {
 		return
 	}
-
-	err = tlvDecode.Tag(tagFirstGroup)
-	val, err := tlvDecode.GetU16()
-	f.firstGroup = lib.GroupId(val)
-	if err != nil {
+	if err = d.NextValue(tagFirstGroup, &f.FirstGroup); err != nil {
 		return err
 	}
 
-	err = tlvDecode.Tag(tagGroupCount)
-	val, err = tlvDecode.GetU16()
-	f.groupCount = val
-	if err != nil {
+	if err = d.NextValue(tagGroupCount, &f.GroupCount); err != nil {
 		return err
 	}
 
-	err = tlvDecode.Tag(tagFirstMap)
-	val, err = tlvDecode.GetU16()
-	f.firstMap = val
-	if err != nil {
+	if err = d.NextValue(tagFirstMap, &f.FirstMap); err != nil {
 		return err
 	}
 
-	err = tlvDecode.Tag(tagMapCount)
-	val, err = tlvDecode.GetU16()
-	f.mapCount = val
-	if err != nil {
+	if err = d.NextValue(tagMapCount, &f.MapCount); err != nil {
 		return err
 	}
 
-	err = tlvDecode.Tag(tagFirstKeyset)
-	val, err = tlvDecode.GetU16()
-	f.firstKeyset = lib.KeysetId(val)
-	if err != nil {
+	if err = d.NextValue(tagFirstKeyset, &f.FirstKeyset); err != nil {
 		return err
 	}
 
-	err = tlvDecode.Tag(tagKeysetCount)
-	val, err = tlvDecode.GetU16()
-	f.keysetCount = val
-	if err != nil {
+	if err = d.NextValue(tagKeysetCount, &f.KeysetCount); err != nil {
 		return err
 	}
 
-	err = tlvDecode.Tag(tagNext)
-	val8, err := tlvDecode.GetU8()
-	f.next = lib.FabricIndex(val8)
-	if err != nil {
+	if err = d.NextValue(tagNext, &f.Next); err != nil {
 		return err
 	}
-	return tlvDecode.ExitContainer(container)
+	return d.ExitContainer(container)
 }
 
-func (f *FabricData) Load(storage store.KvsPersistentStorageBase) error {
-	data, err := storage.GetBytes(f.key)
-	if err != nil {
+func (f *FabricData) Load(storage store.PersistentStorageDelegate) error {
+	key, _ := f.UpdateKey()
+	var data []byte
+	if err := storage.GetKeyValue(key.Name(), data); err != nil {
 		return err
-	}
-	tlvReader := tlv.NewDecoder(bytes.NewBuffer(data))
-	return f.deserialize(tlvReader)
-}
-
-func NewFabricData(index lib.FabricIndex) *FabricData {
-	fd := fabricData()
-	fd.fabricIndex = index
-	return fd
-}
-
-func fabricData() *FabricData {
-	return &FabricData{
-		fabricIndex: lib.UndefinedFabricIndex(),
-		firstGroup:  lib.UndefinedGroupId(),
-		groupCount:  0,
-		firstMap:    0,
-		mapCount:    0,
-		firstKeyset: lib.InvalidKeysetId,
-		keysetCount: 0,
-		next:        lib.UndefinedFabricIndex(),
+	} else {
+		tlvReader := tlv.NewDecoder(bytes.NewBuffer(data))
+		return f.Deserialize(tlvReader)
 	}
 }
 
@@ -131,7 +131,11 @@ type KeyMapData struct {
 	groupId     lib.GroupId
 	keysetId    lib.KeysetId
 	*GroupKey
-	*LinkedData
+	LinkedData
+}
+
+func (d KeyMapData) Load(storage store.PersistentStorageDelegate) error {
+	return nil
 }
 
 func NewKeyMapData(index lib.FabricIndex, linkId uint16) *KeyMapData {
@@ -141,7 +145,7 @@ func NewKeyMapData(index lib.FabricIndex, linkId uint16) *KeyMapData {
 			groupId:  0,
 			keysetId: 0,
 		},
-		LinkedData: &LinkedData{
+		LinkedData: LinkedData{
 			id:    linkId,
 			index: 0,
 			next:  0,
@@ -163,11 +167,11 @@ type KeySetData struct {
 	operationalKeys []crypto.GroupOperationalCredentials
 }
 
-func (d *KeySetData) Find(mStorage store.KvsPersistentStorageBase, fabric *FabricData, targetId lib.KeysetId) bool {
-	d.fabricIndex = fabric.fabricIndex
-	d.keysetId = fabric.firstKeyset
+func (d *KeySetData) Find(mStorage store.PersistentStorageDelegate, fabric *FabricData, targetId lib.KeysetId) bool {
+	d.fabricIndex = fabric.FabricIndex
+	d.keysetId = fabric.FirstKeyset
 	d.first = true
-	for i := 0; i < int(fabric.keysetCount); i++ {
+	for i := 0; i < int(fabric.KeysetCount); i++ {
 		err := d.load(mStorage)
 		if err != nil {
 			continue
@@ -182,6 +186,6 @@ func (d *KeySetData) Find(mStorage store.KvsPersistentStorageBase, fabric *Fabri
 	return false
 }
 
-func (d *KeySetData) load(mStorage store.KvsPersistentStorageBase) interface{} {
+func (d *KeySetData) load(mStorage store.PersistentStorageDelegate) interface{} {
 	return nil
 }

@@ -5,11 +5,11 @@ import (
 )
 
 type AttributePersistenceProvider interface {
-	Init(storage store.KvsPersistentStorageBase) error
+	Init(storage store.PersistentStorageDelegate) error
 }
 
 type AttributePersistence struct {
-	mStorage store.KvsPersistentStorageBase
+	mStorage store.PersistentStorageDelegate
 }
 
 func NewAttributePersistence() *AttributePersistence {
@@ -17,7 +17,7 @@ func NewAttributePersistence() *AttributePersistence {
 	return &AttributePersistence{}
 }
 
-func (p AttributePersistence) Init(storage store.KvsPersistentStorageBase) (err error) {
+func (p AttributePersistence) Init(storage store.PersistentStorageDelegate) (err error) {
 	p.mStorage = storage
 	return
 }

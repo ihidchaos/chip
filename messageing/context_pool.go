@@ -48,7 +48,7 @@ func (c *ExchangeContextPool) MatchExchange(
 	packetHeader *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader,
 ) *ExchangeContext {
-	ec := c.Get(payloadHeader.ExchangeId())
+	ec := c.Get(payloadHeader.ExchangeId)
 	if ec != nil {
 		if !ec.MatchExchange(session, packetHeader, payloadHeader) {
 			ec = nil

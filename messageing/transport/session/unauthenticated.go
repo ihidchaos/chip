@@ -36,7 +36,7 @@ func NewUnauthenticated(roleResponder Role, ephemeralInitiatorNodeID lib.NodeId,
 		locker:           sync.Mutex{},
 		mFabricIndex:     lib.UndefinedFabricIndex(),
 		mHolders:         nil,
-		mSessionType:     kUnauthenticated,
+		mSessionType:     TypeUnauthenticated,
 		mPeerAddress:     raw.PeerAddress{},
 		base:             session,
 		ReferenceCounted: lib.NewReferenceCounted(1, session),
@@ -104,6 +104,10 @@ func (s *Unauthenticated) ComputeRoundTripTimeout(upperlayerProcessingTimeout ti
 func (s *Unauthenticated) SessionReleased() {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s *Unauthenticated) RequireMRP() bool {
+	return false
 }
 
 func (s *Unauthenticated) DispatchSessionEvent(delegate DelegateEvent) {

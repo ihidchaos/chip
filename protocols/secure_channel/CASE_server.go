@@ -1,6 +1,7 @@
 package secure_channel
 
 import (
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
@@ -42,7 +43,7 @@ func NewCASEServer() *CASEServer {
 	}
 }
 
-func (s *CASEServer) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
+func (s *CASEServer) GetMessageDispatch() messageing.ExchangeMessageDispatch {
 	//TODO implement me
 	panic("implement me")
 }
@@ -94,7 +95,7 @@ func (s *CASEServer) PrepareForSessionEstablishment(previouslyEstablishedPeer *l
 
 func (s *CASEServer) InitCASEHandshake(ec *messageing.ExchangeContext) error {
 	if ec == nil {
-		return lib.MATTER_ERROR_INVALID_ARGUMENT
+		return chip.MATTER_ERROR_INVALID_ARGUMENT
 	}
 	ec.SetDelegate(s.Session())
 	return nil

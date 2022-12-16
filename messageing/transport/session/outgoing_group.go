@@ -21,7 +21,7 @@ func NewOutgoingGroupSession(groupId lib.GroupId, index lib.FabricIndex) *Outgoi
 		locker:           sync.Mutex{},
 		mFabricIndex:     index,
 		mHolders:         nil,
-		mSessionType:     kGroupOutgoing,
+		mSessionType:     TypeGroupOutgoing,
 		mPeerAddress:     raw.PeerAddress{},
 		base:             session,
 		ReferenceCounted: lib.NewReferenceCounted(1, session),
@@ -54,6 +54,10 @@ func (o *OutgoingGroup) Released() {
 func (o *OutgoingGroup) ClearValue() {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (o *OutgoingGroup) RequireMRP() bool {
+	return false
 }
 
 func (o *OutgoingGroup) GetPeer() lib.ScopedNodeId {

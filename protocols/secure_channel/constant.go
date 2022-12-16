@@ -8,6 +8,10 @@ import (
 
 type state uint8
 
+var mod = "SecureChanel"
+
+var Id = protocols.New(protocolId, nil)
+
 // Message Counter Synchronization Protocol Message Types
 const (
 	MsgCounterSyncReq MsgType = 0x00

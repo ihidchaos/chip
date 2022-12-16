@@ -24,12 +24,9 @@ func Init(options *config.DeviceOptions) error {
 		rendezvousFlags = config.RendezvousInformationFlagOnNetwork
 	}
 
-	err := store.DefaultKeyValueMgr().Init(options.KVS)
-	if err != nil {
-		return err
-	}
+	store.DefaultPersistentStorage().SetStorage(store.NewInitStorage(options.KVS))
 
-	err = store.DefaultKeyValueMgr().SetString("Reboot", time.Now().String())
+	err := store.DefaultPersistentStorage().SetKeyValue("Reboot", time.Now().String())
 	if err != nil {
 		return err
 	}

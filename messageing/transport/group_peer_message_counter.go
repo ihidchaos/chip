@@ -45,7 +45,7 @@ func (g *GroupPeerTable) removeAndCompactFabric(tableIndex int) {
 }
 
 type GroupOutgoingCounters struct {
-	mStorage             store.KvsPersistentStorageBase
+	mStorage             store.PersistentStorageDelegate
 	mGroupDataCounter    uint32
 	mGroupControlCounter uint32
 }
@@ -54,7 +54,7 @@ func NewGroupOutgoingCounters() *GroupOutgoingCounters {
 	return &GroupOutgoingCounters{}
 }
 
-func (g *GroupOutgoingCounters) Init(storage store.KvsPersistentStorageBase) error {
+func (g *GroupOutgoingCounters) Init(storage store.PersistentStorageDelegate) error {
 	g.mStorage = storage
 	return nil
 }
@@ -64,4 +64,14 @@ func (g *GroupOutgoingCounters) GetCounter(isControl bool) uint32 {
 		return g.mGroupControlCounter
 	}
 	return g.mGroupDataCounter
+}
+
+func (g *GroupOutgoingCounters) IncrementCounter(isControl bool) error {
+	//key := lib.Uninitialized()
+	//var value uint32 = 0
+	//if isControl {
+	//	g.mGroupControlCounter++
+	//	value = g.mGroupControlCounter
+	//}
+	return nil
 }

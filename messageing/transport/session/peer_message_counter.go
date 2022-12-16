@@ -2,8 +2,8 @@ package session
 
 import (
 	"github.com/bits-and-blooms/bitset"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/config"
-	"github.com/galenliu/chip/lib"
 )
 
 const InitialSyncValue uint32 = 0
@@ -56,7 +56,7 @@ func (c *PeerMessageCounter) VerifyUnencrypted(counter uint32) error {
 		return c.VerifyPositionUnencrypted(pos, counter)
 
 	default:
-		return lib.ErrorInternal
+		return chip.ErrorInternal
 	}
 }
 
@@ -123,13 +123,13 @@ func (c *PeerMessageCounter) VerifyOrTrustFirstGroup(counter uint32) error {
 	case kSynced:
 		return c.VerifyGroup(counter)
 	default:
-		return lib.ErrorInternal
+		return chip.ErrorInternal
 	}
 }
 
 func (c *PeerMessageCounter) VerifyGroup(counter uint32) error {
 	if c.mState != kSynced {
-		return lib.IncorrectState
+		return chip.ErrorIncorrectState
 	}
 	pos := c.classifyWithRollover(counter)
 	return c.VerifyPositionEncrypted(pos, counter)
@@ -142,11 +142,11 @@ func (c *PeerMessageCounter) VerifyPositionEncrypted(pos position, counter uint3
 	case kInWindow:
 		offset := c.mSynced.mMaxCounter - counter
 		if c.mSynced.mWindow.Test(uint(offset - 1)) {
-			return lib.DuplicateMessageReceived
+			return chip.ErrorDuplicateMessageReceived
 		}
 		return nil
 	default:
-		return lib.DuplicateMessageReceived
+		return chip.ErrorDuplicateMessageReceived
 	}
 }
 

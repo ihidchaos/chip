@@ -2,6 +2,7 @@ package messageing
 
 import (
 	"fmt"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/bitflags"
@@ -51,7 +52,7 @@ type ExchangeManagerBase interface {
 	UnregisterUnsolicitedMessageHandlerForProtocol(id protocols.Id) error
 	OnResponseTimeout(ec *ExchangeContext)
 	OnExchangeClosing(ec *ExchangeContext)
-	GetMessageDispatch() ExchangeMessageDispatchBase
+	GetMessageDispatch() ExchangeMessageDispatch
 	ReleaseContext(ctx *ExchangeContext)
 	Shutdown()
 }
@@ -93,7 +94,7 @@ func NewExchangeManager() *ExchangeManager {
 
 func (e *ExchangeManager) Init(sessionManager *transport.SessionManager) error {
 	if e.mInitialized {
-		return lib.IncorrectState
+		return chip.ErrorIncorrectState
 	}
 	e.mSessionManager = sessionManager
 	e.mNextExchangeId = uint16(rand.Uint32())
@@ -119,7 +120,7 @@ func (e *ExchangeManager) OnExchangeClosing(ec *ExchangeContext) {
 	panic("implement me")
 }
 
-func (e *ExchangeManager) GetMessageDispatch() ExchangeMessageDispatchBase {
+func (e *ExchangeManager) GetMessageDispatch() ExchangeMessageDispatch {
 	//TODO implement me
 	panic("implement me")
 }
@@ -138,7 +139,6 @@ func (e *ExchangeManager) OnMessageReceived(
 
 	var matchingUMH *UnsolicitedMessageHandlerSlot = nil
 
-	protocolId := protocols.New(payloadHeader.ProtocolID(), payloadHeader.VendorId())
 	{
 		//logging
 		var compressedFabricId lib.CompressedFabricId = 0
@@ -150,18 +150,18 @@ func (e *ExchangeManager) OnMessageReceived(
 			}
 		}
 		log.Debug(">>>",
-			"E", fmt.Sprintf("%04X", payloadHeader.ExchangeId()),
+			"E", fmt.Sprintf("%04X", payloadHeader.ExchangeId),
 			"M", fmt.Sprintf("%08X", packetHeader.MessageCounter),
-			"Ack", fmt.Sprintf("%04X", payloadHeader.AckMessageCounter()),
+			"Ack", fmt.Sprintf("%04X", payloadHeader.AckMessageCounter),
 			"S", ss.Type(),
 			"From", log.GroupValue(
 				log.Any("FabricIndex", ss.FabricIndex()),
 				log.Any("NodeId", ss.GetPeer().NodeId()),
 				log.Any("FabricId", compressedFabricId),
 			),
-			"Type", log.GroupValue(
-				log.Any("protocolId", payloadHeader.ProtocolID()),
-				log.Any("opcode", payloadHeader.MessageType()),
+			"TransportType", log.GroupValue(
+				log.Any("protocolId", payloadHeader.ProtocolId),
+				log.Any("opcode", payloadHeader.MessageType),
 			))
 	}
 
@@ -173,7 +173,7 @@ func (e *ExchangeManager) OnMessageReceived(
 		if ec != nil {
 			log.Info("Found matching",
 				"Exchange", ec)
-			_ = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Value(), msg)
+			_ = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Raw(), msg)
 			return
 		}
 	} else {
@@ -188,9 +188,9 @@ func (e *ExchangeManager) OnMessageReceived(
 	//如果不是重复的消息，而且如果消息是对方发起
 	if msgFlags.Has(fDuplicateMessage) && payloadHeader.IsInitiator() {
 		for i, umh := range e.mUMHandlerPool {
-			id := protocolId
+			id := payloadHeader.ProtocolId
 			if umh.IsInUse() && id.Equal(umh.protocolId) {
-				if umh.messageType == payloadHeader.MessageType() {
+				if umh.messageType == payloadHeader.MessageType {
 					matchingUMH = e.mUMHandlerPool[i]
 					break
 				}
@@ -200,11 +200,11 @@ func (e *ExchangeManager) OnMessageReceived(
 			}
 		}
 	} else if !payloadHeader.NeedsAck() {
-		log.Error("ExchangeManager OnMessageReceived failed", lib.MATTER_ERROR_UNSOLICITED_MSG_NO_ORIGINATOR)
+		log.Error("ExchangeManager OnMessageReceived failed", chip.ErrorUnsolicitedMsgNoOriginator)
 		return
 	}
 
-	defer e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Value(), msg)
+	defer e.sendStandaloneAckIfNeeded(packetHeader, payloadHeader, ss, msgFlags.Raw(), msg)
 
 	if matchingUMH != nil {
 		delegate, err := matchingUMH.handler.OnUnsolicitedMessageReceived(payloadHeader)
@@ -212,7 +212,7 @@ func (e *ExchangeManager) OnMessageReceived(
 			log.Error("ExchangeManager OnMessageReceived", err)
 			return
 		}
-		var ec = e.mContextPool.create(e, payloadHeader.ExchangeId(), ss, false, delegate, false)
+		var ec = e.mContextPool.create(e, payloadHeader.ExchangeId, ss, false, delegate, false)
 		if ec == nil {
 			if delegate != nil {
 				matchingUMH.handler.OnExchangeCreationFailed(delegate)
@@ -222,13 +222,13 @@ func (e *ExchangeManager) OnMessageReceived(
 		}
 		log.Info("ExchangeManager Handling", "exchange", ec, "delegate", ec.Delegate())
 
-		if ec.IsEncryptionRequired() != packetHeader.IsEncrypted() {
-			log.Info("ExchangeManager OnMessageReceived", lib.MATTER_ERROR_INVALID_MESSAGE_TYPE)
+		if ec.isEncryptionRequired() != packetHeader.IsEncrypted() {
+			log.Info("ExchangeManager OnMessageReceived", chip.ErrorInvalidMessageType)
 			ec.close()
 			return
 		}
 
-		err = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Value(), msg)
+		err = ec.HandleMessage(packetHeader.MessageCounter, payloadHeader, msgFlags.Raw(), msg)
 		if err != nil {
 			log.Error("ExchangeManager OnMessageReceived failed", err)
 		}
@@ -270,7 +270,7 @@ func (e *ExchangeManager) registerUMH(protocolId protocols.Id, msgType uint8, ha
 		}
 	}
 	if selected == nil {
-		return lib.TooManyUnsolicitedMessageHandlers
+		return chip.TooManyUnsolicitedMessageHandlers
 	}
 	selected.handler = handle
 	selected.protocolId = protocolId
@@ -285,7 +285,7 @@ func (e *ExchangeManager) unregisterUMH(id protocols.Id, msgType uint8) error {
 			return nil
 		}
 	}
-	return lib.NoUnsolicitedMessageHandler
+	return chip.ErrorNoUnsolicitedMessageHandler
 }
 
 func (e *ExchangeManager) sendStandaloneAckIfNeeded(
@@ -298,9 +298,9 @@ func (e *ExchangeManager) sendStandaloneAckIfNeeded(
 	if !payloadHeader.NeedsAck() {
 		return
 	}
-	ec := e.mContextPool.create(e, payloadHeader.ExchangeId(), session, !payloadHeader.IsInitiator(), nil, true)
+	ec := e.mContextPool.create(e, payloadHeader.ExchangeId, session, !payloadHeader.IsInitiator(), nil, true)
 	if ec == nil {
-		log.Error("ExchangeManager OnMessageReceived failed", lib.MATTER_ERROR_NO_MEMORY)
+		log.Error("ExchangeManager OnMessageReceived failed", chip.ErrorNoMemory)
 		return
 	}
 	log.Debug("ExchangeManager Generating StandaloneAck", "Exchange", ec)

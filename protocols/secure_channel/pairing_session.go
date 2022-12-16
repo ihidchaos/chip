@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
@@ -18,7 +19,7 @@ import (
 
 type pairingSessionBase interface {
 	OnSuccessStatusReport()
-	DeriveSecureSession(ctx *session.CryptoContext) error
+	DeriveSecureSession(ctx *transport.CryptoContext) error
 	LocalScopedNodeId() lib.ScopedNodeId
 	Peer() lib.ScopedNodeId
 	PeerCATs() lib.CATValues
@@ -43,7 +44,7 @@ type pairingSession struct {
 func NewPairingSessionImpl() pairingSession {
 	return pairingSession{
 		role:                0,
-		secureSessionType:   session.SecureSessionTypeCASE,
+		secureSessionType:   session.SecureTypeCASE,
 		sessionManager:      nil,
 		exchangeContext:     &messageing.ExchangeContext{},
 		secureSessionHolder: nil,
@@ -77,24 +78,24 @@ func (s *pairingSession) IsValidPeerSessionId() bool {
 	panic("implement me")
 }
 
-func (s *pairingSession) DeriveSecureSession(ctx session.CryptoContext) error {
+func (s *pairingSession) DeriveSecureSession(ctx transport.CryptoContext) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *pairingSession) encodeMRPParameters(tlvEncode *tlv.Encoder, tag tlv.Tag, mrpLocalConfig *messageing.ReliableMessageProtocolConfig) error {
-	mrpParamsContainer, err := tlvEncode.StartContainer(tag, tlv.TypeStructure)
+func (s *pairingSession) encodeMRPParameters(e *tlv.Encoder, tag tlv.Tag, mrpLocalConfig *messageing.ReliableMessageProtocolConfig) error {
+	mrpParamsContainer, err := e.StartContainer(tag, tlv.TypeStructure)
 	if err != nil {
 		return err
 	}
-	if err = tlv.PutUint(tlvEncode, tlv.ContextTag(1), uint64(mrpLocalConfig.IdleRetransTimeout.Milliseconds())); err != nil {
+	if err = e.Put(tlv.ContextTag(1), uint64(mrpLocalConfig.IdleRetransTimeout.Milliseconds())); err != nil {
 		return err
 	}
 
-	if err = tlv.PutUint(tlvEncode, tlv.ContextTag(2), uint64(mrpLocalConfig.ActiveRetransTimeout.Milliseconds())); err != nil {
+	if err = e.Put(tlv.ContextTag(2), uint64(mrpLocalConfig.ActiveRetransTimeout.Milliseconds())); err != nil {
 		return err
 	}
-	return tlvEncode.EndContainer(mrpParamsContainer)
+	return e.EndContainer(mrpParamsContainer)
 }
 
 func (s *pairingSession) decodeMRPParametersIfPresent(tlvDecode *tlv.Decoder, expectedTag tlv.Tag) (err error) {
@@ -225,7 +226,7 @@ func (s *pairingSession) sendStatusReport(ctxt *messageing.ExchangeContext, prot
 		log.Error("SecureChannel", err, "msg", "Failed to allocate status report message")
 		return
 	}
-	if err := s.exchangeContext.SendMessage(CASEStatusReport, buf.Bytes(), messageing.None); err != nil {
+	if err := s.exchangeContext.SendMessage(CASEStatusReport, buf.Bytes(), bitflags.Some(messageing.None)); err != nil {
 		log.Error("SecureChannel", err, "msg", "Failed to send status report message")
 	}
 }

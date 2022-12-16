@@ -39,8 +39,7 @@ func (c *ReliableMessageContext) AutoRequestAck() bool {
 
 }
 
-func (c *ReliableMessageContext) IsAckPending() bool {
-
+func (c *ReliableMessageContext) isAckPending() bool {
 	return c.mFlags.Has(fAckPending)
 }
 
@@ -100,4 +99,9 @@ func (c *ReliableMessageContext) ShouldIgnoreSessionRelease() bool {
 
 func (c *ReliableMessageContext) ReliableMessageMgr() *ReliableMessageMgr {
 	return c.mExchangeContext.mExchangeMgr.mReliableMessageMgr
+}
+
+func (c *ReliableMessageContext) TakePendingPeerAckMessageCounter() uint32 {
+	c.SetAckPending(false)
+	return c.mPendingPeerAckMessageCounter
 }

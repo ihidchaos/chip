@@ -3,6 +3,7 @@ package session
 import (
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
+	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
 	log "golang.org/x/exp/slog"
 	"sync"
@@ -19,13 +20,13 @@ type Secure struct {
 	*BaseImpl
 	mState                 State
 	mDelegate              SecureDelegate
-	mSecureSessionType     SecureType
+	mSecureType            SecureType
 	mLocalSessionId        uint16
 	mPeerSessionId         uint16
 	mLocalNodeId           lib.NodeId
 	mPeerNodeId            lib.NodeId
 	mRemoteMRPConfig       *messageing.ReliableMessageProtocolConfig
-	mCryptoContext         *CryptoContext
+	mCryptoContext         *transport.CryptoContext
 	mPeerCATs              *lib.CATValues
 	mLastPeerActivityTime  time.Time
 	mLastActivityTime      time.Time
@@ -40,16 +41,16 @@ func NewSecure(
 	options ...OptionalFunc,
 ) *Secure {
 	session := &Secure{
-		mDelegate:          table,
-		mState:             kEstablishing,
-		mSecureSessionType: secureSessionType,
-		mLocalSessionId:    localSessionId,
+		mDelegate:       table,
+		mState:          kEstablishing,
+		mSecureType:     secureSessionType,
+		mLocalSessionId: localSessionId,
 	}
 	session.BaseImpl = &BaseImpl{
 		locker:           sync.Mutex{},
 		mFabricIndex:     lib.UndefinedFabricIndex(),
 		mHolders:         nil,
-		mSessionType:     kSecure,
+		mSessionType:     TypeSecure,
 		mPeerAddress:     raw.PeerAddress{},
 		base:             session,
 		ReferenceCounted: lib.NewReferenceCounted(0, session),
@@ -82,9 +83,13 @@ func (s *Secure) Released() {
 
 func (s *Secure) MoveToState(targetState State) {
 	if s.mState != targetState {
-		log.Info("Moving state", "from", s.mState, "to", targetState, "Tag", s)
+		log.Info(s.Name()+":Moving state", "from", s.mState, "to", targetState)
 		s.mState = targetState
 	}
+}
+
+func (s *Secure) RequireMRP() bool {
+	return s.mPeerAddress.TransportType == raw.Udp
 }
 
 func (s *Secure) ClearValue() {
@@ -108,10 +113,10 @@ func (s *Secure) State() State {
 }
 
 func (s *Secure) SecureType() SecureType {
-	return s.mSecureSessionType
+	return s.mSecureType
 }
 
-func (s *Secure) GetCryptoContext() *CryptoContext {
+func (s *Secure) GetCryptoContext() *transport.CryptoContext {
 	return s.mCryptoContext
 }
 
@@ -169,6 +174,39 @@ func (s *Secure) Activate(local, peer lib.ScopedNodeId, ts lib.CATValues, peerSe
 
 }
 
+func (s *Secure) IsCASESession() bool {
+	return s.mSessionType == SecureTypeCASE
+}
+
+// MarkAsDefunct 标记为失效
+func (s *Secure) MarkAsDefunct() {
+	log.Debug(s.Name(), "msg", "MarkAsDefunct", "TransportType", s.SecureType(), "LSID", s.mLocalSessionId)
+	switch s.mState {
+	case kEstablishing:
+	case kActive:
+		s.MoveToState(kDefunct)
+	case kDefunct:
+		return
+	case kPendingEviction:
+		return
+	}
+}
+
+func (s *Secure) MarkForEviction() {
+	log.Debug(s.Name(), "msg", "MarkForEviction", "TransportType", s.SecureType(), "LSID", s.mLocalSessionId)
+	switch s.mState {
+	case kEstablishing:
+		s.MoveToState(kPendingEviction)
+		s.NotifySessionReleased()
+	case kActive:
+		s.Release()
+		s.MoveToState(kPendingEviction)
+		s.NotifySessionReleased()
+	case kDefunct:
+	case kPendingEviction:
+	}
+}
+
 func WithLocalNodeId(localNodeId lib.NodeId) OptionalFunc {
 	return func(session *Secure) {
 		session.mLocalNodeId = localNodeId
@@ -185,6 +223,10 @@ func WithPeerCATs(peerCATs *lib.CATValues) OptionalFunc {
 	return func(session *Secure) {
 		session.mPeerCATs = peerCATs
 	}
+}
+
+func (s *Secure) Name() string {
+	return "SecureSession"
 }
 
 func WithPeerSessionId(peerSessionId uint16) OptionalFunc {

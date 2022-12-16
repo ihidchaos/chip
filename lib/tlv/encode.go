@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"golang.org/x/exp/constraints"
+	"github.com/spf13/cast"
 	"io"
 	"math"
 )
@@ -181,8 +181,8 @@ func (enc *Encoder) PutBytes(tag Tag, data []byte) error {
 	return enc.WriteElementWithData(TypeByteString, tag, data)
 }
 
-func (enc *Encoder) PutUTFString(tag Tag, data []byte) error {
-	return enc.WriteElementWithData(TypeUTF8String, tag, data)
+func (enc *Encoder) PutUTFString(tag Tag, str string) error {
+	return enc.WriteElementWithData(TypeUTF8String, tag, []byte(str))
 }
 
 func (enc *Encoder) putUint(tag Tag, val uint64) error {
@@ -272,12 +272,26 @@ func (enc *Encoder) tagError(val any) error {
 	return fmt.Errorf("tag err:%s", val)
 }
 
-func PutUint[T constraints.Unsigned](enc *Encoder, tag Tag, val T) error {
-	return enc.putUint(tag, uint64(val))
-}
-
-func PutInt[T constraints.Signed](enc *Encoder, tag Tag, val T) error {
-	return enc.putInt(tag, int64(val))
+func (enc *Encoder) Put(tag Tag, v any) error {
+	switch v.(type) {
+	case uint, uint8, uint16, uint32, uint64:
+		val := cast.ToUint64(v)
+		return enc.putUint(tag, val)
+	case int, int8, int16, int32, int64:
+		val := cast.ToInt64(v)
+		return enc.putInt(tag, val)
+	case bool:
+		val := cast.ToBool(v)
+		return enc.PutBoolean(tag, val)
+	case []byte:
+		val, _ := v.([]byte)
+		return enc.PutBytes(tag, val)
+	case string:
+		val := cast.ToString(v)
+		return enc.PutUTFString(tag, val)
+	default:
+		return enc.elementTypeError(v)
+	}
 }
 
 func EstimateStructOverhead(firstFieldSize int, args ...int) int {

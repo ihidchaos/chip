@@ -27,22 +27,26 @@ func (t Role) String() string {
 }
 
 const (
+	//建立连接
 	kEstablishing State = iota
+	//活跃
 	kActive
+	//失效
 	kDefunct
+	//等待回收
 	kPendingEviction
 )
 const (
-	kUndefined Type = iota
-	kUnauthenticated
-	kSecure
-	kGroupIncoming
-	kGroupOutgoing
+	TypeUndefined Type = iota
+	TypeUnauthenticated
+	TypeSecure
+	TypeGroupIncoming
+	TypeGroupOutgoing
 )
 
 const (
-	SecureSessionTypePASE SecureType = iota
-	SecureSessionTypeCASE
+	SecureTypePASE SecureType = iota
+	SecureTypeCASE
 )
 
 func (t State) String() string {
@@ -57,7 +61,7 @@ func (t SecureType) String() string {
 
 func (t Type) String() string {
 	return [...]string{
-		"Undefined", "Unauthenticated", "Secure", "GroupIncoming", "GroupOutgoing",
+		"Undefined", "Unauthenticated", "Secure", "TypeGroupIncoming", "TypeGroupOutgoing",
 	}[t]
 }
 

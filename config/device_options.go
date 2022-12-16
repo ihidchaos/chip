@@ -107,7 +107,7 @@ var (
 	DeviceOptionKvs = Flag{
 		"KVS",
 		path.ConfigKvsPath,
-		"A file to store Key Value Store items.\n"}
+		"A file to store Key Raw Store items.\n"}
 
 	DeviceOptionInterfaceId = Flag{
 		"interface-id",

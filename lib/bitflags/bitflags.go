@@ -40,8 +40,12 @@ func (b *Flags[T]) Sets(flags ...T) {
 	}
 }
 
-func (b *Flags[T]) Value() T {
+func (b *Flags[T]) Raw() T {
 	return b.mFlags
+}
+
+func (b *Flags[T]) Clear(f T) {
+
 }
 
 func U64To32(val uint64) (h, l uint32) {

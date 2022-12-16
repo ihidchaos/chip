@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/lib/store"
 	log "golang.org/x/exp/slog"
 	"sync/atomic"
@@ -48,9 +48,9 @@ type Provider interface {
 }
 
 type ProviderImpl struct {
-	mChipFactoryStorage  store.Storage
-	mChipConfigStorage   store.Storage
-	mChipCountersStorage store.Storage
+	mChipFactoryStorage  store.KvsStorage
+	mChipConfigStorage   store.KvsStorage
+	mChipCountersStorage store.KvsStorage
 }
 
 func NewProviderImpl() *ProviderImpl {
@@ -64,19 +64,19 @@ func (conf *ProviderImpl) ReadConfigValueBool(k Key) (bool, error) {
 
 func (conf *ProviderImpl) ReadConfigValueUint16(k Key) (uint16, error) {
 	store := conf.GetStorageForNamespace(k)
-	v, err := store.ReadValueUint64(k.Name)
+	v, err := store.ReadValueUint(k.Name)
 	return uint16(v), err
 }
 
 func (conf *ProviderImpl) ReadConfigValueUint32(k Key) (uint32, error) {
 	store := conf.GetStorageForNamespace(k)
-	v, err := store.ReadValueUint64(k.Name)
+	v, err := store.ReadValueUint(k.Name)
 	return uint32(v), err
 }
 
 func (conf *ProviderImpl) ReadConfigValueUint64(k Key) (uint64, error) {
 	store := conf.GetStorageForNamespace(k)
-	return store.ReadValueUint64(k.Name)
+	return store.ReadValueUint(k.Name)
 }
 
 func (conf *ProviderImpl) ReadConfigValueStr(k Key) (string, error) {
@@ -98,17 +98,17 @@ func (conf *ProviderImpl) WriteConfigValueBool(k Key, val bool) error {
 
 func (conf *ProviderImpl) WriteConfigValueUint16(k Key, val uint16) error {
 	store := conf.GetStorageForNamespace(k)
-	return store.WriteValueUint64(k.Name, uint64(val))
+	return store.WriteValueUint(k.Name, uint64(val))
 }
 
 func (conf *ProviderImpl) WriteConfigValueUint32(k Key, val uint32) error {
 	store := conf.GetStorageForNamespace(k)
-	return store.WriteValueUint64(k.Name, uint64(val))
+	return store.WriteValueUint(k.Name, uint64(val))
 }
 
 func (conf *ProviderImpl) WriteConfigValueUint64(k Key, val uint64) error {
 	store := conf.GetStorageForNamespace(k)
-	return store.WriteValueUint64(k.Name, val)
+	return store.WriteValueUint(k.Name, val)
 }
 
 func (conf *ProviderImpl) WriteConfigValueStr(k Key, val string) error {
@@ -134,7 +134,7 @@ func (conf *ProviderImpl) ConfigValueExists(k Key) bool {
 func (conf *ProviderImpl) FactoryResetConfig() error {
 	if conf.mChipFactoryStorage == nil {
 		log.Info("storage get failed")
-		return lib.DeviceErrorConfigNotFound
+		return chip.DeviceErrorConfigNotFound
 	}
 	err := conf.mChipFactoryStorage.DeleteAll()
 	if err != nil {
@@ -148,7 +148,7 @@ func (conf *ProviderImpl) FactoryResetCounters() error {
 	if conf.mChipCountersStorage == nil {
 		log.Info("storage get failed")
 
-		return lib.DeviceErrorConfigNotFound
+		return chip.DeviceErrorConfigNotFound
 	}
 	err := conf.mChipCountersStorage.DeleteAll()
 	if err != nil {
@@ -168,22 +168,22 @@ type Key struct {
 	Name      string
 }
 
-func (conf *ProviderImpl) GetStorageForNamespace(k Key) store.Storage {
+func (conf *ProviderImpl) GetStorageForNamespace(k Key) store.KvsStorage {
 	if k.Namespace == KConfigNamespaceChipFactory {
 		if conf.mChipFactoryStorage == nil {
-			conf.mChipFactoryStorage = store.NewPersistentStorageImpl()
+			conf.mChipFactoryStorage = store.NewInitStorage()
 		}
 		return conf.mChipFactoryStorage
 	}
 	if k.Namespace == KConfigNamespaceChipConfig {
 		if conf.mChipConfigStorage == nil {
-			conf.mChipConfigStorage = store.NewPersistentStorageImpl()
+			conf.mChipConfigStorage = store.NewInitStorage()
 		}
 		return conf.mChipConfigStorage
 	}
 	if k.Namespace == KConfigNamespaceChipCounters {
 		if conf.mChipCountersStorage == nil {
-			conf.mChipCountersStorage = store.NewPersistentStorageImpl()
+			conf.mChipCountersStorage = store.NewInitStorage()
 		}
 		return conf.mChipCountersStorage
 	}
@@ -193,21 +193,21 @@ func (conf *ProviderImpl) GetStorageForNamespace(k Key) store.Storage {
 func (conf *ProviderImpl) EnsureNamespace(k string) error {
 	if k == KConfigNamespaceChipFactory {
 		if conf.mChipFactoryStorage == nil {
-			conf.mChipFactoryStorage = store.NewPersistentStorageImpl()
+			conf.mChipFactoryStorage = store.NewInitStorage()
 		}
 		log.Info("init factory storage:", "Path", ChipDefaultFactoryPath)
 		return conf.mChipFactoryStorage.Init(ChipDefaultFactoryPath)
 	}
 	if k == KConfigNamespaceChipConfig {
 		if conf.mChipConfigStorage == nil {
-			conf.mChipConfigStorage = store.NewPersistentStorageImpl()
+			conf.mChipConfigStorage = store.NewInitStorage()
 		}
 		log.Info("init config storage", "path", ChipDefaultConfigPath)
 		return conf.mChipConfigStorage.Init(ChipDefaultConfigPath)
 	}
 	if k == KConfigNamespaceChipCounters {
 		if conf.mChipCountersStorage == nil {
-			conf.mChipCountersStorage = store.NewPersistentStorageImpl()
+			conf.mChipCountersStorage = store.NewInitStorage()
 		}
 		log.Info("init counters storage", "path", ChipDefaultDataPath)
 		return conf.mChipCountersStorage.Init(ChipDefaultDataPath)

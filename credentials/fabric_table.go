@@ -1,6 +1,7 @@
 package credentials
 
 import (
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/store"
@@ -8,7 +9,7 @@ import (
 )
 
 type FabricTableInitParams struct {
-	Storage             store.KvsPersistentStorageBase
+	Storage             store.PersistentStorageDelegate
 	OperationalKeystore crypto.OperationalKeystore
 	OpCertStore         PersistentStorageOpCertStore
 }
@@ -51,8 +52,8 @@ type FabricTable struct {
 	mStates                   []*FabricInfo
 	mPendingFabric            *FabricInfo
 	mFabricLabel              string
-	mStorage                  store.KvsPersistentStorageBase
-	operationalKeystore       crypto.OperationalKeystore
+	mStorage                  store.PersistentStorageDelegate
+	mOperationalKeystore      crypto.OperationalKeystore
 	mOpCertStore              PersistentStorageOpCertStore
 	mFabricCount              uint8
 	mNextAvailableFabricIndex lib.FabricIndex
@@ -90,7 +91,7 @@ func (f *FabricTable) Init(params *FabricTableInitParams) error {
 
 func (f *FabricTable) Delete(index lib.FabricIndex) error {
 	if f.mStorage == nil || !index.IsValidFabricIndex() {
-		return lib.InvalidArgument
+		return chip.ErrorInvalidArgument
 	}
 	return nil
 }
@@ -133,7 +134,7 @@ func (f *FabricTable) SetFabricLabel(label string) error {
 func (f *FabricTable) FabricLabel(index lib.FabricIndex) (string, error) {
 	fabricInfo := f.FindFabricWithIndex(index)
 	if fabricInfo == nil {
-		return "", lib.InvalidFabricIndex
+		return "", chip.ErrorInvalidFabricIndex
 	}
 	return fabricInfo.GetFabricLabel(), nil
 }
@@ -164,7 +165,7 @@ func (f *FabricTable) FetchPendingNonFabricAssociatedRootCert() ([]byte, error) 
 
 func (f *FabricTable) FetchICACert(index lib.FabricIndex) ([]byte, error) {
 	if f.mOpCertStore == nil {
-		return nil, lib.IncorrectState
+		return nil, chip.ErrorIncorrectState
 	}
 	icaCert, err := f.mOpCertStore.GetCertificate(index, CertChainElement_Icac)
 	if err != nil {
@@ -178,7 +179,7 @@ func (f *FabricTable) FetchICACert(index lib.FabricIndex) ([]byte, error) {
 
 func (f *FabricTable) FetchNOCCert(index lib.FabricIndex) ([]byte, error) {
 	if f.mStorage == nil {
-		return nil, lib.IncorrectState
+		return nil, chip.ErrorIncorrectState
 	}
 	return f.mOpCertStore.GetCertificate(index, CertChainElement_Noc)
 }
@@ -186,7 +187,7 @@ func (f *FabricTable) FetchNOCCert(index lib.FabricIndex) ([]byte, error) {
 func (f *FabricTable) FetchRootPubkey(index lib.FabricIndex) (*crypto.P256PublicKey, error) {
 	fabricInfo := f.FindFabricWithIndex(index)
 	if fabricInfo == nil {
-		return nil, lib.InvalidFabricIndex
+		return nil, chip.ErrorInvalidFabricIndex
 	}
 	return fabricInfo.FetchRootPubkey()
 
@@ -197,9 +198,15 @@ func (f *FabricTable) FetchCATs(index lib.FabricIndex) ([]byte, error) {
 	panic("implement me")
 }
 
-func (f *FabricTable) SignWithOpKeypair(index lib.FabricIndex) *crypto.P256ECDSASignature {
-	//TODO implement me
-	panic("implement me")
+func (f *FabricTable) SignWithOpKeypair(index lib.FabricIndex, msg []byte) (crypto.P256ECDSASignature, error) {
+	fabricInfo := f.FindFabricWithIndex(index)
+	if fabricInfo.HasOperationalKey() {
+		return fabricInfo.SignWithOpKeypair(msg)
+	}
+	if f.mOperationalKeystore != nil {
+		return f.mOperationalKeystore.SignWithOpKeypair(index, msg)
+	}
+	return nil, chip.New(chip.ErrorKeyNotFound, "FabricTable", "SignWithOpKeypair")
 }
 
 func (f *FabricTable) FindFabricWithIndex(index lib.FabricIndex) *FabricInfo {
@@ -242,8 +249,8 @@ func (f *FabricTable) RevertPendingFabricData() {
 }
 
 func (f *FabricTable) AllocateEphemeralKeypairForCASE() *crypto.P256Keypair {
-	if f.operationalKeystore != nil {
-		return f.operationalKeystore.AllocateEphemeralKeypairForCASE()
+	if f.mOperationalKeystore != nil {
+		return f.mOperationalKeystore.AllocateEphemeralKeypairForCASE()
 	}
 	return crypto.GenericP256Keypair()
 }

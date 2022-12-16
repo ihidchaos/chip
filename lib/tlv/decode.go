@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"reflect"
 )
 
 var EndOfTLVError error = errors.New("end of tlv")
 var ByteLenError error = errors.New("tlv data length err")
 
-// A Decoder reads and decodes JSON values from an input stream.
+// A Decoder reads and decodes tlv values from an input stream.
 type Decoder struct {
 	r   io.Reader
 	buf []byte
@@ -36,7 +37,6 @@ type Decoder struct {
 }
 
 // NewDecoder returns a new decoder that reads from r.
-//
 // The decoder introduces its own buffering and may
 // readData data from r beyond the JSON values requested.
 func NewDecoder(r io.Reader) *Decoder {
@@ -205,7 +205,7 @@ func (dec *Decoder) skipToEndContainer() error {
 	//
 	//	} else if dec.elementType.isContainer() {
 	//		nestLevel++
-	//		dec.containerType = Type(dec.elementType)
+	//		dec.containerType = NextType(dec.elementType)
 	//	}
 	//
 	//	if err := dec.skipData(); err != nil {
@@ -217,11 +217,7 @@ func (dec *Decoder) skipToEndContainer() error {
 	//}
 }
 
-func (dec *Decoder) Decode(v any) error {
-	return nil
-}
-
-func (dec *Decoder) Tag(tag Tag) error {
+func (dec *Decoder) NextTag(tag Tag) error {
 	if err := dec.Next(); err != nil {
 		return err
 	}
@@ -231,8 +227,18 @@ func (dec *Decoder) Tag(tag Tag) error {
 	return nil
 }
 
-func (dec *Decoder) Type(expectedType Type, expectedTag Tag) error {
-	err := dec.Tag(expectedTag)
+func (dec *Decoder) NextValue(tag Tag, out any) error {
+	if err := dec.Next(); err != nil {
+		return err
+	}
+	if dec.elemTag != tag {
+		return dec.TagError(dec.elemTag)
+	}
+	return dec.Get(out)
+}
+
+func (dec *Decoder) NextType(expectedType Type, expectedTag Tag) error {
+	err := dec.NextTag(expectedTag)
 	if err != nil {
 		return err
 	}
@@ -247,28 +253,28 @@ func (dec *Decoder) Next() error {
 	if err != nil {
 		return err
 	}
-	tagControl := tagCtl(c)
-	elementType := elemType(c)
-	if !elementType.isValid() {
-		return dec.elemTypeError(elementType)
+	tc := tagCtl(c)
+	et := elemType(c)
+	if !et.isValid() {
+		return dec.elemTypeError(et)
 	}
-	if elementType == endOfContainer {
+	if et == endOfContainer {
 		return EndOfTLVError
 	}
-	if tag, err := dec.readTag(tagControl); err != nil {
+	if tag, err := dec.readTag(tc); err != nil {
 		return err
 	} else {
 		dec.elemTag = tag
 	}
-	if elementType.hasValue() || elementType.hasLength() {
-		data, err := dec.readElement(elementType)
+	if et.hasValue() || et.hasLength() {
+		data, err := dec.readElement(et)
 		if err != nil {
 			return err
 		}
 		dec.elemLenOrVal = data
 	}
-	dec.elementType = elementType
-	dec.tagControl = tagControl
+	dec.elementType = et
+	dec.tagControl = tc
 	return nil
 }
 
@@ -348,31 +354,6 @@ func (dec *Decoder) byte() (byte, error) {
 	return data[0], err
 }
 
-func (dec *Decoder) refill() error {
-	// Make room to readData more into the buffer.
-	// First slide down data already consumed.
-	if dec.p > 0 {
-		dec.scanned += int64(dec.p)
-		n := copy(dec.buf, dec.buf[dec.p:])
-		dec.buf = dec.buf[:n]
-		dec.p = 0
-	}
-
-	// Grow buffer if not large enough.
-	const minRead = 512
-	if cap(dec.buf)-len(dec.buf) < minRead {
-		newBuf := make([]byte, len(dec.buf), 2*cap(dec.buf)+minRead)
-		copy(newBuf, dec.buf)
-		dec.buf = newBuf
-	}
-
-	// readData. Delay error for next iteration (after scan).
-	n, err := dec.r.Read(dec.buf[len(dec.buf):cap(dec.buf)])
-	dec.buf = dec.buf[0 : len(dec.buf)+n]
-
-	return err
-}
-
 func (dec *Decoder) readElement(elementType elementType) (val uint64, err error) {
 	p := make([]byte, 1<<elementType.fieldSize())
 	_, err = dec.readData(p)
@@ -407,7 +388,7 @@ func (dec *Decoder) valueError(val any) error {
 }
 
 func (dec *Decoder) TagError(val any) error {
-	return fmt.Errorf("tag err :%d", val)
+	return fmt.Errorf("tag err :%v", val)
 }
 
 func (dec *Decoder) GetBoolean() (bool, error) {
@@ -420,14 +401,91 @@ func (dec *Decoder) GetBoolean() (bool, error) {
 	return false, dec.elemTypeError(dec.elementType)
 }
 
-func (dec *Decoder) GetData(data []byte) error {
-	buf, err := dec.GetBytes()
-	if err != nil {
-		return err
+func (dec *Decoder) Get(out any) error {
+	switch out.(type) {
+	case *int:
+		if val, err := dec.GetInt(); err != nil {
+			return err
+		} else {
+			v := int(val)
+			out = &v
+		}
+	case *int8:
+		if val, err := dec.GetInt(); err != nil {
+			return err
+		} else {
+			v := int8(val)
+			out = &v
+		}
+	case *int16:
+		if val, err := dec.GetInt(); err != nil {
+			return err
+		} else {
+			v := int16(val)
+			out = &v
+		}
+	case *int32:
+		if val, err := dec.GetInt(); err != nil {
+			return err
+		} else {
+			v := int32(val)
+			out = &v
+		}
+
+	case *int64:
+		if val, err := dec.GetInt(); err != nil {
+			return err
+		} else {
+			out = &val
+		}
+	case *uint:
+		if val, err := dec.GetUint(); err != nil {
+			return err
+		} else {
+			v := uint(val)
+			out = &v
+		}
+	case *uint8:
+		if val, err := dec.GetUint(); err != nil {
+			return err
+		} else {
+			v := uint8(val)
+			out = &v
+		}
+	case *uint16:
+		if val, err := dec.GetUint(); err != nil {
+			return err
+		} else {
+			v := uint16(val)
+			out = &v
+		}
+	case *uint32:
+		if val, err := dec.GetUint(); err != nil {
+			return err
+		} else {
+			v := uint32(val)
+			out = &v
+		}
+	case *uint64:
+		if val, err := dec.GetUint(); err != nil {
+			return err
+		} else {
+			out = &val
+		}
+	case *bool:
+		if val, err := dec.GetBoolean(); err != nil {
+			return err
+		} else {
+			out = &val
+		}
+	case []byte:
+		if val, err := dec.GetBytes(); err != nil {
+			return err
+		} else {
+			out = &val
+		}
+	default:
+		return dec.valueError(reflect.TypeOf(out))
 	}
-	if len(buf) != len(data) {
-		return ByteLenError
-	}
-	copy(data, buf)
-	return err
+	return nil
 }

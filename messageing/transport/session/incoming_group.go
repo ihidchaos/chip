@@ -23,7 +23,7 @@ func NewIncomingGroupSession(groupId lib.GroupId, index lib.FabricIndex, nodeId 
 		locker:           sync.Mutex{},
 		mFabricIndex:     index,
 		mHolders:         nil,
-		mSessionType:     kGroupIncoming,
+		mSessionType:     TypeGroupIncoming,
 		mPeerAddress:     raw.PeerAddress{},
 		base:             session,
 		ReferenceCounted: lib.NewReferenceCounted(1, session),
@@ -34,6 +34,10 @@ func NewIncomingGroupSession(groupId lib.GroupId, index lib.FabricIndex, nodeId 
 func (i *IncomingGroupSession) IsActive() bool {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (i *IncomingGroupSession) RequireMRP() bool {
+	return false
 }
 
 func (i *IncomingGroupSession) IsEstablishing() bool {

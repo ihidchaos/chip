@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/config"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/messageing"
@@ -62,7 +63,7 @@ func (t *UnauthenticatedSessionTable) allocEntry(sessionRole session.Role, ephem
 	}
 	entry = t.findLeastRecentUsedEntry()
 	if entry == nil {
-		return nil, lib.NotMemory
+		return nil, chip.ErrorNotMemory
 	}
 	*entry = *session.NewUnauthenticated(sessionRole, ephemeralInitiatorNodeID, config)
 	return entry, nil

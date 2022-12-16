@@ -50,7 +50,7 @@ func (u *UDPTransport) Init(parameters *UdpListenParameters) error {
 				Port: int(parameters.Address().Port()),
 			})
 			if err != nil {
-				log.Error("UDPTransportBase Connection", err, "Tag", "UDPTransportBase")
+				log.Error("UDPTransportBase Connection", err, "NextTag", "UDPTransportBase")
 				u.Close()
 				return
 			}
@@ -91,12 +91,12 @@ func (u *UDPTransport) onConnection(conn *net.UDPConn, port uint16) {
 	var data []byte
 	_, err := io.ReadFull(conn, data)
 	if err != nil {
-		log.Error("read data", err, "Tag", "UDPTransportBase")
+		log.Error("read data", err, "NextTag", "UDPTransportBase")
 		return
 	}
 	packetBuffer := system.NewPacketBufferHandle(data)
 	if err := packetBuffer.IsValid(); err != nil {
-		log.Error("invalid message", err, "Tag", "UDPTransportBase")
+		log.Error("invalid message", err, "NextTag", "UDPTransportBase")
 		return
 	}
 	srcAddr, _ := netip.ParseAddr(conn.RemoteAddr().String())
@@ -106,7 +106,7 @@ func (u *UDPTransport) onConnection(conn *net.UDPConn, port uint16) {
 
 func (u *UDPTransport) onUdpReceive(srcAddr netip.AddrPort, data *system.PacketBufferHandle) {
 	if u.mDelegate == nil {
-		log.Warn("not delegate", "Tag", "UDPTransportBase")
+		log.Warn("not delegate", "NextTag", "UDPTransportBase")
 		return
 	}
 	u.mDelegate.HandleMessageReceived(srcAddr, data)

@@ -10,45 +10,49 @@ import (
 var sUnknownTypeName = "----"
 
 type Id struct {
-	mVendorId   lib.VendorId
-	mProtocolId uint16
+	VendorId   lib.VendorId
+	ProtocolId uint16
 }
 
 func New(protocolId uint16, option optional.Option[lib.VendorId]) Id {
 	id := Id{
-		mVendorId:   lib.VidCommon,
-		mProtocolId: protocolId,
+		VendorId:   lib.VidCommon,
+		ProtocolId: protocolId,
 	}
 	if option.IsSome() {
-		id.mVendorId = option.Unwrap()
+		id.VendorId = option.Unwrap()
 	}
 	return id
 }
 
-//var StandardSecureChannel = &Id{mVendorId: lib.VendorIdMatterStandard, mProtocolId: 0x0000}
+func NotSpecifiedId() Id {
+	return Id{
+		VendorId:   lib.VidNotSpecified,
+		ProtocolId: 0xFFFF,
+	}
+}
+
+//var StandardSecureChannel = &Id{VendorId: lib.VendorIdMatterStandard, ProtocolId: 0x0000}
 
 func FromFullyQualifiedSpecForm(aSpecForm uint32) Id {
-	return Id{mVendorId: lib.VendorId(aSpecForm >> 16), mProtocolId: uint16(aSpecForm & 0x0000FFFF)}
+	return Id{VendorId: lib.VendorId(aSpecForm >> 16), ProtocolId: uint16(aSpecForm & 0x0000FFFF)}
 }
 
 func (id *Id) ToFullyQualifiedSpecForm() uint32 {
 	return id.toUint32()
 }
 
-func (id *Id) VendorId() lib.VendorId { return id.mVendorId }
-
 func (id *Id) toUint32() uint32 {
-	return (uint32(id.mVendorId) << 16) | uint32(id.mProtocolId)
+	return (uint32(id.VendorId) << 16) | uint32(id.ProtocolId)
 }
 
-func (id *Id) ProtocolId() uint16 { return id.mProtocolId }
-
 func (id *Id) Equal(other Id) bool {
-	return id.mVendorId == other.mVendorId && id.mProtocolId == other.mProtocolId
+	return id.VendorId == other.VendorId && id.ProtocolId == other.ProtocolId
 }
 
 func (id *Id) LogValue() log.Value {
 	return log.GroupValue(
-		log.String("id", fmt.Sprintf("%04X", id.mProtocolId)),
+		log.String("ProtocolId", fmt.Sprintf("%04X", id.ProtocolId)),
+		log.String("VendorId", fmt.Sprintf("%04X", id.VendorId)),
 	)
 }

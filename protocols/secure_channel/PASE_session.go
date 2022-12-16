@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/lib/setup"
 	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
@@ -55,7 +56,7 @@ func (s *PASESession) PeerCATs() lib.CATValues {
 	return s.mPeerCATs
 }
 
-func (s *PASESession) DeriveSecureSession(ctx *session.CryptoContext) error {
+func (s *PASESession) DeriveSecureSession(ctx *transport.CryptoContext) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -180,36 +181,36 @@ func (s *PASESession) SendPBKDFParamRequest() (err error) {
 	}
 
 	buf := bytes.NewBuffer(make([]byte, 0))
-	tlvEncode := tlv.NewEncoder(buf)
+	e := tlv.NewEncoder(buf)
 	outContainerType := tlv.TypeNotSpecified
-	outContainerType, err = tlvEncode.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
+	outContainerType, err = e.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
 
-	if err = tlvEncode.PutBytes(tlv.ContextTag(1), s.pbkdfLocalRandomData); err != nil {
+	if err = e.Put(tlv.ContextTag(1), s.pbkdfLocalRandomData); err != nil {
 		return err
 	}
 
-	if err = tlv.PutUint(tlvEncode, tlv.ContextTag(2), uint64(s.LocalSessionId().Unwrap())); err != nil {
+	if err = e.Put(tlv.ContextTag(2), uint64(s.LocalSessionId().Unwrap())); err != nil {
 		return err
 	}
-	if err = tlv.PutUint(tlvEncode, tlv.ContextTag(3), uint64(defaultCommissioningPasscodeId)); err != nil {
+	if err = e.Put(tlv.ContextTag(3), uint64(defaultCommissioningPasscodeId)); err != nil {
 		return err
 	}
 
-	if err = tlvEncode.PutBoolean(tlv.ContextTag(4), s.havePBKDFParameters); err != nil {
+	if err = e.Put(tlv.ContextTag(4), s.havePBKDFParameters); err != nil {
 		return err
 	}
 
 	if s.LocalMRPConfig != nil {
-		if err = s.pairingSession.encodeMRPParameters(tlvEncode, tlv.ContextTag(5), s.LocalMRPConfig); err != nil {
+		if err = s.pairingSession.encodeMRPParameters(e, tlv.ContextTag(5), s.LocalMRPConfig); err != nil {
 			return err
 		}
 	}
-	if err := tlvEncode.EndContainer(outContainerType); err != nil {
+	if err := e.EndContainer(outContainerType); err != nil {
 		return err
 	}
 
 	s.commissioningHash.Write(buf.Bytes())
-	if err = s.exchangeContext.SendMessage(PBKDFParamRequest, buf.Bytes(), messageing.ExpectResponse); err != nil {
+	if err = s.exchangeContext.SendMessage(PBKDFParamRequest, buf.Bytes(), bitflags.Some(messageing.ExpectResponse)); err != nil {
 		return err
 	}
 	s.nextExpectedMsg = PBKDFParamResponse
@@ -230,7 +231,7 @@ func (s *PASESession) OnMessageReceived(context *messageing.ExchangeContext, hea
 	if err = s.validateReceivedMessage(context, header, data); err != nil {
 		return err
 	}
-	msgType := MsgType(header.MessageType())
+	msgType := MsgType(header.MessageType)
 	switch msgType {
 	case PBKDFParamRequest:
 		err = s.HandlePBKDFParamRequest(data)
@@ -275,9 +276,9 @@ func (s *PASESession) OnExchangeClosing(ec *messageing.ExchangeContext) {
 	panic("implement me")
 }
 
-func (s *PASESession) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
-	//TODO implement me
-	panic("implement me")
+func (s *PASESession) GetMessageDispatch() messageing.ExchangeMessageDispatch {
+	//return SessionEstablishmentExchangeDispatchInstance()
+	return nil
 }
 
 func (s *PASESession) OnUnsolicitedMessageReceived(header *raw.PayloadHeader) (messageing.ExchangeDelegate, error) {
@@ -303,7 +304,7 @@ func (s *PASESession) HandlePBKDFParamRequest(w io.Reader) (err error) {
 
 	tlvDecode := tlv.NewDecoder(w)
 	containerType := tlv.TypeStructure
-	if err = tlvDecode.Type(containerType, tlv.AnonymousTag()); err != nil {
+	if err = tlvDecode.NextType(containerType, tlv.AnonymousTag()); err != nil {
 		return err
 	}
 	if containerType, err = tlvDecode.EnterContainer(); err != nil {
@@ -431,7 +432,7 @@ func (s *PASESession) SendPBKDFParamResponse(initiatorRandom []byte, initiatorHa
 	if err = s.setupSpake2p(); err != nil {
 		return err
 	}
-	if err = s.exchangeContext.SendMessage(PBKDFParamResponse, buf.Bytes(), messageing.ExpectResponse); err != nil {
+	if err = s.exchangeContext.SendMessage(PBKDFParamResponse, buf.Bytes(), bitflags.Some(messageing.ExpectResponse)); err != nil {
 		return err
 	}
 	s.nextExpectedMsg = PASEPake1
@@ -452,23 +453,23 @@ func (s *PASESession) HandlePBKDFParamResponse(msg *system.PacketBufferHandle) (
 	var responderSessionId uint16
 	var serializedWS []byte
 
-	tlvDecoder := tlv.NewDecoder(msg)
+	d := tlv.NewDecoder(msg)
 	var containerType = tlv.TypeStructure
-	if err = tlvDecoder.Type(containerType, tlv.AnonymousTag()); err != nil {
+	if err = d.NextType(containerType, tlv.AnonymousTag()); err != nil {
 		return err
 	}
-	if containerType, err = tlvDecoder.EnterContainer(); err != nil {
+	if containerType, err = d.EnterContainer(); err != nil {
 		return err
 	}
 
 	// Initiator's random value
-	if err = tlvDecoder.Next(); err != nil {
+	if err = d.Next(); err != nil {
 		return err
 	}
-	if tlvDecoder.GetTag().Number() != 1 {
-		return tlvDecoder.TagError(tlvDecoder.GetTag())
+	if d.GetTag().Number() != 1 {
+		return d.TagError(d.GetTag())
 	}
-	if random, err = tlvDecoder.GetBytes(); err != nil {
+	if random, err = d.GetBytes(); err != nil {
 		return err
 	}
 	if slices.Equal(random, s.pbkdfLocalRandomData) {
@@ -476,31 +477,31 @@ func (s *PASESession) HandlePBKDFParamResponse(msg *system.PacketBufferHandle) (
 	}
 
 	// RoleResponder's random value
-	if err = tlvDecoder.Next(); err != nil {
+	if err = d.Next(); err != nil {
 		return err
 	}
-	if tlvDecoder.GetTag().Number() != 2 {
-		return tlvDecoder.TagError(tlvDecoder.GetTag())
+	if d.GetTag().Number() != 2 {
+		return d.TagError(d.GetTag())
 	}
-	if random, err = tlvDecoder.GetBytes(); err != nil {
+	if random, err = d.GetBytes(); err != nil {
 		return err
 	}
 
-	if err = tlvDecoder.Next(); err != nil {
+	if err = d.Next(); err != nil {
 		return err
 	}
-	if tlvDecoder.GetTag().Number() != 3 {
-		return tlvDecoder.TagError(tlvDecoder.GetTag())
+	if d.GetTag().Number() != 3 {
+		return d.TagError(d.GetTag())
 	}
-	if responderSessionId, err = tlvDecoder.GetU16(); err != nil {
+	if responderSessionId, err = d.GetU16(); err != nil {
 		return err
 	}
 	log.Debug("SecureChannel Peer assigned session ID %d", responderSessionId)
 	s.peerSessionId = optional.Option[uint16]{responderSessionId}
 
 	if s.havePBKDFParameters {
-		if err = tlvDecoder.Next(); err != tlv.EndOfTLVError {
-			if err = s.decodeMRPParametersIfPresent(tlvDecoder, tlv.ContextTag(5)); err != nil {
+		if err = d.Next(); err != tlv.EndOfTLVError {
+			if err = s.decodeMRPParametersIfPresent(d, tlv.ContextTag(5)); err != nil {
 				return err
 			}
 			s.exchangeContext.SessionHandle().Session.(*session.Unauthenticated).SetRemoteMRPConfig(s.RemoteMRPConfig)
@@ -508,38 +509,39 @@ func (s *PASESession) HandlePBKDFParamResponse(msg *system.PacketBufferHandle) (
 		salt = s.salt
 	} else {
 
-		if err = tlvDecoder.Next(); err != nil {
+		if err = d.Next(); err != nil {
 			return err
 		}
-		if containerType, err = tlvDecoder.EnterContainer(); err != nil {
-			return err
-		}
-
-		if err = tlvDecoder.Next(); err != nil {
-			return err
-		}
-		if tlvDecoder.GetTag().Number() != 1 {
-			return tlvDecoder.TagError(tlvDecoder.GetTag())
-		}
-		if s.iterationCount, err = tlvDecoder.GetU32(); err != nil {
+		if containerType, err = d.EnterContainer(); err != nil {
 			return err
 		}
 
-		if err = tlvDecoder.Next(); err != nil {
+		if err = d.Next(); err != nil {
 			return err
 		}
-		if tlvDecoder.GetTag().Number() != 2 {
-			return tlvDecoder.TagError(tlvDecoder.GetTag())
+		if d.GetTag().Number() != 1 {
+			return d.TagError(d.GetTag())
 		}
-		if salt, err = tlvDecoder.GetBytes(); err != nil {
+
+		if s.iterationCount, err = d.GetU32(); err != nil {
 			return err
 		}
 
-		if err = tlvDecoder.ExitContainer(containerType); err != nil {
+		if err = d.Next(); err != nil {
 			return err
 		}
-		if err = tlvDecoder.Next(); err != tlv.EndOfTLVError {
-			if err = s.decodeMRPParametersIfPresent(tlvDecoder, tlv.ContextTag(5)); err != nil {
+		if d.GetTag().Number() != 2 {
+			return d.TagError(d.GetTag())
+		}
+		if salt, err = d.GetBytes(); err != nil {
+			return err
+		}
+
+		if err = d.ExitContainer(containerType); err != nil {
+			return err
+		}
+		if err = d.Next(); err != tlv.EndOfTLVError {
+			if err = s.decodeMRPParametersIfPresent(d, tlv.ContextTag(5)); err != nil {
 				return err
 			}
 			s.exchangeContext.SessionHandle().Session.(*session.Unauthenticated).SetRemoteMRPConfig(s.RemoteMRPConfig)
@@ -564,10 +566,9 @@ func (s *PASESession) SendMsg1() (err error) {
 
 	lib.MatterTraceEventScope("PASESession", "SendMsg1")
 	buf := new(bytes.Buffer)
-	tlvEncoder := tlv.NewEncoder(buf)
-
+	e := tlv.NewEncoder(buf)
 	var outerContainerType = tlv.TypeNotSpecified
-	if outerContainerType, err = tlvEncoder.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
+	if outerContainerType, err = e.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
 		return err
 	}
 
@@ -576,15 +577,13 @@ func (s *PASESession) SendMsg1() (err error) {
 	if err = s.spake2p.ComputeRoundOne(X, Y); err != nil {
 		return err
 	}
-	if err = tlvEncoder.PutBytes(tlv.ContextTag(1), X); err != nil {
+	if err = e.Put(tlv.ContextTag(1), X); err != nil {
 		return err
 	}
-
-	if err = tlvEncoder.EndContainer(outerContainerType); err != nil {
+	if err = e.EndContainer(outerContainerType); err != nil {
 		return err
 	}
-
-	if err = s.exchangeContext.SendMessage(PASEPake1, buf.Bytes(), messageing.ExpectResponse); err != nil {
+	if err = s.exchangeContext.SendMessage(PASEPake1, buf.Bytes(), bitflags.Some(messageing.ExpectResponse)); err != nil {
 		return err
 	}
 
@@ -610,7 +609,7 @@ func (s *PASESession) HandleMsg1AndSendMsg2(w io.Reader) (err error) {
 
 	tlvDecoder := tlv.NewDecoder(w)
 	var containerType = tlv.TypeStructure
-	if err = tlvDecoder.Type(containerType, tlv.AnonymousTag()); err != nil {
+	if err = tlvDecoder.NextType(containerType, tlv.AnonymousTag()); err != nil {
 		return err
 	}
 	if containerType, err = tlvDecoder.EnterContainer(); err != nil {
@@ -623,7 +622,7 @@ func (s *PASESession) HandleMsg1AndSendMsg2(w io.Reader) (err error) {
 	if tlvDecoder.GetTag().Number() != 1 {
 		return tlvDecoder.TagError(tlvDecoder.GetTag())
 	}
-	if err = tlvDecoder.GetData(X); err != nil {
+	if err = tlvDecoder.Get(X); err != nil {
 		return err
 	}
 	if err = s.spake2p.BeginVerifier(nil, 0, nil, 0, s.paseVerifier.W0, s.paseVerifier.ML); err != nil {
@@ -653,7 +652,7 @@ func (s *PASESession) HandleMsg1AndSendMsg2(w io.Reader) (err error) {
 		if err = tlvDecoder.ExitContainer(outerContainerType); err != nil {
 			return err
 		}
-		if err = s.exchangeContext.SendMessage(PASEPake2, buf.Bytes(), messageing.ExpectResponse); err != nil {
+		if err = s.exchangeContext.SendMessage(PASEPake2, buf.Bytes(), bitflags.Some(messageing.ExpectResponse)); err != nil {
 			return err
 		}
 		s.nextExpectedMsg = PASEPake3
@@ -679,7 +678,7 @@ func (s *PASESession) HandleMsg2AndSendMsg3(w io.Reader) (err error) {
 
 	var containerType = tlv.TypeStructure
 	tlvDecoder := tlv.NewDecoder(w)
-	if err = tlvDecoder.Type(containerType, tlv.AnonymousTag()); err != nil {
+	if err = tlvDecoder.NextType(containerType, tlv.AnonymousTag()); err != nil {
 		return err
 	}
 	if containerType, err = tlvDecoder.EnterContainer(); err != nil {
@@ -732,7 +731,7 @@ func (s *PASESession) HandleMsg2AndSendMsg3(w io.Reader) (err error) {
 		if err = tlvEncoder.EndContainer(outerContainerType); err != nil {
 			return err
 		}
-		if err = s.exchangeContext.SendMessage(PASEPake3, buf.Bytes(), messageing.ExpectResponse); err != nil {
+		if err = s.exchangeContext.SendMessage(PASEPake3, buf.Bytes(), bitflags.Some(messageing.ExpectResponse)); err != nil {
 			return err
 		}
 		s.nextExpectedMsg = CASEStatusReport
@@ -756,7 +755,7 @@ func (s *PASESession) HandleMsg3(w io.Reader) (err error) {
 	var peerVerifier = make([]byte, crypto.MaxHashLength)
 
 	tlvDecoder := tlv.NewDecoder(w)
-	if err = tlvDecoder.Type(containerType, tlv.AnonymousTag()); err != nil {
+	if err = tlvDecoder.NextType(containerType, tlv.AnonymousTag()); err != nil {
 		return err
 	}
 	if containerType, err = tlvDecoder.EnterContainer(); err != nil {
@@ -769,7 +768,7 @@ func (s *PASESession) HandleMsg3(w io.Reader) (err error) {
 	if tlvDecoder.GetTag().Number() != 1 {
 		return tlvDecoder.TagError(tlvDecoder.GetTag())
 	}
-	if err = tlvDecoder.GetData(peerVerifier); err != nil {
+	if err = tlvDecoder.Get(peerVerifier); err != nil {
 		return err
 	}
 

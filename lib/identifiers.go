@@ -10,12 +10,12 @@ const (
 	kMaxValidFabricIndex  FabricIndex = 0xFE
 )
 
-//Range Type
+//Range NextType
 //0xFFFF_FFFF_FFFF_xxxx Group Node ID
 //0xFFFF_FFFF_0000_0000 to 0xFFFF_FFFF_FFFE_FFFF
 //Reserved for future use
 //0xFFFF_FFFE_xxxx_xxxx Temporary Local Node ID
-//0xFFFF_FFFD_xxxx_xxxx CASE Authenticated Tag
+//0xFFFF_FFFD_xxxx_xxxx CASE Authenticated NextTag
 //0xFFFF_FFFC_xxxx_xxxx to 0xFFFF_FFFC_FFFF_FFFF
 //Reserved for future use
 //0xFFFF_FFFB_xxxx_xxxx PAKE key identifiers

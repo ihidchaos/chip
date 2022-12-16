@@ -2,17 +2,17 @@ package secure_channel
 
 import (
 	"bytes"
-	"crypto/elliptic"
 	"crypto/sha256"
 	"fmt"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/crypto"
 	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/lib/tlv"
 	"github.com/galenliu/chip/messageing"
 	"github.com/galenliu/chip/messageing/transport"
 	"github.com/galenliu/chip/messageing/transport/raw"
-	"github.com/galenliu/chip/messageing/transport/session"
 	"github.com/galenliu/chip/platform/system"
 	"github.com/moznion/go-optional"
 	"golang.org/x/exp/rand"
@@ -55,8 +55,8 @@ type CASESession struct {
 
 	mInitiatorRandom []byte
 
-	mResumeResumptionId []byte //会话恢复ID 16个字节
-	mNewResumptionId    []byte //会话恢复ID 16个字节
+	mResumeResumptionId []byte              //会话恢复ID 16个字节
+	mNewResumptionId    ResumptionIdStorage //会话恢复ID 16个字节
 
 	mState state
 }
@@ -65,7 +65,7 @@ func (s *CASESession) PeerCATs() lib.CATValues {
 	return s.mPeerCATs
 }
 
-func (s *CASESession) DeriveSecureSession(ctx *session.CryptoContext) error {
+func (s *CASESession) DeriveSecureSession(ctx *transport.CryptoContext) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -80,7 +80,7 @@ func NewCASESession() *CASESession {
 	return caseSession
 }
 
-func (s *CASESession) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
+func (s *CASESession) GetMessageDispatch() messageing.ExchangeMessageDispatch {
 	//TODO implement me
 	panic("implement me")
 }
@@ -91,7 +91,7 @@ func (s *CASESession) OnMessageReceived(ec *messageing.ExchangeContext, payloadH
 	if err != nil {
 		return err
 	}
-	msgType := MsgType(payloadHeader.MessageType())
+	msgType := MsgType(payloadHeader.MessageType)
 
 	sha256.New()
 
@@ -106,7 +106,7 @@ func (s *CASESession) OnMessageReceived(ec *messageing.ExchangeContext, payloadH
 	case sentSigma3:
 	case sentSigma2Resume:
 	default:
-		return lib.InvalidMessageType
+		return chip.ErrorInvalidMessageType
 	}
 	return nil
 }
@@ -127,7 +127,7 @@ func (s *CASESession) HandleSigma1(msg *system.PacketBufferHandle) error {
 	s.peerSessionId = optional.Option[uint16]{sigma1.initiatorSessionId}
 
 	if s.mFabricsTable == nil {
-		return lib.IncorrectState
+		return chip.ErrorIncorrectState
 	}
 
 	if sigma1.sessionResumptionRequested && len(sigma1.resumptionId) == 16 {
@@ -140,11 +140,11 @@ func (s *CASESession) HandleSigma1(msg *system.PacketBufferHandle) error {
 		log.Info("CASE failed to match destination ID with local fabrics")
 	}
 
-	pubKey, err := crypto.UnmarshalP256PublicKey(sigma1.initiatorEphPubKey)
+	pubKey, err := crypto.UnmarshalPublicKey(sigma1.initiatorEphPubKey)
 	if err != nil {
 		return err
 	}
-	s.mRemotePubKey = &pubKey
+	s.mRemotePubKey = pubKey
 
 	err = s.SendSigma2()
 	if err != nil {
@@ -157,17 +157,23 @@ func (s *CASESession) HandleSigma1(msg *system.PacketBufferHandle) error {
 }
 
 func (s *CASESession) SendSigma2() error {
+
 	if s.LocalSessionId().IsNone() {
-		return fmt.Errorf("LocalSessionId is nil")
+		return chip.New(chip.ErrorInvalidArgument, "CASESession", "SendSigma2 LocalSessionId is nil")
 	}
+	if s.mFabricsTable == nil {
+		return chip.New(chip.ErrorIncorrectState, "CASESession", "SendSigma2 FabriceTable is nil")
+	}
+
 	//获取ICA证书
 	icaCert, err := s.mFabricsTable.FetchICACert(s.mFabricIndex)
-	if err != nil && len(icaCert) != credentials.MaxCHIPCertLength {
-		return fmt.Errorf("sigma2 icaCert err")
+	if err != nil && len(icaCert) < credentials.MaxCHIPCertLength {
+		return chip.New(chip.ErrorInvalidArgument, "CASESession", "sigma2 icaCert err")
 	}
+
 	//获取节点操作证书(NOC)
 	nocCert, err := s.mFabricsTable.FetchNOCCert(s.mFabricIndex)
-	if err != nil && len(nocCert) != credentials.MaxCHIPCertLength {
+	if err != nil && len(nocCert) < credentials.MaxCHIPCertLength {
 		return fmt.Errorf("sigma2 nocCert err")
 	}
 
@@ -177,123 +183,108 @@ func (s *CASESession) SendSigma2() error {
 
 	//生成临时密钥对
 	s.mEphemeralKey = s.mFabricsTable.AllocateEphemeralKeypairForCASE()
-	if s.mEphemeralKey == nil {
-		return fmt.Errorf("sigma2 ephemeral key error")
-	}
 
 	// 生成共享密钥
-	s.mSharedSecret = s.mEphemeralKey.ECDHDeriveSecret(*s.mRemotePubKey)
+	if s.mSharedSecret, err = s.mEphemeralKey.ECDHDeriveSecret(s.mRemotePubKey); err != nil {
+		return err
+	}
 
 	//生成一个盐值
-	salt, err := s.ConstructSaltSigma2(msgRand, elliptic.Marshal(elliptic.P256(), s.mEphemeralKey.PublicKey.X, s.mEphemeralKey.Y), s.mIPK)
-	if err != nil || salt == nil {
-		return fmt.Errorf("sigma2 salt error")
+	salt, err := s.ConstructSaltSigma2(msgRand, s.mEphemeralKey.PrivateKey().PublicKey().Bytes(), s.mIPK)
+	if err != nil {
+		return chip.New(chip.ErrorInternal, "CASESession", "Construct salt sigma2 err")
 	}
 
 	// 使用HKDF函数派生出密钥sr2k,sr2k为16个字节
 	sr2k := crypto.HKDFSha256(s.mSharedSecret, salt, KDFSR2Info)
 	if sr2k == nil || len(sr2k) != crypto.SymmetricKeyLengthBytes {
-		return fmt.Errorf("sigma2 hkdfSha256 error")
+		return chip.New(chip.ErrorInternal, "CASESession", "sigma2 hkdfSha256 error")
 	}
 
-	//msgR2SignedLen := tlv.EstimateStructOverhead(credentials.MaxCHIPCertLength, credentials.MaxCHIPCertLength, crypto.P256PublicKeyLength, crypto.P256PublicKeyLength)
-
-	//msgR2Signed := s.ConstructTBSData(nocCert, icaCert, s.mEphemeralKey.MarshalPublicKey(), s.mRemotePubKey.Marshal())
-
-	tbsData2Signature := s.mFabricsTable.SignWithOpKeypair(s.mFabricIndex).Bytes()
-
-	buf := bytes.NewBuffer(make([]byte, 0))
-	tlvWriterMsg1 := tlv.NewEncoder(buf)
-	_, err = tlvWriterMsg1.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
+	// Construct Sigma2 TBS Data
+	msgR2Signed, err := s.ConstructTBSData(nocCert, icaCert, s.mEphemeralKey.PrivateKey().PublicKey().Bytes(), s.mRemotePubKey.PublicKey().Bytes())
 	if err != nil {
 		return err
 	}
 
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderNOC), nocCert)
+	// Generate a Signature
+	tbsData2Signature, err := s.mFabricsTable.SignWithOpKeypair(s.mFabricIndex, msgR2Signed)
 	if err != nil {
 		return err
 	}
-	if len(icaCert) > 0 {
-		err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSenderICAC), icaCert)
-		if err != nil {
+
+	buf := new(bytes.Buffer)
+	e := tlv.NewEncoder(buf)
+	outType := tlv.TypeNotSpecified
+	if outType, err = e.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
+		return err
+	}
+	if err = e.Put(tlv.ContextTag(TagTBEDataSenderNOC), nocCert); err != nil {
+		return err
+	}
+	if icaCert != nil {
+		if err = e.Put(tlv.ContextTag(TagTBEDataSenderICAC), icaCert); err != nil {
 			return err
 		}
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataSignature), tbsData2Signature)
-	if err != nil {
+	if err = e.Put(tlv.ContextTag(TagTBEDataSignature), tbsData2Signature); err != nil {
 		return err
 	}
 
 	s.mNewResumptionId = make([]byte, resumptionIdSize)
-	_, err = rand.Read(s.mNewResumptionId)
-	if err != nil {
+	if _, err = rand.Read(s.mNewResumptionId); err != nil {
 		return err
 	}
-	err = tlvWriterMsg1.PutBytes(tlv.ContextTag(TagTBEDataResumptionID), s.mNewResumptionId)
-	if err != nil {
-		return err
-	}
-
-	err = tlvWriterMsg1.EndContainer(tlv.TypeStructure)
-	if err != nil {
+	if err = e.Put(tlv.ContextTag(TagTBEDataResumptionID), s.mNewResumptionId); err != nil {
 		return err
 	}
 
-	// 使用对称密钥sr2k 对 Sigma2数量进行加密
-	msgR2Encrypted, err := crypto.AesCcmEncrypt(buf.Bytes(), sr2k, kTBEData2Nonce, crypto.AEADMicLengthBytes)
+	if err = e.EndContainer(outType); err != nil {
+		return err
+	}
 
-	buf = bytes.NewBuffer(make([]byte, 0))
-	tlvEncoder := tlv.NewEncoder(buf)
-	_, err = tlvEncoder.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure)
-	if err != nil {
+	// 使用对称密钥sr2k 对 Sigma2数据进行加密
+	msgR2Encrypted, _ := crypto.AES128CCMEncrypt(buf.Bytes(), sr2k, kTBEData2Nonce, nil, crypto.AEADMicLengthBytes)
+
+	buf = new(bytes.Buffer)
+	e2 := tlv.NewEncoder(buf)
+	outType = tlv.TypeNotSpecified
+	if outType, err = e2.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
 		return err
 	}
-	err = tlvEncoder.PutBytes(tlv.ContextTag(1), msgRand)
-	if err != nil {
+	if err = e2.Put(tlv.ContextTag(1), msgRand); err != nil {
 		return err
 	}
-	err = tlv.PutUint(tlvEncoder, tlv.ContextTag(2), s.LocalSessionId().Unwrap())
-	if err != nil {
+	if err = e2.Put(tlv.ContextTag(2), s.LocalSessionId().Unwrap()); err != nil {
 		return err
 	}
-	err = tlvEncoder.PutBytes(tlv.ContextTag(3), s.mEphemeralKey.PubBytes())
-	if err != nil {
+	if err = e2.Put(tlv.ContextTag(3), s.mEphemeralKey.PubBytes()); err != nil {
 		return err
 	}
-	err = tlvEncoder.PutBytes(tlv.ContextTag(4), msgR2Encrypted)
-	if err != nil {
+	if err = e2.Put(tlv.ContextTag(4), msgR2Encrypted); err != nil {
 		return err
 	}
 
 	if s.LocalMRPConfig != nil {
-		if _, err = tlvEncoder.StartContainer(tlv.ContextTag(5), tlv.TypeStructure); err != nil {
-			return err
-		}
-		if err = tlv.PutUint(tlvEncoder, tlv.ContextTag(1), uint64(s.LocalMRPConfig.IdleRetransTimeout.Milliseconds())); err != nil {
-			return err
-		}
-		if err = tlv.PutUint(tlvEncoder, tlv.ContextTag(2), uint64(s.LocalMRPConfig.ActiveRetransTimeout.Milliseconds())); err != nil {
-			return err
-		}
-		err = tlvEncoder.EndContainer(tlv.TypeStructure)
-		if err != nil {
+		if err = s.encodeMRPParameters(e2, tlv.ContextTag(5), s.LocalMRPConfig); err != nil {
 			return err
 		}
 	}
-	if err = tlvEncoder.EndContainer(tlv.TypeStructure); err != nil {
+
+	if err = e2.EndContainer(outType); err != nil {
 		return err
 	}
 
 	//记录下Hash值
 	s.mCommissioningHash.Write(buf.Bytes())
 
-	if err = s.exchangeContext.SendMessage(CASESigma2, buf.Bytes(), messageing.ExpectResponse); err != nil {
+	if err = s.exchangeContext.SendMessage(CASESigma2, buf.Bytes(), bitflags.Some(messageing.ExpectResponse)); err != nil {
 		return err
 	}
 
 	s.mState = sentSigma2
 
-	log.Info("Sent sigma2 message")
+	log.Info("CASESession", "SendSigma2", "Sent sigma2 message")
 
 	return nil
 }
@@ -390,7 +381,7 @@ func (s *CASESession) PrepareForSessionEstablishment(
 		return err
 	}
 	s.mFabricsTable = fabrics
-	s.role = session.KSessionRoleResponder
+	s.role = transport.KSessionRoleResponder
 	s.mSessionResumptionStorage = storage
 	s.LocalMRPConfig = config
 
@@ -433,32 +424,61 @@ func (s *CASESession) FindLocalNodeFromDestinationId(destinationId []byte, initi
 	return nil
 }
 
-func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []byte) (saltSpan []byte, err error) {
-	//md := make([]byte, crypto.Sha256HashLength)
-	saltSpan = make([]byte, ipkSize+sigmaParamRandomNumberSize+crypto.P256PublicKeyLength+crypto.Sha256HashLength)
-	buf := bytes.NewBuffer(saltSpan)
-	_, err = buf.Write(ipk)
-	_, err = buf.Write(rand)
-	_, err = buf.Write(publicKey)
-	_, err = buf.Write(s.mCommissioningHash.Sum(nil))
-	return saltSpan, nil
-}
-
 func (s *CASESession) ValidateReceivedMessage(ec *messageing.ExchangeContext, header *raw.PayloadHeader, msg *system.PacketBufferHandle) error {
 	if s.exchangeContext != nil {
 		if s.exchangeContext != ec {
-			return lib.MATTER_ERROR_INVALID_ARGUMENT
+			return chip.MATTER_ERROR_INVALID_ARGUMENT
 		}
 	} else {
 		s.exchangeContext = ec
 	}
 	s.exchangeContext.UseSuggestedResponseTimeout(kExpectedHighProcessingTime)
 	if msg.IsNull() {
-		return lib.MATTER_ERROR_INVALID_ARGUMENT
+		return chip.MATTER_ERROR_INVALID_ARGUMENT
 	}
 	return nil
 }
 
 func (s *CASESession) OnSuccessStatusReport() {
 	s.finish()
+}
+
+func (s *CASESession) ConstructSaltSigma2(rand []byte, publicKey []byte, ipk []byte) (saltSpan []byte, err error) {
+	//md := make([]byte, crypto.Sha256HashLength)
+	size := ipkSize + sigmaParamRandomNumberSize + crypto.P256PublicKeyLength + crypto.Sha256HashLength
+	buf := bytes.NewBuffer(saltSpan)
+	_, err = buf.Write(ipk)
+	_, err = buf.Write(rand)
+	_, err = buf.Write(publicKey)
+	_, err = buf.Write(s.mCommissioningHash.Sum(nil))
+	if buf.Len() != size {
+		return nil, chip.ErrorInvalidArgument
+	}
+	return saltSpan, nil
+}
+
+func (s *CASESession) ConstructTBSData(nocCert []byte, ICACert []byte, pubKey []byte, receiverPubKey []byte) (enc []byte, err error) {
+	buf := new(bytes.Buffer)
+	e := tlv.NewEncoder(buf)
+	outContainerType := tlv.TypeNotSpecified
+	if outContainerType, err = e.StartContainer(tlv.AnonymousTag(), tlv.TypeStructure); err != nil {
+		return
+	}
+	if err = e.Put(tlv.ContextTag(1), nocCert); err != nil {
+		return
+	}
+	if err = e.Put(tlv.ContextTag(2), ICACert); err != nil {
+		return
+	}
+	if err = e.Put(tlv.ContextTag(3), pubKey); err != nil {
+		return
+	}
+	if err = e.Put(tlv.ContextTag(4), receiverPubKey); err != nil {
+		return
+	}
+
+	if err = e.EndContainer(outContainerType); err != nil {
+		return
+	}
+	return buf.Bytes(), nil
 }

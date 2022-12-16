@@ -1,7 +1,7 @@
 package dnssd
 
 import (
-	"github.com/galenliu/chip/lib"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/messageing"
 	"net"
 )
@@ -68,7 +68,7 @@ func (b *BaseAdvertisingParams) EnableIpV4(enable bool) {
 
 func (b *BaseAdvertisingParams) GetTcpSupported() (bool, error) {
 	if b.mTcpSupported == nil {
-		return false, lib.IncorrectState
+		return false, chip.ErrorIncorrectState
 	}
 	return *b.mTcpSupported, nil
 }

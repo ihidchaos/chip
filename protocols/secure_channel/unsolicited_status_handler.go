@@ -20,7 +20,7 @@ type UnsolicitedStatusHandlerImpl struct {
 	mExchangeManager messageing.ExchangeManagerBase
 }
 
-func (h UnsolicitedStatusHandlerImpl) GetMessageDispatch() messageing.ExchangeMessageDispatchBase {
+func (h UnsolicitedStatusHandlerImpl) GetMessageDispatch() messageing.ExchangeMessageDispatch {
 	//TODO implement me
 	panic("implement me")
 }

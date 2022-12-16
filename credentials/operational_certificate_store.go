@@ -11,18 +11,18 @@ const (
 )
 
 type OperationalCertificateStore interface {
-	Init(persistentStorage store.KvsPersistentStorageBase) error
+	Init(persistentStorage store.PersistentStorageDelegate) error
 }
 
 type OperationalCertificateStoreImpl struct {
-	mStorage store.KvsPersistentStorageBase
+	mStorage store.PersistentStorageDelegate
 }
 
 func NewOperationalCertificateStoreImpl() *OperationalCertificateStoreImpl {
 	return &OperationalCertificateStoreImpl{}
 }
 
-func (o OperationalCertificateStoreImpl) Init(persistentStorage store.KvsPersistentStorageBase) error {
+func (o OperationalCertificateStoreImpl) Init(persistentStorage store.PersistentStorageDelegate) error {
 	o.mStorage = persistentStorage
 	return nil
 }

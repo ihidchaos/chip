@@ -2,6 +2,7 @@ package messageing
 
 import (
 	"fmt"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/bitflags"
 	"github.com/galenliu/chip/messageing/transport"
@@ -13,8 +14,10 @@ import (
 	"time"
 )
 
+var cancelChan chan any
+
 type ExchangeHandle struct {
-	ExchangeContext
+	*ExchangeContext
 }
 
 type ExchangeSessionHolder struct {
@@ -41,7 +44,7 @@ type ExchangeContext struct {
 	*ReliableMessageContext
 	mExchangeId      uint16
 	mExchangeMgr     *ExchangeManager
-	mDispatch        ExchangeMessageDispatchBase
+	mDispatch        ExchangeMessageDispatch
 	mSession         *ExchangeSessionHolder
 	mDelegate        ExchangeDelegate
 	mFlags           bitflags.Flags[uint16]
@@ -71,7 +74,7 @@ func NewExchangeContext(
 	ec.mSession = NewExchangeSessionHolder(ec)
 	ec.mSession.Grad(session)
 	ec.SetResponseTimeout(time.Duration(0))
-	if ec.IsInitiator() && !isEphemeralExchange {
+	if ec.isInitiator() && !isEphemeralExchange {
 		ec.WillSendMessage()
 	}
 	ec.SetAckPending(false)
@@ -79,26 +82,18 @@ func NewExchangeContext(
 	return ec
 }
 
-// IsInitiator 是否是通信的发起方
-func (c *ExchangeContext) IsInitiator() bool {
+// isInitiator 是否是通信的发起方
+func (c *ExchangeContext) isInitiator() bool {
 	return c.mFlags.Has(fInitiator)
 }
 
-func (c *ExchangeContext) IsResponseExpected() bool {
+func (c *ExchangeContext) isResponseExpected() bool {
 	return c.mFlags.Has(fResponseExpected)
 }
 
-func (c *ExchangeContext) SetResponseExpected(inResponseExpected bool) {
+func (c *ExchangeContext) setResponseExpected(inResponseExpected bool) {
 	c.mFlags.Set(inResponseExpected, fResponseExpected)
 
-}
-
-func (c *ExchangeContext) IsEncryptionRequired() bool {
-	return c.mDispatch.IsEncryptionRequired()
-}
-
-func (c *ExchangeContext) IsGroupExchangeContext() bool {
-	return c.mSession.IsGroup()
 }
 
 func (c *ExchangeContext) UseSuggestedResponseTimeout(applicationProcessingTimeout time.Duration) {
@@ -109,30 +104,75 @@ func (c *ExchangeContext) SetResponseTimeout(timeout time.Duration) {
 	c.mResponseTimeout = timeout
 }
 
-func (c *ExchangeContext) SendMessage(msgType MessageType, msgPayload []byte, sendFlags uint16) error {
+func (c *ExchangeContext) isEncryptionRequired() bool {
+	return c.mDispatch.IsEncryptionRequired()
+}
 
-	//isStandaloneAck := protocolId == protocols.StandardSecureChannelProtocolId && msgType == StandaloneAck
-	if err := c.send(msgType.ProtocolId(), msgType.MessageType(), msgPayload, sendFlags); err != nil {
-		return err
+func (c *ExchangeContext) isGroupExchangeContext() bool {
+	return c.mSession != nil && c.mSession.IsGroup()
+}
+
+func (c *ExchangeContext) SendMessage(msgType MessageType, msg []byte, sendFlags bitflags.Flags[uint16]) (err error) {
+	isStandaloneAck := lib.IsStandaloneAck(msgType.MessageType())
+
+	if c.mExchangeMgr == nil {
+		return chip.New(chip.ErrorInternal, "ExchangeContext", "ExchangeMgr nil")
 	}
-	return nil
+	if c.mSession == nil {
+		return chip.New(chip.ErrorConnectionAborted)
+	}
+	reliableTransmissionRequested := c.SessionHandle().RequireMRP() && sendFlags.Has(fNoAutoRequestAck) && !c.isGroupExchangeContext()
+
+	if sendFlags.Has(fExpectResponse) && !c.isGroupExchangeContext() {
+		if c.isResponseExpected() {
+			return chip.ErrorIncorrectState
+		}
+		c.setResponseExpected(true)
+		if c.mResponseTimeout > 0 {
+			if err = c.startResponseTimer(time.After(c.mResponseTimeout)); err != nil {
+				c.setResponseExpected(false)
+				return err
+			}
+		}
+	}
+	if c.isGroupExchangeContext() && !c.isInitiator() {
+		return chip.ErrorInternal
+	}
+
+	err = c.mDispatch.SendMessage(c.mExchangeMgr.mSessionManager,
+		c.mSession.SessionHandler(),
+		c.mExchangeId, c.isInitiator(),
+		c.ReliableMessageContext,
+		reliableTransmissionRequested,
+		msgType.ProtocolId(),
+		msgType.MessageType(),
+		msg)
+
+	if err != nil && c.isResponseExpected() {
+		c.cancelResponseTimer()
+		c.setResponseExpected(false)
+	}
+	if err == nil && !isStandaloneAck {
+		c.mFlags.Clear(fWillSendMessage)
+		c.messageHandled()
+	}
+	return err
 }
 
 func (c *ExchangeContext) MatchExchange(session *transport.SessionHandle,
 	packetHeader *raw.PacketHeader,
 	payloadHeader *raw.PayloadHeader) bool {
-	return (c.mExchangeId == payloadHeader.ExchangeId()) &&
+	return (c.mExchangeId == payloadHeader.ExchangeId) &&
 		(c.mSession.Contains(session)) &&
-		(c.IsEncryptionRequired() == packetHeader.IsEncrypted()) &&
-		(payloadHeader.IsInitiator() != c.IsInitiator())
+		(c.isEncryptionRequired() == packetHeader.IsEncrypted()) &&
+		(payloadHeader.IsInitiator() != c.isInitiator())
 }
 
 func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *raw.PayloadHeader, f uint32, buf *system.PacketBufferHandle) error {
-
 	msgFlags := bitflags.Some(f)
 	isDuplicate := msgFlags.Has(fDuplicateMessage)
-	//isStandaloneAck := payloadHeader.HasMessageType(uint8(secure_channel.StandaloneAck))
-	isStandaloneAck := false
+	var standaloneAck uint8 = 0x10
+	isStandaloneAck := payloadHeader.HasMessageType(standaloneAck)
 	defer func() {
 		if (isDuplicate || isStandaloneAck) && c.mDelegate != nil {
 			return
@@ -140,11 +180,11 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 		c.messageHandled()
 	}()
 
-	if c.mDispatch.IsReliableTransmissionAllowed() && !c.IsGroupExchangeContext() {
+	if c.mDispatch.IsReliableTransmissionAllowed() && !c.isGroupExchangeContext() {
 		if !msgFlags.Has(fDuplicateMessage) &&
 			payloadHeader.IsAckMsg() &&
-			payloadHeader.AckMessageCounter().IsSome() {
-			c.HandleRcvdAck(payloadHeader.AckMessageCounter().Unwrap())
+			payloadHeader.AckMessageCounter.IsSome() {
+			c.HandleRcvdAck(payloadHeader.AckMessageCounter.Unwrap())
 		}
 		if payloadHeader.NeedsAck() {
 			c.HandleNeedsAck(messageCounter, f)
@@ -163,16 +203,16 @@ func (c *ExchangeContext) HandleMessage(messageCounter uint32, payloadHeader *ra
 
 	if c.isMessageNotAcked() {
 		log.Info("ExchangeManager Dropping message without piggyback ack when we are waiting for an ack.")
-		return lib.MATTER_ERROR_INCORRECT_STATE
+		return chip.ErrorIncorrectState
 	}
 
-	c.CancelResponseTimer()
+	c.cancelResponseTimer()
 
-	c.SetResponseExpected(false)
-	if c.mDelegate != nil && c.mDispatch.MessagePermitted(protocols.New(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType()) {
+	c.setResponseExpected(false)
+	if c.mDelegate != nil && c.mDispatch.MessagePermitted(payloadHeader.ProtocolId, payloadHeader.MessageType) {
 		return c.mDelegate.OnMessageReceived(c, payloadHeader, buf)
 	}
-	DefaultOnMessageReceived(c, protocols.New(payloadHeader.ProtocolID(), payloadHeader.VendorId()), payloadHeader.MessageType(), messageCounter, buf)
+	DefaultOnMessageReceived(c, payloadHeader.ProtocolId, payloadHeader.MessageType, messageCounter, buf)
 	return nil
 }
 
@@ -185,9 +225,9 @@ func (c *ExchangeContext) ExchangeId() uint16 {
 }
 
 func (c *ExchangeContext) GetMessageDispatch(isEphemeralExchange bool,
-	delegate ExchangeDelegate) ExchangeMessageDispatchBase {
+	delegate ExchangeDelegate) ExchangeMessageDispatch {
 	if isEphemeralExchange {
-		return DefaultEphemeraExchangeDispatch()
+		return DefaultEphemeralDispatch()
 	}
 	if delegate != nil {
 		return delegate.GetMessageDispatch()
@@ -217,9 +257,9 @@ func (c *ExchangeContext) DoClose(clearRetransTable bool) {
 	_ = c.FlushAcks()
 
 	if clearRetransTable {
-		c.mExchangeMgr.ReliableMessageMgr().clearRetransTable(c.ReliableMessageContext)
+		c.mExchangeMgr.ReliableMessageMgr().ClearRetransTable(c.ReliableMessageContext)
 	}
-	c.CancelResponseTimer()
+	c.cancelResponseTimer()
 }
 
 func (c *ExchangeContext) close() {
@@ -236,12 +276,6 @@ func (c *ExchangeContext) OnSessionReleased() {
 	panic("implement me")
 }
 
-func (c *ExchangeContext) send(id protocols.Id, msgType uint8, msgBuf []byte, sendFlags uint16) error {
-
-	//c.mDispatch.SendMessage(c.ExchangeMgr().SessionManagerBase(),c.mSession.)
-	return nil
-}
-
 func (c *ExchangeContext) HasSessionHandle() bool {
 	return c.mSession != nil
 }
@@ -250,31 +284,41 @@ func (c *ExchangeContext) SessionHandle() *transport.SessionHandle {
 	return c.mSession.SessionHandler()
 }
 
-func (c *ExchangeContext) CancelResponseTimer() {
-	systemLayer := c.mExchangeMgr.SessionManager().SystemLayer()
-	if systemLayer == nil {
-		return
+func (c *ExchangeContext) cancelResponseTimer() {
+	if cancelChan != nil {
+		select {
+		case cancelChan <- true:
+		}
 	}
-	systemLayer.CancelTimer(c.HandleResponseTimeout, c)
 }
 
-func (c *ExchangeContext) startResponseTimer() {
-	systemLayer := c.mExchangeMgr.SessionManager().SystemLayer()
-	if systemLayer == nil {
-		return
+func (c *ExchangeContext) startResponseTimer(timOutChan <-chan time.Time) error {
+	if cancelChan == nil {
+		cancelChan = make(chan any)
 	}
-	systemLayer.StartTimer(c.mResponseTimeout, c.HandleResponseTimeout, c)
+	go func() {
+		select {
+		case <-timOutChan:
+			c.handleResponseTimeout()
+			return
+		case <-cancelChan:
+			return
+		}
+	}()
+	return nil
 }
 
-func (c *ExchangeContext) HandleResponseTimeout(layer system.Layer, aAppState any) {
-	ec, ok := aAppState.(*ExchangeContext)
-	if !ok {
-		return
-	}
-	ec.NotifyResponseTimeout(true)
+func (c *ExchangeContext) handleResponseTimeout() {
+	c.notifyResponseTimeout(true)
 }
 
-func (c *ExchangeContext) NotifyResponseTimeout(b bool) {
+func (c *ExchangeContext) notifyResponseTimeout(aCloseIfNeeded bool) {
+	c.setResponseExpected(false)
+	if c.mSession != nil {
+		if c.mSession.IsSecure() && c.mSession.Session.(*session.Secure).IsCASESession() {
+			c.mSession.Session.(*session.Secure).MarkAsDefunct()
+		}
+	}
 
 }
 
@@ -286,7 +330,7 @@ func (c *ExchangeContext) LogValue() log.Value {
 }
 
 func (c *ExchangeContext) messageHandled() {
-	if c.mFlags.Has(fClosed) || c.IsResponseExpected() || c.isSendExpected() {
+	if c.mFlags.Has(fClosed) || c.isResponseExpected() || c.isSendExpected() {
 		return
 	}
 	c.close()
@@ -306,7 +350,7 @@ func (c *ExchangeContext) WillSendMessage() {
 }
 
 func DefaultOnMessageReceived(c *ExchangeContext, id protocols.Id, messageType uint8, messageCounter uint32, payload *system.PacketBufferHandle) {
-	log.Error("ExchangeManager Dropping unexpected message of type", lib.MATTER_ERROR_INVALID_MESSAGE_TYPE,
+	log.Error("ExchangeManager Dropping unexpected message of type", chip.ErrorInvalidMessageType,
 		"MessageType", messageType,
 		"protocolId", id,
 		"MessageCounterBase", messageCounter,

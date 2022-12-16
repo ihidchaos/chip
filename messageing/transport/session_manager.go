@@ -1,6 +1,8 @@
 package transport
 
 import (
+	"bytes"
+	"github.com/galenliu/chip"
 	"github.com/galenliu/chip/credentials"
 	"github.com/galenliu/chip/lib"
 	"github.com/galenliu/chip/lib/store"
@@ -51,7 +53,6 @@ type SessionManagerBase interface {
 	// UnauthenticatedMessageDispatch handle the unauthenticated(未经认证的) messages
 	UnauthenticatedMessageDispatch(header *raw.PacketHeader, addr netip.AddrPort, buf *system.PacketBufferHandle)
 
-	PrepareMessage(session *SessionHandle, payloadHeader *raw.PayloadHeader, msgBuf *system.PacketBufferHandle, encryptedMessage *EncryptedPacketBufferHandle) error
 	SendPreparedMessage(session *SessionHandle, preparedMessage *EncryptedPacketBufferHandle) error
 	AllocateSession(sessionType session.SecureType, sessionEvictionHint lib.ScopedNodeId) *SessionHandle
 
@@ -98,7 +99,7 @@ func (s *SessionManager) SetMessageDelegate(delegate SessionMessageDelegate) {
 	s.mCB = delegate
 }
 
-func (s *SessionManager) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManagerBase, storage store.KvsPersistentStorageBase, table *credentials.FabricTable) error {
+func (s *SessionManager) Init(systemLay system.Layer, transportMgr MgrBase, counter MessageCounterManagerBase, storage store.PersistentStorageDelegate, table *credentials.FabricTable) error {
 
 	s.mState = initialized
 	s.mSystemLayer = systemLay
@@ -125,7 +126,7 @@ func (s *SessionManager) OnMessageReceived(srcAddr netip.AddrPort, msg *system.P
 	packetHeader := raw.NewPacketHeader()
 	err := packetHeader.DecodeAndConsume(msg)
 	if err != nil {
-		log.Error("packet header failed", err, "Tag", "sessionManager")
+		log.Error("packet header failed", err, "NextTag", "sessionManager")
 		return
 	}
 	if packetHeader.IsEncrypted() {
@@ -145,7 +146,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 	sourceNodeId := packetHeader.SourceNodeId
 	destinationNodeId := packetHeader.DestinationNodeId
 	if (sourceNodeId.IsSome() && destinationNodeId.IsSome()) || (sourceNodeId.IsNone() && destinationNodeId.IsNone()) {
-		log.Info("received malformed unsecure packet", "SourceNodeId", sourceNodeId, "DestinationNodeId", destinationNodeId, "Tag", "sessionManager")
+		log.Info("received malformed unsecure packet", "SourceNodeId", sourceNodeId, "DestinationNodeId", destinationNodeId, "NextTag", "sessionManager")
 		return
 		//ephemeral node id is only assigned to the initiator, there should be one and only one node id exists.
 	}
@@ -164,7 +165,7 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 		// 对方为响应，我们是发起人
 		optionalSession = s.mUnauthenticatedSessions.FindInitiator(destinationNodeId.Unwrap())
 		if optionalSession == nil {
-			log.Info("Received unknown unsecure packet for initiator", "DestinationNodeId", destinationNodeId, "Tag", "sessionManager")
+			log.Info("Received unknown unsecure packet for initiator", "DestinationNodeId", destinationNodeId, "NextTag", "sessionManager")
 			return
 		}
 	}
@@ -178,12 +179,12 @@ func (s *SessionManager) UnauthenticatedMessageDispatch(packetHeader *raw.Packet
 	payloadHeader := raw.NewPayloadHeader()
 	err = payloadHeader.DecodeAndConsume(msg)
 	if err != nil {
-		log.Error("Received invalid packet", err, "Tag", "sessionManager")
+		log.Error("Received invalid packet", err, "NextTag", "sessionManager")
 		return
 	}
 
 	err = unsecuredSession.PeerMessageCounter().VerifyUnencrypted(packetHeader.MessageCounter)
-	if err == lib.DuplicateMessageReceived {
+	if err == chip.ErrorDuplicateMessageReceived {
 		log.Info(
 			"Received a duplicate message", "messageCounter", packetHeader.MessageCounter, "payloadHeader", payloadHeader)
 		isDuplicate = true
@@ -218,8 +219,8 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 		return
 	}
 
-	nonce := session.BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, func() lib.NodeId {
-		if secureSession.SecureType() == session.SecureSessionTypeCASE {
+	nonce := BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, func() lib.NodeId {
+		if secureSession.SecureType() == session.SecureTypeCASE {
 			return secureSession.PeerNodeId()
 		}
 		return lib.UndefinedNodeId()
@@ -231,13 +232,13 @@ func (s *SessionManager) SecureUnicastMessageDispatch(packetHeader *raw.PacketHe
 	}
 
 	err = secureSession.SessionMessageCounter().PeerMessageCounter.VerifyEncryptedUnicast(packetHeader.MessageCounter)
-	if err == lib.DuplicateMessageReceived {
+	if err == chip.ErrorDuplicateMessageReceived {
 		log.Info("Received a duplicate message on exchange", "MessageCounterBase", packetHeader.MessageCounter, "PayloadHeader", payloadHeader)
 		isDuplicate = true
 		err = nil
 	}
 	if err != nil {
-		log.Error("Message counter verify failed", err, "Tag", "Inet")
+		log.Error("Message counter verify failed", err, "NextTag", "Inet")
 		return
 	}
 	secureSession.MarkActiveRx()
@@ -288,8 +289,8 @@ func (s *SessionManager) SecureGroupMessageDispatch(packetHeader *raw.PacketHead
 		if packetHeader.DestinationGroupId.Unwrap() != groupContext.GroupId {
 			continue
 		}
-		nonce = session.BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, packetHeader.SourceNodeId.Unwrap())
-		payloadHeader, err = Decrypt(session.NewCryptoContext(groupContext.Key), nonce, packetHeader, msg)
+		nonce = BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, packetHeader.SourceNodeId.Unwrap())
+		payloadHeader, err = Decrypt(NewCryptoContext(groupContext.Key), nonce, packetHeader, msg)
 	}
 	if err != nil {
 		log.Error("Failed to retrieve Key. Discarding everything", err)
@@ -368,8 +369,48 @@ func (s *SessionManager) FabricRemoved(fabricId lib.FabricIndex) {
 	}
 }
 
-func (s *SessionManager) PrepareMessage(session *SessionHandle, payloadHeader *raw.PayloadHeader, msgBuf *system.PacketBufferHandle, encryptedMessage *EncryptedPacketBufferHandle) error {
-	return nil
+func (s *SessionManager) PrepareMessage(sessionHandle *SessionHandle,
+	payloadHeader *raw.PayloadHeader,
+	message []byte) (msg []byte, err error) {
+
+	var packetHeader = raw.NewPacketHeader()
+	var isControlMsg = lib.IsControlMessage(payloadHeader)
+	if isControlMsg {
+		packetHeader.SetSecureSessionControlMsg(true)
+	}
+	switch sessionHandle.Session.Type() {
+	case session.TypeGroupOutgoing:
+		groupSession := sessionHandle.Session.(*session.OutgoingGroup)
+		groups := credentials.GetGroupDataProvider()
+		fabric := s.mFabricTable.FindFabricWithIndex(groupSession.FabricIndex())
+
+		packetHeader.SetDestinationGroupId(groupSession.GroupId())
+		packetHeader.SetMessageCounter(s.mGroupClientCounter.GetCounter(isControlMsg))
+		_ = s.mGroupClientCounter.IncrementCounter(isControlMsg)
+		packetHeader.SetSessionType(raw.GroupSession)
+
+		sourceNodeId := fabric.GetNodeId()
+		packetHeader.SetSourceNodeId(sourceNodeId)
+
+		if packetHeader.IsValidGroupMsg() {
+			return nil, chip.ErrorInternal
+		}
+
+		lib.MatterTraceMessageSent(payloadHeader, packetHeader, message)
+
+		var keyContext = groups.KeyContext(groupSession.FabricIndex(), groupSession.GroupId())
+		packetHeader.SetSessionId(keyContext.KeyHash())
+
+		var nonce = BuildNonce(packetHeader.SecurityFlags(), packetHeader.MessageCounter, sourceNodeId)
+		if err := Encrypt(NewCryptoContext(keyContext), nonce, payloadHeader, packetHeader, bytes.NewBuffer(message)); err != nil {
+			return nil, err
+		}
+		keyContext.Release()
+	default:
+		return nil, nil
+
+	}
+	return nil, nil
 }
 
 func (s *SessionManager) SendPreparedMessage(session *SessionHandle, preparedMessage *EncryptedPacketBufferHandle) error {

@@ -5,17 +5,17 @@ import (
 	"net/netip"
 )
 
-type Type uint8
+type TransportType uint8
 
 const (
-	Undefined Type = iota
+	Undefined TransportType = iota
 	Udp
 	Ble
 	Tcp
 )
 
 type PeerAddress struct {
-	TransportType Type
+	TransportType TransportType
 	Interface     net.Interface
 	AddrPort      netip.AddrPort
 }

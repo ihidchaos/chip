@@ -28,6 +28,7 @@ type Session interface {
 	GetPeer() lib.ScopedNodeId
 	ComputeRoundTripTimeout(duration time.Duration) time.Duration
 	RemoteMRPConfig() *messageing.ReliableMessageProtocolConfig
+	RequireMRP() bool
 	Released()
 	ClearValue()
 	AddHolder(handle Holder)
@@ -88,11 +89,11 @@ func (s *BaseImpl) RemoveHolder(holder Holder) {
 }
 
 func (s *BaseImpl) IsSecure() bool {
-	return s.Type() == kSecure
+	return s.Type() == TypeSecure
 }
 
 func (s *BaseImpl) IsGroup() bool {
-	return s.Type() == kGroupIncoming || s.Type() == kGroupOutgoing
+	return s.Type() == TypeGroupIncoming || s.Type() == TypeGroupOutgoing
 }
 
 func (s *BaseImpl) Type() Type {
@@ -101,7 +102,7 @@ func (s *BaseImpl) Type() Type {
 
 func (s *BaseImpl) LogValue() log.Value {
 	return log.GroupValue(
-		log.String("Type", s.mSessionType.String()),
+		log.String("TransportType", s.mSessionType.String()),
 		log.Int("ReferenceCounted", s.ReferenceCount()),
 	)
 }
