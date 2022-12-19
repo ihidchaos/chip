@@ -281,7 +281,7 @@ func (dec *Decoder) Next() error {
 func (dec *Decoder) readTag(tagControl tagControl) (tag Tag, err error) {
 	var p []byte
 	tag = AnonymousTag()
-	err = nil
+
 	switch tagControl {
 	case ContextSpecific:
 		p = make([]byte, 1)

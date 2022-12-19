@@ -9,7 +9,7 @@ import (
 
 func Encrypt(context *CryptoContext, nonce []byte, payloadHeader *raw.PayloadHeader, header *raw.PacketHeader, buf *bytes.Buffer) (err error) {
 	if buf.Len() == 0 || buf.Len() > raw.MaxAppMessageLen {
-		return err.MATTER_ERROR_INVALID_MESSAGE_LENGTH
+		return chip.MATTER_ERROR_INVALID_MESSAGE_LENGTH
 	}
 	if err = payloadHeader.Encode(buf); err != nil {
 		return err
